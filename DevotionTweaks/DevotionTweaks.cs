@@ -198,7 +198,7 @@ namespace DevotionTweaks
             }
             else
             {
-                DevotionTweaksPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian");
+                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian");
             }
         }
         #endregion
@@ -221,7 +221,7 @@ namespace DevotionTweaks
             }
             else
             {
-                DevotionTweaksPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #1");
+                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #1");
             }
 
             if (c.TryGotoNext(MoveType.After,
@@ -237,7 +237,7 @@ namespace DevotionTweaks
             }
             else
             {
-                DevotionTweaksPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
+                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
             }
         }
 
@@ -267,21 +267,6 @@ namespace DevotionTweaks
             lemCtrl.ReturnUntrackedItems();
         }
 
-        private static void GenerateEliteBuff_Internal(DevotedLemurianController lem)
-        {
-            if (lem is BetterLemurController lemCtrl && lemCtrl.LemurianBody && lemCtrl.LemurianInventory)
-            {
-                //if (lemCtrl.DevotedEvolutionLevel > 3)
-                //{
-                    //CrueltyElite.CreateCrueltyElite(lemCtrl, lemCtrl.LemurianBody, lemCtrl.LemurianInventory);
-                //}
-                var list = gigaChadLvl.ToList();
-
-                var idx = UE.Random.Range(0, list.Count);
-                lemCtrl.LemurianInventory.SetEquipmentIndex(list[idx]);
-            }
-        }
-
         private static void DevotionInventoryController_EvolveDevotedLumerian(ILContext il)
         {
             var c = new ILCursor(il);
@@ -291,12 +276,18 @@ namespace DevotionTweaks
                 i => i.MatchCall<UE.Debug>("LogError")))
             {
                 c.Emit(OpCodes.Ldarg_1);
-                c.Emit(OpCodes.Call, typeof(DevotionTweaks).GetMethod(nameof(GenerateEliteBuff_Internal)));
+                c.EmitDelegate<Action<DevotedLemurianController>>((lem) =>
+                {
+                    var list = gigaChadLvl.ToList();
+
+                    var idx = UE.Random.Range(0, list.Count);
+                    lem.LemurianInventory.SetEquipmentIndex(list[idx]);
+                });
                 c.RemoveRange(2);
             }
             else
             {
-                DevotionTweaksPlugin._logger.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian");
+                LemurFusionPlugin._logger.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian");
             }
         }
 
@@ -320,7 +311,7 @@ namespace DevotionTweaks
             }
             else
             {
-                DevotionTweaksPlugin._logger.LogError("Hook failed for DevotionInventoryController_GenerateEliteBuff");
+                LemurFusionPlugin._logger.LogError("Hook failed for DevotionInventoryController_GenerateEliteBuff");
             }
         }
         #endregion

@@ -52,7 +52,7 @@ namespace DevotionTweaks
 
         public static void InitROO()
         {
-            if (DevotionTweaksPlugin.rooInstalled)
+            if (LemurFusionPlugin.rooInstalled)
             {
                 /*var sprite = LoadSprite();
                 if (sprite != null)
@@ -98,7 +98,7 @@ namespace DevotionTweaks
 
             ConfigEntry<T> configEntry = myConfig.Bind(section, name, defaultValue, description);
 
-            if (DevotionTweaksPlugin.rooInstalled)
+            if (LemurFusionPlugin.rooInstalled)
             {
                 TryRegisterOption(configEntry, restartRequired);
             }
@@ -122,7 +122,7 @@ namespace DevotionTweaks
 
             ConfigEntry<float> configEntry = myConfig.Bind(section, name, defaultValue, description);
 
-            if (DevotionTweaksPlugin.rooInstalled)
+            if (LemurFusionPlugin.rooInstalled)
             {
                 TryRegisterOptionSlider(configEntry, min, max, restartRequired);
             }
@@ -146,7 +146,7 @@ namespace DevotionTweaks
 
             ConfigEntry<int> configEntry = myConfig.Bind(section, name, defaultValue, description);
 
-            if (DevotionTweaksPlugin.rooInstalled)
+            if (LemurFusionPlugin.rooInstalled)
             {
                 TryRegisterOptionSlider(configEntry, min, max, restartRequired);
             }

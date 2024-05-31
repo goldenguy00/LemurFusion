@@ -85,7 +85,7 @@ public class BetterLemurController : DevotedLemurianController
             SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
             SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
 
-            if (DevotionTweaksPlugin.riskyInstalled)
+            if (LemurFusionPlugin.riskyInstalled)
             {
                 SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
                 SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyRegenItem, 60);

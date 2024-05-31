@@ -11,6 +11,8 @@ Makes your lemurians fuse together like dragonball!
 
 - Supports any modded elites!
 
+- Fully supports RiskyMod Ally changes!
+
 - Lemurians will switch between the various high tier elite types once they are fully evolved.
 
 - Fully functional and configurable scoreboard entry for all the lemurs you control. 
@@ -19,12 +21,16 @@ Makes your lemurians fuse together like dragonball!
 
 - Stat multipliers per fusion, similar to dronemeld, while still retaining the vanilla HP and damage buffs that they would get on evolution.
 
+- Resize Lemur buddies based on fusion count, kinda borked rn but its funny if you set it to 0, try it.
+
 
 ### *(WORK IN PROGRESS, COMING SOON)*
 
 - Can make them share a single inventory or have their own unique inventories with a limited amount of item sharing.
 
 - Multiple elite types on a single guy.
+
+- Make it even more customizable and developed with mod compatability in mind.
 
 
 ---
@@ -34,7 +40,11 @@ Makes your lemurians fuse together like dragonball!
 
 - Added some fun/quality of life config options.
 
-- Future plans will be to make it even more customizable and developed with mod compatability in mind.
+
+---
+# Found Bug or Have Suggestions?
+
+    >https://github.com/goldenguy00/LemurFusion/issues
 
 ---
 # Special Thanks to:
@@ -51,3 +61,10 @@ Makes your lemurians fuse together like dragonball!
 
 - Nuxlar for the scoreboard
     >https://github.com/FocusedFault
+
+---
+## Changelog
+
+# 1.0.0
+
+- Ported DronemeldDevotionFix code, stripped the dronemeld dependency and made the mod good

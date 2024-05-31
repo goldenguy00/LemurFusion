@@ -133,12 +133,12 @@ namespace DevotionTweaks
                         baseSize = transform.localScale;
                     var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
 
-                    DevotionTweaksPlugin._logger.LogWarning(baseSize.ToString());
-                    DevotionTweaksPlugin._logger.LogWarning(scaleFactor.ToString());
+                    LemurFusionPlugin._logger.LogWarning(baseSize.ToString());
+                    LemurFusionPlugin._logger.LogWarning(scaleFactor.ToString());
 
                     transform.localScale = baseSize + scaleFactor;
 
-                    DevotionTweaksPlugin._logger.LogWarning(transform.localScale.ToString());
+                    LemurFusionPlugin._logger.LogWarning(transform.localScale.ToString());
                 }
             }
         }
