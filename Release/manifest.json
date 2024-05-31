@@ -1,0 +1,8 @@
+{
+    "name": "DevotionTweaks",
+    "author": "score",
+    "version_number": "1.0.0",
+    "description": "Duplicate devotion summons will boost existing summons' stats instead.",
+    "website_url": "https://github.com/goldenguy00/LemurMeld",
+    "dependencies": []
+}
