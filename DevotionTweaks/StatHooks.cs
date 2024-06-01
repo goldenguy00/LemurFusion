@@ -20,16 +20,52 @@ namespace DevotionTweaks
 
         public void InitHooks()
         {
+            if (!LemurFusionPlugin.lemNamesInstalled)
+                On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
+            else
+            {
+                On.RoR2.CharacterBody.GetColoredUserName += CharacterBody_GetColoredUserName;
+                On.RoR2.CharacterBody.GetUserName += CharacterBody_GetUserName;
+            }
+
             On.RoR2.UI.ScoreboardController.Rebuild += AddLemurianInventory;
-            On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
             On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
         }
 
+        private string CharacterBody_GetUserName(On.RoR2.CharacterBody.orig_GetUserName orig, CharacterBody self)
+        {
+            var retv = orig(self);
+            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            if (meldCount.HasValue && meldCount.Value > 0)
+            {
+                return $"{retv} <style=cStack>x{meldCount}</style>";
+            }
+            return retv;
+        }
+
+        private string CharacterBody_GetColoredUserName(On.RoR2.CharacterBody.orig_GetColoredUserName orig, CharacterBody self)
+        {
+            var retv = orig(self);
+            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            if (meldCount.HasValue && meldCount.Value > 0)
+            {
+                return $"{retv} <style=cStack>x{meldCount}</style>";
+            }
+            return retv;
+        }
+
         public void RemoveHooks()
         {
+            if (!LemurFusionPlugin.lemNamesInstalled)
+                On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
+            else
+            {
+                On.RoR2.CharacterBody.GetUserName -= CharacterBody_GetUserName;
+                On.RoR2.CharacterBody.GetColoredUserName -= CharacterBody_GetColoredUserName;
+            }
+
             On.RoR2.UI.ScoreboardController.Rebuild -= AddLemurianInventory;
-            On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
             On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
         }

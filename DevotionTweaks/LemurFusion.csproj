@@ -36,6 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="ExamplePlugin">
+      <HintPath>..\libs\ExamplePlugin.dll</HintPath>
+    </Reference>
     <Reference Include="Facepunch.Steamworks">
       <HintPath>libs\Facepunch.Steamworks.dll</HintPath>
       <Private>false</Private>

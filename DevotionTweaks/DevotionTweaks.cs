@@ -30,7 +30,6 @@ namespace DevotionTweaks
         public DevotionTweaks()
         {
             instance = this;
-
             //        //
             // assets //
             //        //
