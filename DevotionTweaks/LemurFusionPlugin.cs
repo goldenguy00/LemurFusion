@@ -11,7 +11,7 @@ namespace DevotionTweaks
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         public static LemurFusionPlugin instance;
 
