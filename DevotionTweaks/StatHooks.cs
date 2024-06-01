@@ -4,8 +4,9 @@ using UnityEngine.Networking;
 using UnityEngine;
 using RoR2;
 using System.Linq;
+using LemurFusion.Config;
 
-namespace DevotionTweaks
+namespace LemurFusion
 {
     internal class StatHooks
     {
@@ -16,18 +17,14 @@ namespace DevotionTweaks
         public StatHooks() 
         {
             instance = this;
+
+            On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return ModifyName(orig(self), self); };
+            On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
+            On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
         }
 
         public void InitHooks()
         {
-            if (!LemurFusionPlugin.lemNamesInstalled)
-                On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
-            else
-            {
-                On.RoR2.CharacterBody.GetColoredUserName += CharacterBody_GetColoredUserName;
-                On.RoR2.CharacterBody.GetUserName += CharacterBody_GetUserName;
-            }
-
             On.RoR2.UI.ScoreboardController.Rebuild += AddLemurianInventory;
             On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
@@ -35,42 +32,10 @@ namespace DevotionTweaks
 
         public void RemoveHooks()
         {
-            if (!LemurFusionPlugin.lemNamesInstalled)
-                On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
-            else
-            {
-                On.RoR2.CharacterBody.GetUserName -= CharacterBody_GetUserName;
-                On.RoR2.CharacterBody.GetColoredUserName -= CharacterBody_GetColoredUserName;
-            }
-
             On.RoR2.UI.ScoreboardController.Rebuild -= AddLemurianInventory;
             On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
         }
-
-        private static string CharacterBody_GetUserName(On.RoR2.CharacterBody.orig_GetUserName orig, CharacterBody self)
-        {
-            var retv = orig(self);
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{retv} <style=cStack>x{meldCount}</style>";
-            }
-            return retv;
-        }
-
-        private static string CharacterBody_GetColoredUserName(On.RoR2.CharacterBody.orig_GetColoredUserName orig, CharacterBody self)
-        {
-            var retv = orig(self);
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{retv} <style=cStack>x{meldCount}</style>";
-            }
-            return retv;
-        }
-
-
 
         #region Hooks
         private static void AddLemurianInventory(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
@@ -107,17 +72,6 @@ namespace DevotionTweaks
             }
         }
 
-        private static string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
-        {
-            var retv = orig(self);
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{retv} <style=cStack>x{meldCount}</style>";
-            }
-            return retv;
-        }
-
         private static void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body)
         {
             orig(self, body);
@@ -148,11 +102,21 @@ namespace DevotionTweaks
         #endregion
 
         #region Utils
+        private static string ModifyName(string orig, CharacterBody self)
+        {
+            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            if (meldCount.HasValue && meldCount.Value > 0)
+            {
+                return $"{orig} <style=cStack>x{meldCount}</style>";
+            }
+            return orig;
+        }
+
         private static Vector3 GetScaleFactor(int configValue, int meldCount)
         {
             if (meldCount <= 1) return Vector3.one;
 
-            return Vector3.one * ((meldCount - 1) * (configValue * 0.001f));
+            return Vector3.one * ((meldCount - 1) * (configValue * 0.01f) * 0.5f);
         }
 
         private static float GetStatModifier(int configValue, int meldCount, int multiplyStatsCount)
@@ -163,7 +127,8 @@ namespace DevotionTweaks
         internal static void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
-            return;
+            if (!PluginConfig.miniElders.Value) return;
+
             if (PluginConfig.statMultSize.Value > 0 && meldCount > 1)
             {
                 var transform = body?.modelLocator?.modelTransform; 

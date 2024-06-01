@@ -13,8 +13,9 @@ using UE = UnityEngine;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.AddressableAssets;
+using LemurFusion.Config;
 
-namespace DevotionTweaks
+namespace LemurFusion
 {
     public class DevotionTweaks
     {
@@ -147,13 +148,14 @@ namespace DevotionTweaks
             if (self?.masterPrefab == masterPrefab && self.summonerBodyObject?.TryGetComponent<CharacterBody>(out var body) == true)
             {
                 // successful lemurmeld
-                var targetSummon = TrySummon(body.masterObjectId);
+                // hijacking this var for CreateTwin_ExtraLife. fuck your config, you get another friend.
+                var targetSummon = self.ignoreTeamMemberLimit ? null : TrySummon(body.masterObjectId);
                 if (targetSummon != null)
                 {
                     return targetSummon;
                 }
+                self.ignoreTeamMemberLimit = true;
             }
-
             return orig(self);
         }
 
@@ -169,6 +171,7 @@ namespace DevotionTweaks
             }
 
             // replace summon with an existing guy
+            // hijacking ignoreMaxAllies for CreateTwin_ExtraLife
             if (lemCtrlList.Count >= PluginConfig.maxLemurs.Value && lemCtrlList.Any())
             {
                 var meldTarget = lemCtrlList.OrderBy(l => l.MeldCount).First();
@@ -186,6 +189,16 @@ namespace DevotionTweaks
         private static void LemurianEggController_SummonLemurian(ILContext il)
         {
             var c = new ILCursor(il);
+            if (c.TryGotoNext(MoveType.Before,
+                i => i.MatchStfld<MasterSummon>(nameof(MasterSummon.ignoreTeamMemberLimit))
+                ))
+            {
+                c.Prev.OpCode = OpCodes.Ldc_I4_0;
+            }
+            else
+            {
+                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 1");
+            }
 
             if (c.TryGotoNext(MoveType.Before,
                 i => i.MatchLdarg(0),
@@ -197,7 +210,7 @@ namespace DevotionTweaks
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian");
+                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 2");
             }
         }
         #endregion

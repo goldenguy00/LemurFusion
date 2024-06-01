@@ -2,18 +2,22 @@ using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
+using LemurFusion.Config;
+using RoR2;
 using System;
 
-namespace DevotionTweaks
+namespace LemurFusion
 {
     [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("com.bepis.r2api.recalculatestats", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
         public const string PluginVersion = "1.0.2";
+        public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
 
@@ -27,9 +31,11 @@ namespace DevotionTweaks
         {
             instance = this;
             _logger = Logger;
+            pluginInfo = Info;
 
             PluginConfig.myConfig = Config;
-            PluginConfig.ReadConfig();
+
+            Configs.Setup();
 
             new DevotionTweaks();
             new StatHooks();
@@ -41,6 +47,14 @@ namespace DevotionTweaks
                 var harmony = new Harmony(PluginGUID);
                 harmony.PatchAll();
             }
+
+            GameModeCatalog.availability.CallWhenAvailable(new Action(PostLoad));
+        }
+
+        private void PostLoad()
+        {
+            LightChanges.PostLoad();
+            HeavyChanges.PostLoad();
         }
     }
 

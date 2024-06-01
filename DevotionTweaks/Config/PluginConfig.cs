@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using LemurFusion;
 using Facepunch.Steamworks;
 using RiskOfOptions;
 using RiskOfOptions.OptionConfigs;
@@ -8,7 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace DevotionTweaks
+namespace LemurFusion.Config
 {
     public static class PluginConfig
     {
@@ -25,6 +26,7 @@ namespace DevotionTweaks
         public static ConfigEntry<int> statMultDamage;
         public static ConfigEntry<int> statMultAttackSpeed;
         public static ConfigEntry<int> statMultSize;
+
 
         public const string GENERAL = "01 - General";
         public const string EXPERIMENTAL = "02 - Experimental";
@@ -43,7 +45,7 @@ namespace DevotionTweaks
 
             statMultHealth = BindAndOptionsSlider(STATS, "Fusion Health Increase", 20, "Health multiplier for each lemur fusion, in percent.", 0, 100);
 
-            statMultDamage = BindAndOptionsSlider(STATS, "Fusion Damage Increase", 20, "Damage multiplier for each lemur fusion, in percent.",  0, 100);
+            statMultDamage = BindAndOptionsSlider(STATS, "Fusion Damage Increase", 20, "Damage multiplier for each lemur fusion, in percent.", 0, 100);
 
             statMultAttackSpeed = BindAndOptionsSlider(STATS, "Fusion Attack Speed Increase", 20, "Attack speed multiplier for each lemur fusion, in percent.", 0, 100);
 
