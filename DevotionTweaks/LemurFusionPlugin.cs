@@ -1,6 +1,8 @@
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
+using HarmonyLib;
+using System;
 
 namespace DevotionTweaks
 {
@@ -11,7 +13,7 @@ namespace DevotionTweaks
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.1";
+        public const string PluginVersion = "1.0.2";
 
         public static LemurFusionPlugin instance;
 
@@ -31,6 +33,33 @@ namespace DevotionTweaks
 
             new DevotionTweaks();
             new StatHooks();
+
+            // this is absurd, change anything that this mod references and it instantly explodes.
+            // fucking hell man
+            if (lemNamesInstalled)
+            {
+                var harmony = new Harmony(PluginGUID);
+                harmony.PatchAll();
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(ExamplePlugin.ExamplePlugin), "NameFriend")]
+    public class Class_Method
+    {
+        [HarmonyFinalizer]
+        public static Exception Finalizer(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                // An exception was thrown by the method!
+                LemurFusionPlugin._logger.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames!");
+                LemurFusionPlugin._logger.LogWarning(__exception.Message);
+                LemurFusionPlugin._logger.LogWarning(__exception.StackTrace);
+            }
+
+            // return null so that no Exception is thrown. You could re-throw as a different Exception as well.
+            return null;
         }
     }
 }

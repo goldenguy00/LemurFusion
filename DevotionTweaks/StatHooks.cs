@@ -33,28 +33,6 @@ namespace DevotionTweaks
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
         }
 
-        private string CharacterBody_GetUserName(On.RoR2.CharacterBody.orig_GetUserName orig, CharacterBody self)
-        {
-            var retv = orig(self);
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{retv} <style=cStack>x{meldCount}</style>";
-            }
-            return retv;
-        }
-
-        private string CharacterBody_GetColoredUserName(On.RoR2.CharacterBody.orig_GetColoredUserName orig, CharacterBody self)
-        {
-            var retv = orig(self);
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{retv} <style=cStack>x{meldCount}</style>";
-            }
-            return retv;
-        }
-
         public void RemoveHooks()
         {
             if (!LemurFusionPlugin.lemNamesInstalled)
@@ -69,6 +47,30 @@ namespace DevotionTweaks
             On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
         }
+
+        private static string CharacterBody_GetUserName(On.RoR2.CharacterBody.orig_GetUserName orig, CharacterBody self)
+        {
+            var retv = orig(self);
+            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            if (meldCount.HasValue && meldCount.Value > 0)
+            {
+                return $"{retv} <style=cStack>x{meldCount}</style>";
+            }
+            return retv;
+        }
+
+        private static string CharacterBody_GetColoredUserName(On.RoR2.CharacterBody.orig_GetColoredUserName orig, CharacterBody self)
+        {
+            var retv = orig(self);
+            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            if (meldCount.HasValue && meldCount.Value > 0)
+            {
+                return $"{retv} <style=cStack>x{meldCount}</style>";
+            }
+            return retv;
+        }
+
+
 
         #region Hooks
         private static void AddLemurianInventory(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
@@ -160,6 +162,8 @@ namespace DevotionTweaks
 
         internal static void ResizeBody(int meldCount, CharacterBody body)
         {
+            // todo: fix this shit.
+            return;
             if (PluginConfig.statMultSize.Value > 0 && meldCount > 1)
             {
                 var transform = body?.modelLocator?.modelTransform; 
@@ -167,14 +171,9 @@ namespace DevotionTweaks
                 {
                     if (baseSize == default)
                         baseSize = transform.localScale;
+
                     var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
-
-                    LemurFusionPlugin._logger.LogWarning(baseSize.ToString());
-                    LemurFusionPlugin._logger.LogWarning(scaleFactor.ToString());
-
                     transform.localScale = baseSize + scaleFactor;
-
-                    LemurFusionPlugin._logger.LogWarning(transform.localScale.ToString());
                 }
             }
         }
