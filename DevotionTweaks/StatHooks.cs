@@ -96,7 +96,7 @@ namespace LemurFusion
                     GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.MultiplyStatsCount);
 
                 args.baseAttackSpeedAdd += (sender.baseAttackSpeed + sender.levelAttackSpeed * sender.level) *
-                    GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value, lem.MultiplyStatsCount);
+                    GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value);
             }
         }
         #endregion
@@ -119,7 +119,7 @@ namespace LemurFusion
             return Vector3.one * ((meldCount - 1) * (configValue * 0.01f) * 0.5f);
         }
 
-        private static float GetStatModifier(int configValue, int meldCount, int multiplyStatsCount)
+        private static float GetStatModifier(int configValue, int meldCount, int multiplyStatsCount = 0)
         {
             return (meldCount - 1) * (configValue * 0.01f) + (multiplyStatsCount * 0.1f);
         }
@@ -134,9 +134,7 @@ namespace LemurFusion
                 var transform = body?.modelLocator?.modelTransform; 
                 if (transform)
                 {
-                    if (baseSize == default)
-                        baseSize = transform.localScale;
-
+                    
                     var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
                     transform.localScale = baseSize + scaleFactor;
                 }

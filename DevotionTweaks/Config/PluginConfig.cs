@@ -19,6 +19,7 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> enableMinionScoreboard;
         public static ConfigEntry<int> teleportDistance;
         public static ConfigEntry<int> maxLemurs;
+        public static ConfigEntry<bool> fixEvoWhenDisabled;
 
         public static ConfigEntry<bool> miniElders;
 
@@ -35,21 +36,64 @@ namespace LemurFusion.Config
         internal static void ReadConfig()
         {
             InitROO();
-            maxLemurs = BindAndOptionsSlider(GENERAL, "Max Lemurs", 1, "Max dudes", 1, 20);
-            disableFallDamage = BindAndOptions(GENERAL, "Disable Fall Damage", true, "If true, prevents Lemurians from taking fall damage.");
-            teleportDistance = BindAndOptionsSlider(GENERAL, "Teleport Distance", 100, "Sets the max distance a Lemurian can be from their owner before teleporting.", 50, 400);
 
-            enableMinionScoreboard = BindAndOptions(GENERAL, "Enable Minion Scoreboard", true, "Devoted Lemurians will show up on the scoreboard.");
+            // general
+            maxLemurs = BindAndOptionsSlider(GENERAL, 
+                "Max Lemurs",
+                1, 
+                "Max dudes",
+                1, 20);
 
-            miniElders = BindAndOptions(EXPERIMENTAL, "Mini Elder Lemurians", false, "Theyre so cute omg");
+            disableFallDamage = BindAndOptions(GENERAL,
+                "Disable Fall Damage", 
+                true, 
+                "If true, prevents Lemurians from taking fall damage.");
 
-            statMultHealth = BindAndOptionsSlider(STATS, "Fusion Health Increase", 20, "Health multiplier for each lemur fusion, in percent.", 0, 100);
+            teleportDistance = BindAndOptionsSlider(GENERAL,
+                "Teleport Distance",
+                100, 
+                "Sets the max distance a Lemurian can be from their owner before teleporting.",
+                50, 400);
 
-            statMultDamage = BindAndOptionsSlider(STATS, "Fusion Damage Increase", 20, "Damage multiplier for each lemur fusion, in percent.", 0, 100);
+            enableMinionScoreboard = BindAndOptions(GENERAL,
+                "Enable Minion Scoreboard", 
+                true, 
+                "Devoted Lemurians will show up on the scoreboard."); 
 
-            statMultAttackSpeed = BindAndOptionsSlider(STATS, "Fusion Attack Speed Increase", 20, "Attack speed multiplier for each lemur fusion, in percent.", 0, 100);
+            fixEvoWhenDisabled = BindAndOptions(GENERAL,
+                "Fix When Disabled", 
+                true,
+                "Fixes the item orb not showing when giving items to eggs and allows devotion minions to evolve even when the Artifact is disabled.");
 
-            statMultSize = BindAndOptionsSlider(STATS, "Fusion Size Increase", 2, "Base size multiplier for each lemur fusion, in percent.", 0, 10);
+            miniElders = BindAndOptions(GENERAL, 
+                "Mini Elder Lemurians",
+                false,
+                "Theyre so cute omg");
+
+            // stats
+            statMultHealth = BindAndOptionsSlider(STATS, 
+                "Fusion Health Increase",
+                20, 
+                "Health multiplier for each lemur fusion, in percent.",
+                0, 100);
+
+            statMultDamage = BindAndOptionsSlider(STATS, 
+                "Fusion Damage Increase",
+                20, 
+                "Damage multiplier for each lemur fusion, in percent.", 
+                0, 100);
+
+            statMultAttackSpeed = BindAndOptionsSlider(STATS,
+                "Fusion Attack Speed Increase",
+                20,
+                "Attack speed multiplier for each lemur fusion, in percent.",
+                0, 100);
+
+            statMultSize = BindAndOptionsSlider(STATS, 
+                "Fusion Size Increase",
+                2,
+                "Base size multiplier for each lemur fusion, in percent.",
+                0, 10);
         }
 
         public static void InitROO()

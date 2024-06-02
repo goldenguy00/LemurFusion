@@ -27,6 +27,7 @@ namespace LemurFusion
 
         public static GameObject masterPrefab;
         public const string masterPrefabName = "BetterDevotedLemurianMaster";
+        public const string masterCloneName = masterPrefabName + "(Clone)";
 
         public DevotionTweaks()
         {
@@ -38,8 +39,6 @@ namespace LemurFusion
             masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion().InstantiateClone(masterPrefabName, true);
             MonoBehaviour.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
             masterPrefab.AddComponent<BetterLemurController>();
-
-            ContentAddition.AddMaster(masterPrefab);
 
             //       //
             // hooks //
@@ -189,16 +188,6 @@ namespace LemurFusion
         private static void LemurianEggController_SummonLemurian(ILContext il)
         {
             var c = new ILCursor(il);
-            if (c.TryGotoNext(MoveType.Before,
-                i => i.MatchStfld<MasterSummon>(nameof(MasterSummon.ignoreTeamMemberLimit))
-                ))
-            {
-                c.Prev.OpCode = OpCodes.Ldc_I4_0;
-            }
-            else
-            {
-                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 1");
-            }
 
             if (c.TryGotoNext(MoveType.Before,
                 i => i.MatchLdarg(0),
@@ -207,6 +196,17 @@ namespace LemurFusion
             {
                 c.RemoveRange(2);
                 c.Emit<DevotionTweaks>(OpCodes.Ldsfld, nameof(DevotionTweaks.masterPrefab));
+            }
+            else
+            {
+                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 1");
+            }
+
+            if (c.TryGotoNext(MoveType.Before,
+                i => i.MatchStfld<MasterSummon>(nameof(MasterSummon.ignoreTeamMemberLimit))
+                ))
+            {
+                c.Prev.OpCode = OpCodes.Ldc_I4_0;
             }
             else
             {

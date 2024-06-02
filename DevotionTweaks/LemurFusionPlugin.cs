@@ -3,6 +3,7 @@ using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
 using LemurFusion.Config;
+using R2API;
 using RoR2;
 using System;
 
@@ -10,13 +11,14 @@ namespace LemurFusion
 {
     [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("com.bepis.r2api.recalculatestats", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("com.RiskyLives.RiskyMod", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("com.RiskyLives.RiskyArtifacts", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.2";
+        public const string PluginVersion = "1.0.3";
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
@@ -39,6 +41,7 @@ namespace LemurFusion
 
             new DevotionTweaks();
             new StatHooks();
+            new AITweaks();
 
             // this is absurd, change anything that this mod references and it instantly explodes.
             // fucking hell man
@@ -47,6 +50,8 @@ namespace LemurFusion
                 var harmony = new Harmony(PluginGUID);
                 harmony.PatchAll();
             }
+
+            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
 
             GameModeCatalog.availability.CallWhenAvailable(new Action(PostLoad));
         }

@@ -1,7 +1,10 @@
 ﻿using BepInEx.Configuration;
+using JetBrains.Annotations;
 using RoR2;
 using RoR2.CharacterAI;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -17,23 +20,20 @@ namespace LemurFusion.Config
             Custom
         }
 
-        internal static string BlackList_TierList_Raw;
-        internal static string BlackList_ItemList_Raw;
-        internal static string ItemDrop_CustomDropList_Raw;
+        internal static ConfigEntry<bool> Blacklist_Enable;
+        internal static ConfigEntry<bool> Blacklist_Filter_CannotCopy;
+        internal static ConfigEntry<bool> Blacklist_Filter_Scrap;
 
-        internal static bool Blacklist_Enable = false;
-        internal static bool BlackList_Filter_CannotCopy = true;
-        internal static bool BlackList_Filter_Scrap = true;
-        internal static List<ItemTier> BlackList_TierList;
-        internal static List<ItemDef> BlackList_ItemList;
-        internal static bool FilterItems = false;
-        internal static bool FilterTiers = false;
-
-        internal static bool ItemDrop_Enable = false;
-        internal static ItemIndex[] ItemDrop_CustomDropList;
+        internal static ConfigEntry<bool> ItemDrop_Enable;
         internal static ConfigEntry<DeathItem> ItemDrop_Type;
 
-        internal static bool Misc_FixEvo = true;
+        internal static ConfigEntry<string> Blacklisted_ItemTiers_Raw;
+        internal static ConfigEntry<string> Blacklisted_Items_Raw;
+        internal static ConfigEntry<string> DeathDrops_TierToItem_Map_Raw;
+
+        internal static List<ItemTier> Blacklisted_ItemTiers;
+        internal static List<ItemIndex> Blacklisted_Items;
+        internal static SortedList<ItemTier, ItemIndex> DeathDrops_TierToItem_Map;
 
         public LightChanges()
         {
@@ -48,111 +48,62 @@ namespace LemurFusion.Config
             ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/items.LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {
-                itemDef.tags = [.. itemDef.tags, ItemTag.BrotherBlacklist, ItemTag.CannotSteal];
+                itemDef.tags = [.. itemDef.tags, ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy];
             }
         }
 
         internal static void PostLoad()
         {
-            if (Blacklist_Enable)
+            LemurFusionPlugin._logger.LogInfo("Light PostLoad");
+            if (Blacklist_Enable.Value)
             {
-                BlackList_ItemList = new List<ItemDef>();
-                string[] itemString = BlackList_ItemList_Raw.Split(',');
-                for (int i = 0; i < itemString.Length; i++)
+                // just to get familiar with this syntax... move along.
+                Blacklisted_Items = [.. from item in Blacklisted_Items_Raw.Value.Split(',') 
+                                        let idx = ItemCatalog.FindItemIndex(item.Trim())
+                                        where idx != ItemIndex.None && ItemCatalog.IsIndexValid(idx)
+                                        select ItemCatalog.GetItemDef(idx) into def 
+                                        where def && def.DoesNotContainTag(ItemTag.AIBlacklist)
+                                                  && (!Blacklist_Filter_Scrap.Value || (def.DoesNotContainTag(ItemTag.Scrap) && def.DoesNotContainTag(ItemTag.PriorityScrap)))
+                                                  && (!Blacklist_Filter_CannotCopy.Value || def.DoesNotContainTag(ItemTag.CannotCopy))
+                                        select def.itemIndex];
+
+                Blacklisted_ItemTiers = [.. from tier in Blacklisted_ItemTiers_Raw.Value.Split(',')
+                                            let def = ItemTierCatalog.FindTierDef(tier.Trim())
+                                            where def
+                                            select def.tier];
+
+
+                // just for the fun of it
+                var itemPairList = DeathDrops_TierToItem_Map_Raw.Value
+                    .Split(';')
+                    .Select(s => s.Split(','))
+                    .Select(s => 
+                        (ItemTierCatalog.FindTierDef(s[0].Trim()),
+                         ItemCatalog.FindItemIndex(s[1].Trim())
+                         ));
+
+                foreach (var (tierDef, itemIndex) in itemPairList)
                 {
-                    ItemIndex itemIndex = ItemCatalog.FindItemIndex(itemString[i].Trim());
-                    if (itemIndex > ItemIndex.None)
+                    if (tierDef && itemIndex != ItemIndex.None)
                     {
-                        ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
-                        if (itemDef)
-                        {
-                            BlackList_ItemList.Add(itemDef);
-                            FilterItems = true;
-                        }
+                        if (!Blacklisted_ItemTiers.Contains(tierDef.tier) &&
+                            !Blacklisted_Items.Contains(itemIndex))
+                        DeathDrops_TierToItem_Map[tierDef.tier] = itemIndex;
                     }
-                }
-
-                BlackList_TierList = new List<ItemTier>();
-                itemString = BlackList_TierList_Raw.Split(',');
-                for (int i = 0; i < itemString.Length; i++)
-                {
-
-                    ItemTierDef itemTier = ItemTierCatalog.FindTierDef(itemString[i].Trim());
-                    if (itemTier)
+                    else
                     {
-                        BlackList_TierList.Add(itemTier.tier);
-                        FilterTiers = true;
-                    }
-                }
-
-                ItemDrop_CustomDropList = new ItemIndex[ItemTierCatalog.allItemTierDefs.Length];
-                for (int i = 0; i < ItemDrop_CustomDropList.Length; i++)
-                {
-                    ItemDrop_CustomDropList[i] = ItemIndex.None;
-                }
-                itemString = ItemDrop_CustomDropList_Raw.Split(',');
-                for (int i = 0; i + 1 < itemString.Length; i += 2)
-                {
-                    ItemTierDef itemTier = ItemTierCatalog.FindTierDef(itemString[i].Trim());
-                    if (itemTier)
-                    {
-                        int tierIndex = GetItemTierIndex(itemTier);
-                        if (tierIndex > -1 && tierIndex < ItemDrop_CustomDropList.Length)
-                        {
-                            ItemIndex itemIndex = ItemCatalog.FindItemIndex(itemString[i + 1].Trim());
-                            if (itemIndex > ItemIndex.None)
-                            {
-                                ItemDrop_CustomDropList[tierIndex] = itemIndex;
-                            }
-                        }
-                        else
-                        {
-                            LemurFusionPlugin._logger.LogWarning(string.Format("{0}Could not find Tier '{1}' for Custom Drop List.", LemurFusionPlugin.PluginName, itemString[i].Trim()));
-                        }
+                        LemurFusionPlugin._logger.LogWarning($"{LemurFusionPlugin.PluginName}Could not find (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
                     }
                 }
             }
-        }
-
-        private static int GetItemTierIndex(ItemTierDef itemTier)
-        {
-            for (int i = 0; i < ItemTierCatalog.allItemTierDefs.Length; i++)
-            {
-                if (ItemTierCatalog.allItemTierDefs[i] == itemTier)
-                {
-                    return i;
-                }
-            }
-            return -1;
         }
 
         private void Hooks()
         {
-            if (Blacklist_Enable)
+            if (Blacklist_Enable.Value)
             {
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += SetPickupPicker;
             }
-            if (Misc_FixEvo)
-            {
-                On.RoR2.DevotionInventoryController.OnBossGroupDefeatedServer += (orig, group) => { };
-                BossGroup.onBossGroupDefeatedServer += BossGroupDefeatedServer;
-                On.RoR2.CharacterAI.LemurianEggController.CreateItemTakenOrb += CreateItemTakeOrb_Egg;
-            }
-        }
-
-        private void BossGroupDefeatedServer(BossGroup group)
-        {
-            if (!SceneCatalog.GetSceneDefForCurrentScene().needSkipDevotionRespawn)
-            {
-                DevotionInventoryController.ActivateDevotedEvolution();
-            }
-        }
-
-        private void CreateItemTakeOrb_Egg(On.RoR2.CharacterAI.LemurianEggController.orig_CreateItemTakenOrb orig, LemurianEggController self, Vector3 effectOrigin, GameObject targetObject, ItemIndex itemIndex)
-        {
-            // why the fuck are they nulling this out lmao
-            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
-            orig(self, effectOrigin, targetObject, itemIndex);
         }
 
         private void SetPickupPicker(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
@@ -172,19 +123,13 @@ namespace LemurFusion.Config
 
                 if (pickupIndex != PickupIndex.none && itemTier && !itemDef.hidden && itemDef.canRemove)
                 {
-                    if (!FilterTiers || !BlackList_TierList.Contains(itemTier.tier))
+                    if (!Blacklisted_ItemTiers.Contains(itemTier.tier) && !Blacklisted_Items.Contains(itemIndex))
                     {
-                        if ((!BlackList_Filter_Scrap || !itemDef.ContainsTag(ItemTag.Scrap) && !itemDef.ContainsTag(ItemTag.PriorityScrap)) && (!BlackList_Filter_CannotCopy || !itemDef.ContainsTag(ItemTag.CannotCopy)))
+                        list.Add(new PickupPickerController.Option
                         {
-                            if (!FilterItems || !BlackList_ItemList.Contains(itemDef))
-                            {
-                                list.Add(new PickupPickerController.Option
-                                {
-                                    available = true,
-                                    pickupIndex = pickupIndex
-                                });
-                            }
-                        }
+                            available = true,
+                            pickupIndex = pickupIndex
+                        });
                     }
                 }
             }

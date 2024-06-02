@@ -63,6 +63,7 @@ public class BetterLemurController : DevotedLemurianController
             }
         }
     }
+
     internal static void PlaceDevotionEgg(Vector3 spawnLoc)
     {
         if (Physics.Raycast(spawnLoc + Vector3.up * 1f, Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
@@ -160,7 +161,7 @@ public class BetterLemurController : DevotedLemurianController
         DevotedLemurianController self, ItemIndex itemIndex, DevotionInventoryController devInvCtrl)
     {
         orig(self, itemIndex, devInvCtrl);
-
+        /*
         if (itemIndex == RoR2Content.Items.ExtraLife.itemIndex)
         {
             CreateTwin_ExtraLife(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
@@ -170,7 +171,7 @@ public class BetterLemurController : DevotedLemurianController
         {
             CreateTwin_ExtraLifeVoid(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
             itemIndex = DLC1Content.Items.BearVoid.itemIndex;
-        }
+        }*/
 
         if (self is BetterLemurController lemCtrl)
         {

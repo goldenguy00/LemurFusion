@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RoR2;
 using UnityEngine;
 using BepInEx.Configuration;
@@ -22,26 +20,21 @@ namespace LemurFusion.Config
             ResetToBaby
         }
 
-        internal static bool Enable = true;
-        internal static int EvoMax = -1;
-
+        internal static ConfigEntry<bool> Enable;
+        internal static ConfigEntry<int> EvoMax;
         internal static ConfigEntry<string> Evo_BodyStages_Raw;
-        internal static List<BodyEvolutionStage> Evo_BodyStages;
         internal static ConfigEntry<bool> DropEggOnDeath;
-
         internal static ConfigEntry<DeathPenalty> OnDeathPenalty;
+        internal static ConfigEntry<bool> ImproveAI;
+        internal static ConfigEntry<bool> CapEvo;
 
-        public HeavyChanges()
-        {
-            if (!Enable)
-            {
-                return;
-            }
-        }
-        
+        internal static List<BodyEvolutionStage> Evo_BodyStages;
+        internal static List<EliteDef> Elite_Blacklist;
+        internal static ConfigEntry<string> Elite_Blacklist_Raw;
+
         internal static void PostLoad()
         {
-            if (Enable)
+            if (Enable.Value)
             {
                 var itemString = Evo_BodyStages_Raw.Value.Split(',');
                 Evo_BodyStages = [];
