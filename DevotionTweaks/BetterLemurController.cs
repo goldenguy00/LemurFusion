@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.AddressableAssets;
 using UnityEngine;
+using System.Runtime.CompilerServices;
 
 public class BetterLemurController : DevotedLemurianController
 {
@@ -157,6 +158,7 @@ public class BetterLemurController : DevotedLemurianController
         On.DevotedLemurianController.OnDevotedBodyDead += DevotedLemurianController_OnDevotedBodyDead;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     private static void DevotedLemurianController_InitializeDevotedLemurian(On.DevotedLemurianController.orig_InitializeDevotedLemurian orig,
         DevotedLemurianController self, ItemIndex itemIndex, DevotionInventoryController devInvCtrl)
     {
@@ -200,14 +202,7 @@ public class BetterLemurController : DevotedLemurianController
             return;
         }
 
-        if (HeavyChanges.OnDeathPenalty.Value == HeavyChanges.DeathPenalty.TrueDeath)
-        {
-            lemCtrl.CommitSudoku();
-        }
-        else
-        {
-            lemCtrl.FakeDeath();
-        }
+        lemCtrl.CommitSudoku();
 
         // not a fan of doing this but fuck it, the vanilla class is giga hard coded
         // id essentially just have to ILModify it to do literally nothing anyways.
@@ -216,54 +211,68 @@ public class BetterLemurController : DevotedLemurianController
         //
         // orig(self);
     }
+    private PickupIndex FindPickupIndex(ItemIndex itemIndex)
+    {
+        PickupIndex pickupIndex = PickupIndex.none;
+        if (itemIndex != ItemIndex.None)
+        {
+            var itemDef = ItemCatalog.GetItemDef(itemIndex);
+
+            if (itemDef && itemDef.itemIndex != ItemIndex.None)
+            {
+                if (LightChanges.DeathDrops_TierToItem_Map.TryGetValue(itemDef.tier, out var idx) && idx != ItemIndex.None)
+                {
+                    pickupIndex = PickupCatalog.FindPickupIndex(idx);
+                }
+            }
+        }
+        return pickupIndex;
+    }
 
     private void DropScrapOnDeath()
     {
         foreach (var item in this._devotedItemList)
         {
-            ItemDef itemDef = ItemCatalog.GetItemDef(item.Key);
-            if (itemDef && itemDef.itemIndex != ItemIndex.None)
+            var pickupIndex = FindPickupIndex(item.Key);
+            if (pickupIndex != PickupIndex.none)
             {
-                PickupIndex pickupIndex = PickupIndex.none;
-                switch (itemDef.tier)
-                {
-                    case ItemTier.Tier1:
-                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapWhite");
-                        break;
-                    case ItemTier.Tier2:
-                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapGreen");
-                        break;
-                    case ItemTier.Tier3:
-                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapRed");
-                        break;
-                    case ItemTier.Boss:
-                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapYellow");
-                        break;
-                }
-                if (pickupIndex != PickupIndex.none)
+                int dropCount = LightChanges.ItemDrop_DropAll.Value ? item.Value : 1;
+                for (int i = 0; i < dropCount; i++)
                 {
                     PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
-
-                    this._devotionInventoryController.RemoveItem(item.Key, item.Value);
                 }
+
+                this._devotionInventoryController.RemoveItem(item.Key, item.Value);
             }
         }
     }
 
-    private void FakeDeath()
+    private void DevolveLem(int newEvoLvl)
+    {
+        // adjust body stage
+        this.MeldCount = newEvoLvl;
+        base.DevotedEvolutionLevel = newEvoLvl;
+    }
+
+    private void CommitSudoku()
     {
         if (base._lemurianMaster.IsDeadAndOutOfLivesServer())
         {
-            bool shouldDie = true;
-            if (base.DevotedEvolutionLevel > 0)
+            bool shouldDie;
+            switch ((HeavyChanges.DeathPenalty)HeavyChanges.OnDeathPenalty.Value)
             {
-                shouldDie = false;
-                if (HeavyChanges.OnDeathPenalty.Value == HeavyChanges.DeathPenalty.ResetToBaby)
-                {
-                }
-                else
-                {
-                }
+                case HeavyChanges.DeathPenalty.Devolve:
+                    //shouldDie = base.DevotedEvolutionLevel < 1;
+                    //DevolveLem(base.DevotedEvolutionLevel - 1);
+                    //break;
+                case HeavyChanges.DeathPenalty.ResetToBaby:
+                    //shouldDie = base.DevotedEvolutionLevel < 1;
+                    //DevolveLem(0);
+                    //break;
+                case HeavyChanges.DeathPenalty.TrueDeath:
+                default:
+                    shouldDie = true;
+                    break;
             }
 
             if (shouldDie)
@@ -283,24 +292,12 @@ public class BetterLemurController : DevotedLemurianController
         }
         this._devotionInventoryController.UpdateAllMinions(false);
     }
-
-    private void CommitSudoku()
-    {
-        if (this._lemurianMaster.IsDeadAndOutOfLivesServer())
-        {
-            this.DropScrapOnDeath();
-            if (HeavyChanges.DropEggOnDeath.Value)
-            {
-                PlaceDevotionEgg(this.LemurianBody.footPosition);
-            }
-        }
-        this._devotionInventoryController.UpdateAllMinions(false);
-    }
     #endregion
 
     #region List Utils
     public static void AddItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
     {
+        if (!itemDef) return;
         AddItem(target, itemDef.itemIndex, count);
     }
 
@@ -317,6 +314,7 @@ public class BetterLemurController : DevotedLemurianController
 
     public static void SetItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
     {
+        if (!itemDef) return;
         SetItem(target, itemDef.itemIndex, count);
     }
 

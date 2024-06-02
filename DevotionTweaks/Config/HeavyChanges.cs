@@ -13,7 +13,7 @@ namespace LemurFusion.Config
             public int EvolutionStage = -1;
         }
 
-        public enum DeathPenalty : byte
+        public enum DeathPenalty
         {
             TrueDeath,
             Devolve,
@@ -22,15 +22,16 @@ namespace LemurFusion.Config
 
         internal static ConfigEntry<bool> Enable;
         internal static ConfigEntry<int> EvoMax;
-        internal static ConfigEntry<string> Evo_BodyStages_Raw;
         internal static ConfigEntry<bool> DropEggOnDeath;
-        internal static ConfigEntry<DeathPenalty> OnDeathPenalty;
+        internal static ConfigEntry<int> OnDeathPenalty;
         internal static ConfigEntry<bool> ImproveAI;
         internal static ConfigEntry<bool> CapEvo;
 
-        internal static List<BodyEvolutionStage> Evo_BodyStages;
-        internal static List<EliteDef> Elite_Blacklist;
         internal static ConfigEntry<string> Elite_Blacklist_Raw;
+        internal static ConfigEntry<string> Evo_BodyStages_Raw;
+
+        internal static List<BodyEvolutionStage> Evo_BodyStages = [];
+        internal static List<EliteDef> Elite_Blacklist = [];
 
         internal static void PostLoad()
         {
@@ -50,7 +51,7 @@ namespace LemurFusion.Config
                     }
                     else
                     {
-                        LemurFusionPlugin._logger.LogWarning(string.Format("{0}'{1}' Is being assigned to an invalid evolution stage, ignoring.", LemurFusionPlugin.PluginName, itemString[i]));
+                        LemurFusionPlugin._logger.LogWarning(string.Format("'{1}' Is being assigned to an invalid evolution stage, ignoring.", itemString[i]));
                     }
                 }
 
@@ -61,7 +62,7 @@ namespace LemurFusion.Config
                 }
                 else
                 {
-                    LemurFusionPlugin._logger.LogWarning(string.Format("{0} Could not find master for [{1}] this will cause errors.", LemurFusionPlugin.PluginName, DevotionTweaks.masterPrefabName));
+                    LemurFusionPlugin._logger.LogWarning(string.Format("Could not find master for [{0}] this will cause errors.", DevotionTweaks.masterPrefabName));
                 }
 
                 CharacterMaster master = Evo_BaseMaster.GetComponent<CharacterMaster>();

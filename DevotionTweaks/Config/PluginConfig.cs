@@ -1,6 +1,4 @@
 ﻿using BepInEx.Configuration;
-using LemurFusion;
-using Facepunch.Steamworks;
 using RiskOfOptions;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
@@ -96,6 +94,7 @@ namespace LemurFusion.Config
                 0, 10);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void InitROO()
         {
             if (LemurFusionPlugin.rooInstalled)
@@ -130,6 +129,7 @@ namespace LemurFusion.Config
         }
 
         #region Config
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static ConfigEntry<T> BindAndOptions<T>(string section, string name, T defaultValue, string description = "", bool restartRequired = false)
         {
             if (string.IsNullOrEmpty(description))
@@ -152,6 +152,7 @@ namespace LemurFusion.Config
             return configEntry;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static ConfigEntry<float> BindAndOptionsSlider(string section, string name, float defaultValue, string description = "", float min = 0, float max = 20, bool restartRequired = false)
         {
             if (string.IsNullOrEmpty(description))
@@ -176,6 +177,7 @@ namespace LemurFusion.Config
             return configEntry;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static ConfigEntry<int> BindAndOptionsSlider(string section, string name, int defaultValue, string description = "", int min = 0, int max = 20, bool restartRequired = false)
         {
             if (string.IsNullOrEmpty(description))

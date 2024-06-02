@@ -1,21 +1,10 @@
-﻿using EntityStates;
-using EntityStates.BrotherMonster;
-using EntityStates.BrotherMonster.Weapon;
-using EntityStates.Destructible;
-using HG;
-using MonoMod.Cil;
+﻿using MonoMod.Cil;
 using Mono.Cecil.Cil;
 using RoR2;
 using RoR2.CharacterAI;
-using RoR2.Networking;
-using RoR2.Projectile;
-using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 
 namespace LemurFusion
 {
@@ -35,16 +24,13 @@ namespace LemurFusion
                 switch (driver.customName)
                 {
                     case "ReturnToLeaderDefault":
-                        driver.shouldSprint = true;
                         driver.resetCurrentEnemyOnNextDriverSelection = true;
                         break;
                     case "ReturnToOwnerLeash":
-                        driver.shouldSprint = true;
-                        driver.driverUpdateTimerOverride = -1f;
+                        driver.driverUpdateTimerOverride = 1f;
                         driver.resetCurrentEnemyOnNextDriverSelection = true;
                         break;
                     case "WaitNearLeader":
-                        driver.shouldSprint = true;
                         driver.resetCurrentEnemyOnNextDriverSelection = true;
                         break;
                 }

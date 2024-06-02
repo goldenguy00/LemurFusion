@@ -134,7 +134,6 @@ namespace LemurFusion
                 var transform = body?.modelLocator?.modelTransform; 
                 if (transform)
                 {
-                    
                     var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
                     transform.localScale = baseSize + scaleFactor;
                 }

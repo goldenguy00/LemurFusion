@@ -4,6 +4,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +27,7 @@
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 	  <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+	  <PackageReference Include="IndexRange" Version="1.0.3" />
 	  <PackageReference Include="R2API.ContentManagement" Version="1.0.4" />
 	  <PackageReference Include="R2API.Core" Version="5.1.0" />
 	  <PackageReference Include="R2API.Elites" Version="1.0.3" />
@@ -36,9 +42,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="ExamplePlugin">
-      <HintPath>..\libs\ExamplePlugin.dll</HintPath>
-    </Reference>
     <Reference Include="Facepunch.Steamworks">
       <HintPath>libs\Facepunch.Steamworks.dll</HintPath>
       <Private>false</Private>
@@ -46,6 +49,9 @@
     <Reference Include="KdTreeLib">
       <HintPath>libs\KdTreeLib.dll</HintPath>
       <Private>false</Private>
+    </Reference>
+    <Reference Include="LemurianNames">
+      <HintPath>..\libs\LemurianNames.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Security">
       <HintPath>libs\Mono.Security.dll</HintPath>

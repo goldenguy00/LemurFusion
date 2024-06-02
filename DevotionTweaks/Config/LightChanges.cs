@@ -1,11 +1,9 @@
 ﻿using BepInEx.Configuration;
-using JetBrains.Annotations;
 using RoR2;
 using RoR2.CharacterAI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.AddressableAssets;
 
 namespace LemurFusion.Config
@@ -25,15 +23,16 @@ namespace LemurFusion.Config
         internal static ConfigEntry<bool> Blacklist_Filter_Scrap;
 
         internal static ConfigEntry<bool> ItemDrop_Enable;
-        internal static ConfigEntry<DeathItem> ItemDrop_Type;
+        internal static ConfigEntry<int> ItemDrop_Type;
+        internal static ConfigEntry<bool> ItemDrop_DropAll;
 
         internal static ConfigEntry<string> Blacklisted_ItemTiers_Raw;
         internal static ConfigEntry<string> Blacklisted_Items_Raw;
         internal static ConfigEntry<string> DeathDrops_TierToItem_Map_Raw;
 
-        internal static List<ItemTier> Blacklisted_ItemTiers;
-        internal static List<ItemIndex> Blacklisted_Items;
-        internal static SortedList<ItemTier, ItemIndex> DeathDrops_TierToItem_Map;
+        internal static HashSet<ItemTier> Blacklisted_ItemTiers = [];
+        internal static HashSet<ItemIndex> Blacklisted_Items = [];
+        internal static SortedList<ItemTier, ItemIndex> DeathDrops_TierToItem_Map = [];
 
         public LightChanges()
         {
@@ -52,49 +51,92 @@ namespace LemurFusion.Config
             }
         }
 
-        internal static void PostLoad()
+        private static void BLItems()
         {
-            LemurFusionPlugin._logger.LogInfo("Light PostLoad");
-            if (Blacklist_Enable.Value)
+            try
             {
-                // just to get familiar with this syntax... move along.
-                Blacklisted_Items = [.. from item in Blacklisted_Items_Raw.Value.Split(',') 
+            // just to get familiar with this syntax... move along.
+            Blacklisted_Items = [.. from item in Blacklisted_Items_Raw.Value.Split(',')
                                         let idx = ItemCatalog.FindItemIndex(item.Trim())
                                         where idx != ItemIndex.None && ItemCatalog.IsIndexValid(idx)
-                                        select ItemCatalog.GetItemDef(idx) into def 
+                                        select ItemCatalog.GetItemDef(idx) into def
                                         where def && def.DoesNotContainTag(ItemTag.AIBlacklist)
                                                   && (!Blacklist_Filter_Scrap.Value || (def.DoesNotContainTag(ItemTag.Scrap) && def.DoesNotContainTag(ItemTag.PriorityScrap)))
                                                   && (!Blacklist_Filter_CannotCopy.Value || def.DoesNotContainTag(ItemTag.CannotCopy))
                                         select def.itemIndex];
+            }
+            catch (Exception e)
+            {
+                LemurFusionPlugin._logger.LogWarning(e.Message);
+                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+            }
+        }
 
+        private static void BLItemTiers()
+        {
+            try
+            {
                 Blacklisted_ItemTiers = [.. from tier in Blacklisted_ItemTiers_Raw.Value.Split(',')
                                             let def = ItemTierCatalog.FindTierDef(tier.Trim())
                                             where def
                                             select def.tier];
+            }
+            catch (Exception e)
+            {
+                LemurFusionPlugin._logger.LogWarning(e.Message);
+                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+            }
+        }
 
-
-                // just for the fun of it
-                var itemPairList = DeathDrops_TierToItem_Map_Raw.Value
-                    .Split(';')
-                    .Select(s => s.Split(','))
-                    .Select(s => 
-                        (ItemTierCatalog.FindTierDef(s[0].Trim()),
-                         ItemCatalog.FindItemIndex(s[1].Trim())
-                         ));
-
-                foreach (var (tierDef, itemIndex) in itemPairList)
+        internal static void PostLoad()
+        {
+            LemurFusionPlugin._logger.LogInfo("Light PostLoad");
+            DeathDrops_TierToItem_Map = [];
+            DeathDrops_TierToItem_Map.Add(ItemTier.Tier1, RoR2Content.Items.ScrapWhite.itemIndex);
+            DeathDrops_TierToItem_Map.Add(ItemTier.Tier2, RoR2Content.Items.ScrapGreen.itemIndex);
+            DeathDrops_TierToItem_Map.Add(ItemTier.Tier3, RoR2Content.Items.ScrapRed.itemIndex);
+            DeathDrops_TierToItem_Map.Add(ItemTier.Boss, RoR2Content.Items.ScrapYellow.itemIndex);
+            try
+            {
+                if (Blacklist_Enable.Value)
                 {
-                    if (tierDef && itemIndex != ItemIndex.None)
+                    BLItems();
+                    BLItemTiers();
+
+                    // just for the fun of it
+                    foreach (var itemPair in DeathDrops_TierToItem_Map_Raw.Value.Replace(" ", "").Split(';'))
                     {
-                        if (!Blacklisted_ItemTiers.Contains(tierDef.tier) &&
-                            !Blacklisted_Items.Contains(itemIndex))
-                        DeathDrops_TierToItem_Map[tierDef.tier] = itemIndex;
-                    }
-                    else
-                    {
-                        LemurFusionPlugin._logger.LogWarning($"{LemurFusionPlugin.PluginName}Could not find (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                        var split = itemPair.Split(',');
+                        if (split.Length != 2)
+                        {
+                            LemurFusionPlugin._logger.LogWarning($"String parsing error for (TierDef, ItemDef) pair '({itemPair})' for Custom Drop List.");
+                            continue;
+                        }
+
+                        var tierDef = ItemTierCatalog.FindTierDef(split[0]);
+                        var itemIndex = ItemCatalog.FindItemIndex(split[1]);
+                        LemurFusionPlugin._logger.LogInfo($"Attemping to add ({tierDef}, {itemIndex}) pair parsed from string'({itemPair})' for Custom Drop List.");
+                        if (tierDef && itemIndex != ItemIndex.None)
+                        {
+                            if (!Blacklisted_ItemTiers.Contains(tierDef.tier))
+                            {
+                                if (DeathDrops_TierToItem_Map.ContainsKey(tierDef.tier))
+                                    LemurFusionPlugin._logger.LogWarning($"Overwriting duplicate {tierDef?.name} with (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                                DeathDrops_TierToItem_Map[tierDef.tier] = itemIndex;
+                            }
+                            else
+                                LemurFusionPlugin._logger.LogWarning($"Skipping Blacklisted (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                        }
+                        else
+                        {
+                            LemurFusionPlugin._logger.LogWarning($"Could not find (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                        }
                     }
                 }
+            }catch (Exception e)
+            {
+                LemurFusionPlugin._logger.LogWarning(e.Message);
+                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
             }
         }
 

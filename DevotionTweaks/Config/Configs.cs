@@ -62,14 +62,18 @@
 				"Change the Body type at specific evolution levels with a specific body name.");
 
 			//Death
-			HeavyChanges.OnDeathPenalty = PluginConfig.BindAndOptions(Section_Death,
+			HeavyChanges.OnDeathPenalty = PluginConfig.BindAndOptionsSlider(Section_Death,
 				"Death Penalty",
-				HeavyChanges.DeathPenalty.TrueDeath,
-				"What to do to a devotion minion when it dies. (For Devolve and ResetToBaby, it will kill them if they're at Evolution Level 1)");
+				(int)HeavyChanges.DeathPenalty.TrueDeath,
+                "What to do to a devotion minion when it dies. For Devolve and ResetToBaby, it will kill them if they're at Evolution Level 1\r\n\r\n" +
+                $"{nameof(HeavyChanges.DeathPenalty.TrueDeath)}\r\n" +
+                $"{nameof(HeavyChanges.DeathPenalty.Devolve)}\r\n" +
+                $"{nameof(HeavyChanges.DeathPenalty.ResetToBaby)}\r\n", 
+				0, System.Enum.GetValues(typeof(HeavyChanges.DeathPenalty)).Length);
 
 			HeavyChanges.DropEggOnDeath = PluginConfig.BindAndOptions(Section_Death,
 				"Egg On Death", 
-				false, 
+				true, 
 				"Should minions revert to an egg when they are killed off?");
 		}
 		private static void ReadLightConfig()
@@ -77,21 +81,30 @@
             LemurFusionPlugin._logger.LogInfo("Reading light");
             LightChanges.ItemDrop_Enable = PluginConfig.BindAndOptions(Section_ItemDrop, 
 				Label_Enable, 
-				false, 
+				true, 
 				Desc_Enable);
 
-			LightChanges.ItemDrop_Type = PluginConfig.BindAndOptions(Section_ItemDrop, 
+			LightChanges.ItemDrop_Type = PluginConfig.BindAndOptionsSlider(Section_ItemDrop, 
 				"Item Drop On Death", 
-				LightChanges.DeathItem.Scrap, 
-				"What kind of item to drop when minions are removed. (0 = Nothing, 1 = Scrap (vanilla), 2 = Original Item, 3 = Custom");
+				(int)LightChanges.DeathItem.Scrap, 
+				"What kind of item to drop when minions are removed.\r\n\r\n" +
+                $"{nameof(LightChanges.DeathItem.None)}\r\n" +
+                $"{nameof(LightChanges.DeathItem.Scrap)}\r\n" +
+                $"{nameof(LightChanges.DeathItem.Original)}\r\n" +
+                $"{nameof(LightChanges.DeathItem.Custom)}\r\n",
+                0, System.Enum.GetValues(typeof(LightChanges.DeathItem)).Length);
+            LightChanges.ItemDrop_DropAll = PluginConfig.BindAndOptions(Section_ItemDrop,
+				"Drop Duplicate Items",
+				false,
+				"When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you gave originally.");
 
-			LightChanges.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindAndOptions(Section_ItemDrop, 
+            LightChanges.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindAndOptions(Section_ItemDrop, 
 				"Item Drop On Death Map", 
-				"Tier1Def, ScrapWhite; Tier2Def, ScrapGreen; Tier3Def ScrapRed; BossTierDef, ScrapYellow; LunarTierDef, LunarTrinket; VoidTier1Def, TreasureCacheVoid; VoidTier2Def, TreasureCacheVoid; VoidTier3Def, TreasureCacheVoid; VoidBossDef, TreasureCacheVoid;", 
-				"The item to drop for each Item Tier, in the format {TierDef}");
+				"Tier1Def, ScrapWhite; Tier2Def, ScrapGreen; Tier3Def, ScrapRed; BossTierDef, ScrapYellow; LunarTierDef, LunarTrinket; VoidTier1Def, TreasureCacheVoid; VoidTier2Def, TreasureCacheVoid; VoidTier3Def, TreasureCacheVoid; VoidBossDef, TreasureCacheVoid", 
+				"The item to drop for each Item Tier, in the format \"{TierDef},{ItemDef};\"");
 
 			//Blacklist
-			LightChanges.Blacklist_Enable = PluginConfig.BindAndOptions(Section_Blacklist, Label_Enable, false, Desc_Enable);
+			LightChanges.Blacklist_Enable = PluginConfig.BindAndOptions(Section_Blacklist, Label_Enable, true, Desc_Enable);
 			LightChanges.Blacklist_Filter_CannotCopy = PluginConfig.BindAndOptions(Section_Blacklist, 
 				"Blacklist CannotCopy", 
 				true,
