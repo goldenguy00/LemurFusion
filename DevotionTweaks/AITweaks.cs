@@ -12,51 +12,28 @@ namespace LemurFusion
     {
         public AITweaks()
         {
-            On.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += FullVision;
             ModifyAI(DevotionTweaks.masterPrefab);
+            On.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += FullVision;
             //IL.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += TargetOnlyPlayers;
         }
-        internal static void ModifyAI(GameObject masterPrefab)
+        private void ModifyAI(GameObject masterPrefab)
         {
-            LemurFusionPlugin._logger.LogWarning("Ai Skill Drivers begin");
             foreach (var driver in masterPrefab.GetComponentsInChildren<AISkillDriver>())
             {
                 switch (driver.customName)
                 {
                     case "ReturnToLeaderDefault":
-                        driver.resetCurrentEnemyOnNextDriverSelection = true;
-                        break;
-                    case "ReturnToOwnerLeash":
-                        driver.driverUpdateTimerOverride = 1f;
+                        driver.driverUpdateTimerOverride = -1f;
                         driver.resetCurrentEnemyOnNextDriverSelection = true;
                         break;
                     case "WaitNearLeader":
+                        driver.driverUpdateTimerOverride = -1f;
                         driver.resetCurrentEnemyOnNextDriverSelection = true;
                         break;
-                }
-
-                /*switch (driver.customName)
-                {
-                    case "Slash":
-                        driver.minDistance = 15f;
-                        driver.maxDistance = 45f;
-                        break;
-                    case "LeaveNodegraph":
-                        driver.minDistance = 0f;
-                        driver.maxDistance = 15f;
+                    case "DevotedSecondarySkill":
                         driver.shouldSprint = true;
-                        driver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
                         break;
-                    case "StrafeBecausePrimaryIsntReady":
-                        driver.minDistance = 15f;
-                        break;
-                    case "BlinkBecauseClose":
-                        driver.minDistance = 25f;
-                        driver.maxDistance = 45f;
-                        break;
-                    case "PathToTarget":
-                        driver.minDistance = 15f;
-                        break;*/
+                }
             }
         }
 
@@ -69,17 +46,17 @@ namespace LemurFusion
                 c.Emit(OpCodes.Ldarg_0);
                 c.EmitDelegate((IEnumerable<HurtBox> results, BaseAI instance) =>
                 {
-                    if (instance && instance.master.name == DevotionTweaks.masterPrefabName && PhaseCounter.instance && PhaseCounter.instance.phase == 3)
+                    if (instance && instance.master.name == DevotionTweaks.masterCloneName)
                     {
                         // Filter results to only target players (don't target player allies like drones)
-                        IEnumerable<HurtBox> playerControlledTargets = results.Where(hurtBox =>
+                        IEnumerable<HurtBox> bigPriorityTargets = results.Where(hurtBox =>
                         {
                             GameObject entityObject = HurtBox.FindEntityObject(hurtBox);
-                            return entityObject && entityObject.TryGetComponent(out CharacterBody characterBody) && characterBody.isPlayerControlled;
+                            return entityObject && entityObject.TryGetComponent(out CharacterBody characterBody) && (characterBody.isBoss || characterBody.isChampion);
                         });
 
                         // If there are no players, use the default target so that the AI doesn't end up doing nothing
-                        return playerControlledTargets.Any() ? playerControlledTargets : results;
+                        return bigPriorityTargets.Any() ? bigPriorityTargets : results;
                     }
                     else
                         return results;
@@ -91,7 +68,7 @@ namespace LemurFusion
         {
             if (self && self.master.name == DevotionTweaks.masterCloneName)
             {
-                maxDistance = float.PositiveInfinity;
+                maxDistance = 100;
                 full360Vision = true;
                 filterByLoS = false;
             }

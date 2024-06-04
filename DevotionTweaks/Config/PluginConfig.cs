@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LemurFusion.Config
 {
@@ -17,19 +18,20 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> enableMinionScoreboard;
         public static ConfigEntry<int> teleportDistance;
         public static ConfigEntry<int> maxLemurs;
-        public static ConfigEntry<bool> fixEvoWhenDisabled;
+        //public static ConfigEntry<bool> fixEvoWhenDisabled;
 
-        public static ConfigEntry<bool> miniElders;
+        public static ConfigEntry<bool> improveAI;
+        //public static ConfigEntry<bool> miniElders;
 
         public static ConfigEntry<int> statMultHealth;
         public static ConfigEntry<int> statMultDamage;
         public static ConfigEntry<int> statMultAttackSpeed;
-        public static ConfigEntry<int> statMultSize;
+        //public static ConfigEntry<int> statMultSize;
 
 
         public const string GENERAL = "01 - General";
         public const string EXPERIMENTAL = "02 - Experimental";
-        public const string STATS = "03 - Base Stats";
+        public const string STATS = "03 - Fusion Stats";
 
         internal static void ReadConfig()
         {
@@ -58,16 +60,24 @@ namespace LemurFusion.Config
                 true, 
                 "Devoted Lemurians will show up on the scoreboard."); 
 
-            fixEvoWhenDisabled = BindAndOptions(GENERAL,
-                "Fix When Disabled", 
-                true,
-                "Fixes the item orb not showing when giving items to eggs and allows devotion minions to evolve even when the Artifact is disabled.");
-
-            miniElders = BindAndOptions(GENERAL, 
+            // misc
+            /*
+            miniElders = BindAndOptions(EXPERIMENTAL, 
                 "Mini Elder Lemurians",
                 false,
                 "Theyre so cute omg");
+            */
+            improveAI = BindAndOptions(EXPERIMENTAL,
+                "Improve AI",
+                true,
+                "Makes minions less likely to stand around", 
+                true);
 
+            /*fixEvoWhenDisabled = BindAndOptions(EXPERIMENTAL,
+                "Fix When Disabled",
+                true,
+                "Fixes the item orb not showing when giving items to eggs and allows devotion minions to evolve even when the Artifact is disabled.", true);
+            */
             // stats
             statMultHealth = BindAndOptionsSlider(STATS, 
                 "Fusion Health Increase",
@@ -86,12 +96,12 @@ namespace LemurFusion.Config
                 20,
                 "Attack speed multiplier for each lemur fusion, in percent.",
                 0, 100);
-
+            /*
             statMultSize = BindAndOptionsSlider(STATS, 
                 "Fusion Size Increase",
                 2,
                 "Base size multiplier for each lemur fusion, in percent.",
-                0, 10);
+                0, 10);*/
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

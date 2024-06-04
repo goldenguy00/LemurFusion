@@ -44,7 +44,7 @@ namespace LemurFusion
 
             PluginConfig.myConfig = Config;
 
-            Configs.Setup();
+            ConfigReader.Setup();
 
             new DevotionTweaks();
             new StatHooks();
@@ -65,8 +65,7 @@ namespace LemurFusion
 
         private void PostLoad()
         {
-            LightChanges.PostLoad();
-            HeavyChanges.PostLoad();
+            ConfigExtended.PostLoad();
         }
     }
 

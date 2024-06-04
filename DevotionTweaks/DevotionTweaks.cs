@@ -19,6 +19,27 @@ namespace LemurFusion
 {
     public class DevotionTweaks
     {
+        public class BodyEvolutionStage
+        {
+            public string BodyName = "LemurianBody";
+            public int EvolutionStage = -1;
+        }
+
+        public enum DeathPenalty
+        {
+            TrueDeath,
+            Devolve,
+            ResetToBaby
+        }
+
+        public enum DeathItem
+        {
+            None,
+            Scrap,
+            Original,
+            Custom
+        }
+
         public static DevotionTweaks instance;
 
         public static HashSet<EquipmentIndex> gigaChadLvl = [];
@@ -35,6 +56,7 @@ namespace LemurFusion
             //        //
             // assets //
             //        //
+            UpdateItemDef();
 
             masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion().InstantiateClone(masterPrefabName, true);
             MonoBehaviour.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
@@ -57,7 +79,21 @@ namespace LemurFusion
             IL.RoR2.DevotionInventoryController.UpdateMinionInventory += DevotionInventoryController_UpdateMinionInventory;
             IL.RoR2.DevotionInventoryController.EvolveDevotedLumerian += DevotionInventoryController_EvolveDevotedLumerian;
             IL.RoR2.DevotionInventoryController.GenerateEliteBuff += DevotionInventoryController_GenerateEliteBuff;
+
+            On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
         }
+
+        private void UpdateItemDef()
+        {
+            //Fix up the tags on the Harness
+            LemurFusionPlugin._logger.LogInfo("Changing Lemurian Harness");
+            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/items.LemurianHarness.asset").WaitForCompletion();
+            if (itemDef)
+            {
+                itemDef.tags = [.. itemDef.tags, ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy];
+            }
+        }
+
 
         #region Artifact Setup
         private static void RunArtifactManager_onArtifactEnabledGlobal(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
@@ -83,6 +119,29 @@ namespace LemurFusion
             gigaChadLvl.Clear();
         }
 
+        private static void PickupPickerController_SetOptionsFromInteractor(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
+        {
+            if (!self.GetComponent<LemurianEggController>() || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
+            {
+                orig(self, activator);
+                return;
+            }
+
+            List<PickupPickerController.Option> list = [];
+            foreach (var itemIndex in body.inventory.itemAcquisitionOrder)
+            {
+                if (ConfigExtended.Blacklist_ItemFilter(itemIndex))
+                {
+                    PickupIndex pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
+                    list.Add(new PickupPickerController.Option
+                    {
+                        available = true,
+                        pickupIndex = pickupIndex
+                    });
+                }
+            }
+            self.SetOptionsServer([.. list]);
+        }
         private static void CreateEliteLists()
         {
             lowLvl.Clear();
@@ -238,7 +297,7 @@ namespace LemurFusion
 
             if (c.TryGotoNext(MoveType.After,
                     i => i.MatchCall<DevotionInventoryController>(nameof(DevotionInventoryController.EvolveDevotedLumerian))) &&
-                c.TryFindNext(out var next, 
+                c.TryFindNext(out var next,
                     i => i.MatchCallvirt<Inventory>(nameof(Inventory.GiveItem)),
                     i => i.MatchCallvirt<Inventory>(nameof(Inventory.GiveItem))
                 ))
@@ -250,6 +309,19 @@ namespace LemurFusion
             else
             {
                 LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
+            }
+
+            if (c.TryGotoNext(MoveType.Before,
+                   i => i.MatchCallvirt<Inventory>(nameof(Inventory.AddItemsFrom))
+                ))
+            {
+                c.Remove();
+                c.Emit<ConfigExtended>(OpCodes.Ldsfld, nameof(ConfigExtended.Blacklist_ItemFilter));
+                c.Emit(OpCodes.Callvirt, typeof(Inventory).GetMethod(nameof(Inventory.AddItemsFrom), [typeof(Inventory), typeof(Func<ItemIndex, bool>)]));
+            }
+            else
+            {
+                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #3");
             }
         }
 

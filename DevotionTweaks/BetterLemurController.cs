@@ -50,10 +50,9 @@ public class BetterLemurController : DevotedLemurianController
     public void ReturnUntrackedItems()
     {
         // mechanics
-        if (base.LemurianBody)
+        if (base.LemurianBody && PluginConfig.disableFallDamage.Value)
         {
-            if (PluginConfig.disableFallDamage.Value)
-                base.LemurianBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+            base.LemurianBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
         }
 
         if (base.LemurianInventory && _untrackedItemList.Any())
@@ -67,6 +66,7 @@ public class BetterLemurController : DevotedLemurianController
 
     internal static void PlaceDevotionEgg(Vector3 spawnLoc)
     {
+        if (!Run.instance || !DirectorCore.instance) return;
         if (Physics.Raycast(spawnLoc + Vector3.up * 1f, Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
         {
             DirectorPlacementRule placementRule = new()
@@ -183,13 +183,18 @@ public class BetterLemurController : DevotedLemurianController
             AddItem(lemCtrl._devotedItemList, itemIndex);
 
             lemCtrl._untrackedItemList ??= [];
-            SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
-            SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
-
-            if (LemurFusionPlugin.riskyInstalled)
+            if (!lemCtrl._untrackedItemList.Any())
             {
-                SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
-                SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyRegenItem, 60);
+                SetItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness);
+                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
+                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
+                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
+
+                if (LemurFusionPlugin.riskyInstalled)
+                {
+                    SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
+                    SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyRegenItem, 60);
+                }
             }
         }
     }
@@ -220,7 +225,7 @@ public class BetterLemurController : DevotedLemurianController
 
             if (itemDef && itemDef.itemIndex != ItemIndex.None)
             {
-                if (LightChanges.DeathDrops_TierToItem_Map.TryGetValue(itemDef.tier, out var idx) && idx != ItemIndex.None)
+                if (ConfigExtended.DeathDrops_TierToItem_Map.TryGetValue(itemDef.tier, out var idx) && idx != ItemIndex.None)
                 {
                     pickupIndex = PickupCatalog.FindPickupIndex(idx);
                 }
@@ -236,7 +241,7 @@ public class BetterLemurController : DevotedLemurianController
             var pickupIndex = FindPickupIndex(item.Key);
             if (pickupIndex != PickupIndex.none)
             {
-                int dropCount = LightChanges.ItemDrop_DropAll.Value ? item.Value : 1;
+                int dropCount = ConfigExtended.DeathDrop_DropAll.Value ? item.Value : 1;
                 for (int i = 0; i < dropCount; i++)
                 {
                     PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
@@ -247,39 +252,33 @@ public class BetterLemurController : DevotedLemurianController
         }
     }
 
-    private void DevolveLem(int newEvoLvl)
-    {
-        // adjust body stage
-        this.MeldCount = newEvoLvl;
-        base.DevotedEvolutionLevel = newEvoLvl;
-    }
-
     private void CommitSudoku()
     {
         if (base._lemurianMaster.IsDeadAndOutOfLivesServer())
         {
-            bool shouldDie;
-            switch ((HeavyChanges.DeathPenalty)HeavyChanges.OnDeathPenalty.Value)
+            bool shouldDie = true;
+            /*
+            switch ((DevotionTweaks.DeathPenalty)ConfigExtended.OnDeathPenalty.Value)
             {
-                case HeavyChanges.DeathPenalty.Devolve:
+                case DevotionTweaks.DeathPenalty.Devolve:
                     //shouldDie = base.DevotedEvolutionLevel < 1;
                     //DevolveLem(base.DevotedEvolutionLevel - 1);
                     //break;
-                case HeavyChanges.DeathPenalty.ResetToBaby:
+                case DevotionTweaks.DeathPenalty.ResetToBaby:
                     //shouldDie = base.DevotedEvolutionLevel < 1;
                     //DevolveLem(0);
                     //break;
-                case HeavyChanges.DeathPenalty.TrueDeath:
+                case DevotionTweaks.DeathPenalty.TrueDeath:
                 default:
                     shouldDie = true;
                     break;
-            }
+            }*/
 
             if (shouldDie)
             {
                 base._lemurianMaster.destroyOnBodyDeath = true;
                 this.DropScrapOnDeath();
-                if (HeavyChanges.DropEggOnDeath.Value)
+                if (ConfigExtended.DeathDrop_DropEgg.Value)
                 {
                     PlaceDevotionEgg(this.LemurianBody.footPosition);
                 }

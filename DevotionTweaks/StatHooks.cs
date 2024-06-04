@@ -19,8 +19,8 @@ namespace LemurFusion
             instance = this;
 
             On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return ModifyName(orig(self), self); };
-            On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
-            On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
+            //On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
+            //On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
         }
 
         public void InitHooks()
@@ -127,8 +127,8 @@ namespace LemurFusion
         internal static void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
-            if (!PluginConfig.miniElders.Value) return;
-
+            return;
+            /*
             if (PluginConfig.statMultSize.Value > 0 && meldCount > 1)
             {
                 var transform = body?.modelLocator?.modelTransform; 
@@ -137,7 +137,7 @@ namespace LemurFusion
                     var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
                     transform.localScale = baseSize + scaleFactor;
                 }
-            }
+            }*/
         }
         #endregion
     }
