@@ -1,3 +1,7 @@
+# 1.0.6
+
+- Update manifest.json
+
 # 1.0.5
 
 MAJOR SYSTEM REWORK

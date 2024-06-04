@@ -4,6 +4,16 @@ Makes your lemurians fuse together like dragonball!
 
 ![dbz](https://static1.srcdn.com/wordpress/wp-content/uploads/2017/10/DBZ-Fusion-Goku-and-Piccolo-Featured.jpg?q=50&fit=contain&w=1140&h=&dpr=1.5)
 
+
+---
+# Found Bug or Have Suggestions?
+
+- Contact me at
+
+    >https://discord.com/channels/1214643706490257549/1219963478765207622
+
+    >https://github.com/goldenguy00/LemurFusion/issues
+
 ---
 ## Features
 
@@ -56,12 +66,6 @@ Makes your lemurians fuse together like dragonball!
 
 - Tributed Item Blacklist
 
-
----
-# Found Bug or Have Suggestions?
-
-    >https://github.com/goldenguy00/LemurFusion/issues
-
 ---
 # Special Thanks to:
 
@@ -84,6 +88,10 @@ Makes your lemurians fuse together like dragonball!
 
 ---
 ## Changelog
+
+# 1.0.6
+
+- Update manifest.json
 
 # 1.0.5
 

@@ -1,8 +1,11 @@
 {
     "name": "LemurFusion",
     "author": "score",
-    "version_number": "1.0.5",
+    "version_number": "1.0.6",
     "description": "Devotion rework; If you have too many Lemurians, just fuse them together!",
     "website_url": "https://github.com/goldenguy00/LemurFusion",
-    "dependencies": []
+    "dependencies": [
+        "bbepis-BepInExPack-5.4.2114",
+        "tristanmcpherson-R2API-5.0.5"
+    ]
 }
