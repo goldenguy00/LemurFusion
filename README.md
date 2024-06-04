@@ -4,6 +4,16 @@ Makes your lemurians fuse together like dragonball!
 
 ![dbz](https://static1.srcdn.com/wordpress/wp-content/uploads/2017/10/DBZ-Fusion-Goku-and-Piccolo-Featured.jpg?q=50&fit=contain&w=1140&h=&dpr=1.5)
 
+
+---
+# Found Bug or Have Suggestions?
+
+- Contact me at
+
+    >https://discord.com/channels/1214643706490257549/1219963478765207622
+
+    >https://github.com/goldenguy00/LemurFusion/issues
+
 ---
 ## Features
 
@@ -13,38 +23,48 @@ Makes your lemurians fuse together like dragonball!
 
 - Fully supports RiskyMod Ally changes!
 
+- Designed to be a full scale rework but still compatible with all other mods
+
 - Lemurians will switch between the various high tier elite types once they are fully evolved.
 
 - Fully functional and configurable scoreboard entry for all the lemurs you control. 
 
-- Lemurians will drop 1 scrap of the corresponding tier for each unique item that they had on death, ignoring duplicates. They will remove their contribution to the shared inventory on death.
+- Lemurians will drop their tributed items on death and will remove their contribution to the shared inventory on death.
 
 - Stat multipliers per fusion, similar to dronemeld, while still retaining the vanilla HP and damage buffs that they would get on evolution.
 
-- Resize Lemur buddies based on fusion count, kinda borked rn but its funny if you set it to 0, try it.
 
 
-### *(WORK IN PROGRESS, COMING SOON)*
+### *(WORK IN PROGRESS, SOME FUTURE PLANS COMING SOON)*
 
 - Can make them share a single inventory or have their own unique inventories with a limited amount of item sharing.
 
 - Multiple elite types on a single guy.
 
-- Make it even more customizable and developed with mod compatability in mind.
+- Resize Lemur buddies based on fusion count
 
-
----
-## Config
-
-- Most balance related features are configurable.
-
-- Added some fun/quality of life config options.
-
+- Scoreboard entry for each lemur, or one entry per owner
 
 ---
-# Found Bug or Have Suggestions?
+## Config Options
 
-    >https://github.com/goldenguy00/LemurFusion/issues
+- Total number of lemur buddies you can have
+
+- Disable fall damage
+
+- Teleport to owner distance
+
+- Minion scoreboard
+
+- Improve AI
+
+- Stat Increase Per Fusion
+
+- Revert to Egg On Death
+
+- Items to Drop on Death
+
+- Tributed Item Blacklist
 
 ---
 # Special Thanks to:
@@ -52,6 +72,10 @@ Makes your lemurians fuse together like dragonball!
 - ThinkInvis for the Dronemeld foundation that this was based on.
 
     >https://github.com/ThinkInvis/RoR2-Dronemeld
+
+- Kking117 for the awesome devotion config ideas and framework
+
+    >https://thunderstore.io/package/kking117/DevotionConfig/
 
 - Moffein for the good reference materials for working with EliteDefs and Ally support features from RiskyMod
 
@@ -64,6 +88,36 @@ Makes your lemurians fuse together like dragonball!
 
 ---
 ## Changelog
+
+# 1.0.6
+
+- Update manifest.json
+
+# 1.0.5
+
+MAJOR SYSTEM REWORK
+
+Things shouldn't be broken, but hang in there if they are! This is under active development.
+
+Created better config options
+
+Item blacklist
+
+On Death mechanics
+
+Integrated many changes from https://thunderstore.io/package/kking117/DevotionConfig/
+
+Fixed compat with https://thunderstore.io/package/Risky_Lives/RiskyMod/
+
+Fixed compat with https://thunderstore.io/package/bouncyshield/LemurianNames/
+
+# 1.0.2
+
+- Fixed LemurianNames incompat for real this time
+
+- Removed some debug logs
+
+- Disabled size scaling until I make it work properly
 
 # 1.0.1
 
