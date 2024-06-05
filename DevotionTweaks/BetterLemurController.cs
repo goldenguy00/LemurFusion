@@ -27,12 +27,13 @@ public class BetterLemurController : DevotedLemurianController
                 var heldItems = MeldCount;
                 if (heldItems != value)
                 {
-                    AddItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value - heldItems);
-                    StatHooks.ResizeBody(_untrackedItemList[CU8Content.Items.LemurianHarness.itemIndex], base.LemurianBody);
+                    Utils.AddItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value - heldItems);
+                    //StatHooks.ResizeBody(_untrackedItemList[CU8Content.Items.LemurianHarness.itemIndex], base.LemurianBody);
                 }
             }
         }
     }
+
     public int MultiplyStatsCount
     {
         get
@@ -64,7 +65,64 @@ public class BetterLemurController : DevotedLemurianController
         }
     }
 
-    internal static void PlaceDevotionEgg(Vector3 spawnLoc)
+    private PickupIndex FindPickupIndex(ItemIndex itemIndex, DevotionTweaks.DeathItem dropType)
+    {
+        PickupIndex pickupIndex = PickupIndex.none;
+        if (itemIndex != ItemIndex.None)
+        {
+            switch (dropType)
+            {
+                // this is a warcrime
+                case DevotionTweaks.DeathItem.Scrap:
+                    switch (ItemCatalog.GetItemDef(itemIndex).tier)
+                    {
+                        case ItemTier.Tier1:
+                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapWhite");
+                            break;
+                        case ItemTier.Tier2:
+                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapGreen");
+                            break;
+                        case ItemTier.Tier3:
+                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapRed");
+                            break;
+                        case ItemTier.Boss:
+                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapYellow");
+                            break;
+                    }
+                    break;
+                case DevotionTweaks.DeathItem.Original:
+                    pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
+                    break;
+                case DevotionTweaks.DeathItem.Custom:
+
+                    if (ConfigExtended.DeathDrops_TierToItem_Map.TryGetValue(ItemCatalog.GetItemDef(itemIndex).tier, out var idx) && idx != ItemIndex.None)
+                        pickupIndex = PickupCatalog.FindPickupIndex(idx);
+                    break;
+            }
+        }
+        return pickupIndex;
+    }
+
+    private void DropScrapOnDeath()
+    {
+        var dropType = (DevotionTweaks.DeathItem)ConfigExtended.DeathDrop_ItemType.Value;
+        foreach (var item in this._devotedItemList)
+        {
+            var pickupIndex = FindPickupIndex(item.Key, dropType);
+            if (pickupIndex != PickupIndex.none)
+            {
+                int dropCount = ConfigExtended.DeathDrop_DropAll.Value ? item.Value : 1;
+                for (int i = 0; i < dropCount; i++)
+                {
+                    PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
+                }
+
+                this._devotionInventoryController.RemoveItem(item.Key, item.Value);
+            }
+        }
+    }
+
+    private void PlaceDevotionEgg(Vector3 spawnLoc)
     {
         if (!Run.instance || !DirectorCore.instance) return;
         if (Physics.Raycast(spawnLoc + Vector3.up * 1f, Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
@@ -78,8 +136,20 @@ public class BetterLemurController : DevotedLemurianController
                 ("RoR2/CU8/LemurianEgg/iscLemurianEgg.asset").WaitForCompletion(), placementRule, new Xoroshiro128Plus(0UL)));
         }
     }
-    private static void CreateTwin_ExtraLife(GameObject targetLocation, GameObject masterPrefab, DevotionInventoryController devotionInventoryController)
+
+    private void CreateTwin_ExtraLife(GameObject targetLocation, GameObject masterPrefab, DevotionInventoryController devotionInventoryController)
     {
+        /*
+if (itemIndex == RoR2Content.Items.ExtraLife.itemIndex)
+{
+    CreateTwin_ExtraLife(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
+    itemIndex = RoR2Content.Items.ScrapRed.itemIndex;
+}
+else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
+{
+    CreateTwin_ExtraLifeVoid(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
+    itemIndex = DLC1Content.Items.BearVoid.itemIndex;
+}*/
         ItemIndex itemIndex = RoR2Content.Items.ExtraLifeConsumed.itemIndex;
         if (devotionInventoryController)
         {
@@ -114,7 +184,7 @@ public class BetterLemurController : DevotedLemurianController
         }
     }
 
-    private static void CreateTwin_ExtraLifeVoid(GameObject targetLocation, GameObject masterPrefab, DevotionInventoryController devotionInventoryController)
+    private void CreateTwin_ExtraLifeVoid(GameObject targetLocation, GameObject masterPrefab, DevotionInventoryController devotionInventoryController)
     {
         ItemIndex itemIndex = DLC1Content.Items.BleedOnHitVoid.itemIndex;
         if (devotionInventoryController)
@@ -163,37 +233,25 @@ public class BetterLemurController : DevotedLemurianController
         DevotedLemurianController self, ItemIndex itemIndex, DevotionInventoryController devInvCtrl)
     {
         orig(self, itemIndex, devInvCtrl);
-        /*
-        if (itemIndex == RoR2Content.Items.ExtraLife.itemIndex)
-        {
-            CreateTwin_ExtraLife(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
-            itemIndex = RoR2Content.Items.ScrapRed.itemIndex;
-        }
-        else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
-        {
-            CreateTwin_ExtraLifeVoid(self.gameObject, DevotionTweaks.masterPrefab, devInvCtrl);
-            itemIndex = DLC1Content.Items.BearVoid.itemIndex;
-        }*/
 
         if (self is BetterLemurController lemCtrl)
         {
             lemCtrl._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
 
             lemCtrl._devotedItemList ??= [];
-            AddItem(lemCtrl._devotedItemList, itemIndex);
+            Utils.AddItem(lemCtrl._devotedItemList, itemIndex);
 
             lemCtrl._untrackedItemList ??= [];
             if (!lemCtrl._untrackedItemList.Any())
             {
-                SetItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness);
-                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
-                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
-                SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
+                Utils.SetItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness);
+                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
+                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
+                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
 
                 if (LemurFusionPlugin.riskyInstalled)
                 {
-                    SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
-                    SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyRegenItem, 60);
+                    Utils.SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
                 }
             }
         }
@@ -207,7 +265,22 @@ public class BetterLemurController : DevotedLemurianController
             return;
         }
 
-        lemCtrl.CommitSudoku();
+        if (self._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
+        {
+            self._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex, 1);
+        }
+        else
+        {
+            self._lemurianMaster.destroyOnBodyDeath = true;
+            if ((DevotionTweaks.DeathItem)ConfigExtended.DeathDrop_ItemType.Value != DevotionTweaks.DeathItem.None)
+                (self as BetterLemurController).DropScrapOnDeath();
+
+            if (ConfigExtended.DeathDrop_DropEgg.Value)
+                (self as BetterLemurController).PlaceDevotionEgg(self.LemurianBody.footPosition);
+
+            UnityEngine.Object.Destroy(self._lemurianMaster.gameObject, 1f);
+        }
+        self._devotionInventoryController.UpdateAllMinions(false);
 
         // not a fan of doing this but fuck it, the vanilla class is giga hard coded
         // id essentially just have to ILModify it to do literally nothing anyways.
@@ -215,117 +288,6 @@ public class BetterLemurController : DevotedLemurianController
         // fuck you gearbox.
         //
         // orig(self);
-    }
-    private PickupIndex FindPickupIndex(ItemIndex itemIndex)
-    {
-        PickupIndex pickupIndex = PickupIndex.none;
-        if (itemIndex != ItemIndex.None)
-        {
-            var itemDef = ItemCatalog.GetItemDef(itemIndex);
-
-            if (itemDef && itemDef.itemIndex != ItemIndex.None)
-            {
-                if (ConfigExtended.DeathDrops_TierToItem_Map.TryGetValue(itemDef.tier, out var idx) && idx != ItemIndex.None)
-                {
-                    pickupIndex = PickupCatalog.FindPickupIndex(idx);
-                }
-            }
-        }
-        return pickupIndex;
-    }
-
-    private void DropScrapOnDeath()
-    {
-        foreach (var item in this._devotedItemList)
-        {
-            var pickupIndex = FindPickupIndex(item.Key);
-            if (pickupIndex != PickupIndex.none)
-            {
-                int dropCount = ConfigExtended.DeathDrop_DropAll.Value ? item.Value : 1;
-                for (int i = 0; i < dropCount; i++)
-                {
-                    PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
-                }
-
-                this._devotionInventoryController.RemoveItem(item.Key, item.Value);
-            }
-        }
-    }
-
-    private void CommitSudoku()
-    {
-        if (base._lemurianMaster.IsDeadAndOutOfLivesServer())
-        {
-            bool shouldDie = true;
-            /*
-            switch ((DevotionTweaks.DeathPenalty)ConfigExtended.OnDeathPenalty.Value)
-            {
-                case DevotionTweaks.DeathPenalty.Devolve:
-                    //shouldDie = base.DevotedEvolutionLevel < 1;
-                    //DevolveLem(base.DevotedEvolutionLevel - 1);
-                    //break;
-                case DevotionTweaks.DeathPenalty.ResetToBaby:
-                    //shouldDie = base.DevotedEvolutionLevel < 1;
-                    //DevolveLem(0);
-                    //break;
-                case DevotionTweaks.DeathPenalty.TrueDeath:
-                default:
-                    shouldDie = true;
-                    break;
-            }*/
-
-            if (shouldDie)
-            {
-                base._lemurianMaster.destroyOnBodyDeath = true;
-                this.DropScrapOnDeath();
-                if (ConfigExtended.DeathDrop_DropEgg.Value)
-                {
-                    PlaceDevotionEgg(this.LemurianBody.footPosition);
-                }
-                UnityEngine.Object.Destroy(this._lemurianMaster.gameObject, 1f);
-            }
-            else
-            {
-                this._lemurianMaster.Invoke("RespawnExtraLife", 2f);
-            }
-        }
-        this._devotionInventoryController.UpdateAllMinions(false);
-    }
-    #endregion
-
-    #region List Utils
-    public static void AddItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
-    {
-        if (!itemDef) return;
-        AddItem(target, itemDef.itemIndex, count);
-    }
-
-    public static void AddItem(SortedList<ItemIndex, int> target, ItemIndex itemIndex, int count = 1)
-    {
-        if (itemIndex == ItemIndex.None) return;
-
-        target ??= [];
-        if (target.ContainsKey(itemIndex))
-            target[itemIndex] += count;
-        else
-            target.Add(itemIndex, count);
-    }
-
-    public static void SetItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
-    {
-        if (!itemDef) return;
-        SetItem(target, itemDef.itemIndex, count);
-    }
-
-    public static void SetItem(SortedList<ItemIndex, int> target, ItemIndex itemIndex, int count = 1)
-    {
-        if (itemIndex == ItemIndex.None) return;
-
-        target ??= [];
-        if (target.ContainsKey(itemIndex))
-            target[itemIndex] = count;
-        else
-            target.Add(itemIndex, count);
     }
     #endregion
 }

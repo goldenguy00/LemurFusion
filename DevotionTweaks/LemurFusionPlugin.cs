@@ -25,7 +25,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.6";
+        public const string PluginVersion = "1.0.7";
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
@@ -78,7 +78,7 @@ namespace LemurFusion
             if (__exception != null)
             {
                 // An exception was thrown by the method!
-                LemurFusionPlugin._logger.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames! They suck at coding!");
+                LemurFusionPlugin._logger.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames!");
                 LemurFusionPlugin._logger.LogWarning(__exception.Message);
                 LemurFusionPlugin._logger.LogWarning(__exception.StackTrace);
             }

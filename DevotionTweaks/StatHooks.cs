@@ -21,19 +21,20 @@ namespace LemurFusion
             On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return ModifyName(orig(self), self); };
             //On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
             //On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
+            if (PluginConfig.miniElders.Value)
+                On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
         }
 
         public void InitHooks()
         {
             On.RoR2.UI.ScoreboardController.Rebuild += AddLemurianInventory;
-            On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
         }
 
         public void RemoveHooks()
         {
             On.RoR2.UI.ScoreboardController.Rebuild -= AddLemurianInventory;
-            On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
+            //On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
         }
 
@@ -97,6 +98,11 @@ namespace LemurFusion
 
                 args.baseAttackSpeedAdd += (sender.baseAttackSpeed + sender.levelAttackSpeed * sender.level) *
                     GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value);
+
+                // nerf later stage regen a bit
+                // no clue what kinda curve this is, i just made some shit up.
+                // I think regen to full starts at 50seconds and increases pretty quickly but idk i failed math
+                args.baseRegenAdd += args.baseHealthAdd / (50f * Mathf.Pow(meldCount.Value, PluginConfig.statMultHealth.Value * 0.01f)); 
             }
         }
         #endregion
@@ -121,15 +127,24 @@ namespace LemurFusion
 
         private static float GetStatModifier(int configValue, int meldCount, int multiplyStatsCount = 0)
         {
-            return (meldCount - 1) * (configValue * 0.01f) + (multiplyStatsCount * 0.1f);
+            return ((meldCount - 1) * (configValue * 0.01f)) + (multiplyStatsCount * 0.1f);
         }
 
         internal static void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
-            return;
+            if (PluginConfig.miniElders.Value)
+            {
+                var transform = body?.modelLocator?.modelTransform;
+                if (transform)
+                {
+                    if (baseSize == default)
+                        baseSize = transform.localScale;
+                    transform.localScale = baseSize;
+                }
+            }
             /*
-            if (PluginConfig.statMultSize.Value > 0 && meldCount > 1)
+            if (PluginConfig.miniElders.Value)
             {
                 var transform = body?.modelLocator?.modelTransform; 
                 if (transform)

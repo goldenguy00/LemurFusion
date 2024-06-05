@@ -2,6 +2,7 @@
 using RiskOfOptions;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -18,10 +19,11 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> enableMinionScoreboard;
         public static ConfigEntry<int> teleportDistance;
         public static ConfigEntry<int> maxLemurs;
-        //public static ConfigEntry<bool> fixEvoWhenDisabled;
+        public static ConfigEntry<bool> highTierElitesOnly;
 
         public static ConfigEntry<bool> improveAI;
-        //public static ConfigEntry<bool> miniElders;
+        public static ConfigEntry<bool> enableDetailedLogs;
+        public static ConfigEntry<bool> miniElders;
 
         public static ConfigEntry<int> statMultHealth;
         public static ConfigEntry<int> statMultDamage;
@@ -58,19 +60,30 @@ namespace LemurFusion.Config
             enableMinionScoreboard = BindAndOptions(GENERAL,
                 "Enable Minion Scoreboard", 
                 true, 
-                "Devoted Lemurians will show up on the scoreboard."); 
+                "Devoted Lemurians will show up on the scoreboard.");
+
+            highTierElitesOnly = BindAndOptions(GENERAL,
+                "High Tier Elites Only For Final Evolution",
+                true,
+                "When rerolling the fully evolved elite elder lemurian aspects, should it always be a lategame elite type?");
 
             // misc
-            /*
+            
             miniElders = BindAndOptions(EXPERIMENTAL, 
                 "Mini Elder Lemurians",
                 false,
-                "Theyre so cute omg");
-            */
+                "Theyre so cute omg",
+                true);
+            
             improveAI = BindAndOptions(EXPERIMENTAL,
                 "Improve AI",
                 true,
-                "Makes minions less likely to stand around", 
+                "Makes minions less likely to stand around",
+                true);
+            enableDetailedLogs = BindAndOptions(EXPERIMENTAL,
+                "Enable Detailed Logs",
+                true,
+                "For dev use/debugging. Keep this on if you want to submit a bug report.",
                 true);
 
             /*fixEvoWhenDisabled = BindAndOptions(EXPERIMENTAL,
@@ -141,6 +154,29 @@ namespace LemurFusion.Config
         #region Config
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static ConfigEntry<T> BindAndOptions<T>(string section, string name, T defaultValue, string description = "", bool restartRequired = false)
+        {
+            if (string.IsNullOrEmpty(description))
+            {
+                description = name;
+            }
+
+            if (restartRequired)
+            {
+                description += " (restart required)";
+            }
+
+            ConfigEntry<T> configEntry = myConfig.Bind(section, name, defaultValue, description);
+
+            if (LemurFusionPlugin.rooInstalled)
+            {
+                TryRegisterOption(configEntry, restartRequired);
+            }
+
+            return configEntry;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        public static ConfigEntry<T> BindAndOptionsEnum<T>(string section, string name, T defaultValue, string description = "", bool restartRequired = false)
         {
             if (string.IsNullOrEmpty(description))
             {

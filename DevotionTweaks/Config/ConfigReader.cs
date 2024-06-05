@@ -60,7 +60,7 @@
 
             ConfigExtended.DeathDrop_DropEgg = PluginConfig.BindAndOptions(DEATH,
 				"Egg On Death", 
-				true, 
+				false, 
 				"Should minions revert to an egg when they are killed off?");
 
 			ConfigExtended.DeathDrop_ItemType = PluginConfig.BindAndOptionsSlider(DEATH, 
@@ -88,7 +88,12 @@
 			//Blacklist
 			ConfigExtended.Blacklist_Enable = PluginConfig.BindAndOptions(BLACKLIST, "Enable Blacklist Changes", true, Desc_Enable, true);
 
-			ConfigExtended.Blacklist_Filter_CannotCopy = PluginConfig.BindAndOptions(BLACKLIST, 
+            ConfigExtended.Blacklist_Filter_SprintRelated = PluginConfig.BindAndOptions(BLACKLIST,
+                "Blacklist Sprint Related Items",
+                true,
+                "Automatically blacklist items that are tagged as Sprint Related. Lemurs can't sprint. Sorry.");
+
+            ConfigExtended.Blacklist_Filter_CannotCopy = PluginConfig.BindAndOptions(BLACKLIST, 
 				"Blacklist CannotCopy", 
 				true,
 				"Automatically blacklist items that are tagged as CannotCopy. (The same filter used for Engineer Turrets)");
@@ -107,7 +112,7 @@
 			ConfigExtended.Blacklisted_ItemTiers_Raw = PluginConfig.BindAndOptions(BLACKLIST, 
 				"Tier Blacklist",
 				"LunarTierDef, VoidTier1Def, VoidTier2Def, VoidTier3Def, VoidBossDef",
-				"Item tiers prevented from being given or dropped by minions.",
+				"Item tiers prevented from being given to minions.",
 				true);
 		}
 	}
