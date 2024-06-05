@@ -105,7 +105,7 @@ public class BetterLemurController : DevotedLemurianController
 
     private void DropScrapOnDeath()
     {
-        var dropType = (DevotionTweaks.DeathItem)ConfigExtended.DeathDrop_ItemType.Value;
+        var dropType = ConfigExtended.DeathDrop_ItemType.Value;
         foreach (var item in this._devotedItemList)
         {
             var pickupIndex = FindPickupIndex(item.Key, dropType);
@@ -272,7 +272,7 @@ else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
         else
         {
             self._lemurianMaster.destroyOnBodyDeath = true;
-            if ((DevotionTweaks.DeathItem)ConfigExtended.DeathDrop_ItemType.Value != DevotionTweaks.DeathItem.None)
+            if (ConfigExtended.DeathDrop_ItemType.Value != DevotionTweaks.DeathItem.None)
                 (self as BetterLemurController).DropScrapOnDeath();
 
             if (ConfigExtended.DeathDrop_DropEgg.Value)

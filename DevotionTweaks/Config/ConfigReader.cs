@@ -4,11 +4,9 @@
     //and now it's been ported entirely into LemurFusion. Common Moffein W, once again.
     internal static class ConfigReader
 	{
-		//private const string MISC = "Misc Config";
 		//private const string Section_BaseStats = "Minion Base Stats";
 		//private const string Section_Evolution = "Evolution Settings";
 		private const string DEATH = "Death Settings";
-		//private const string Section_ItemDrop = "Item Drop";
 		private const string BLACKLIST = "Item Blacklist";
 		private const string Desc_Enable = "Enables changes for this section.";
 
@@ -63,26 +61,21 @@
 				false, 
 				"Should minions revert to an egg when they are killed off?");
 
-			ConfigExtended.DeathDrop_ItemType = PluginConfig.BindAndOptionsSlider(DEATH, 
-				"Item To Drop On Death", 
-				(int)DevotionTweaks.DeathItem.Scrap, 
-				"What kind of item to drop when minions are removed.\r\n\r\n" +
-                $"{nameof(DevotionTweaks.DeathItem.None)}\t" +
-                $"{nameof(DevotionTweaks.DeathItem.Scrap)}\t" +
-                $"{nameof(DevotionTweaks.DeathItem.Original)}\t" +
-                $"{nameof(DevotionTweaks.DeathItem.Custom)}\t",
-                0, System.Enum.GetValues(typeof(DevotionTweaks.DeathItem)).Length,
+            ConfigExtended.DeathDrop_DropAll = PluginConfig.BindAndOptions(DEATH,
+                "Drop Duplicate Items",
+                false,
+                "When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you gave originally.");
+
+            ConfigExtended.DeathDrop_ItemType = PluginConfig.BindAndOptions(DEATH, 
+				"Item Dropped On Death",
+				DevotionTweaks.DeathItem.Scrap, 
+				"What kind of item to drop when minions are killed.",
 				true);
 
-            ConfigExtended.DeathDrop_DropAll = PluginConfig.BindAndOptions(DEATH,
-				"Drop Duplicate Items",
-				false,
-				"When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you gave originally.");
-
             ConfigExtended.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindAndOptions(DEATH, 
-				"Item Drop On Death Map", 
+				"Custom Item Map", 
 				"Tier1Def, ScrapWhite; Tier2Def, ScrapGreen; Tier3Def, ScrapRed; BossTierDef, ScrapYellow; LunarTierDef, LunarTrinket; VoidTier1Def, TreasureCacheVoid; VoidTier2Def, TreasureCacheVoid; VoidTier3Def, TreasureCacheVoid; VoidBossDef, TreasureCacheVoid", 
-				"The item to drop for each Item Tier, in the format \"{TierDef},{ItemDef};\"",
+				"Requires \"Item Dropped On Death\" set to Custom. Maps out the Item to drop for each held Item Tier, in the format \"TierDef,ItemDef;\" (whitespace ignored)",
 				true);
 
 			//Blacklist

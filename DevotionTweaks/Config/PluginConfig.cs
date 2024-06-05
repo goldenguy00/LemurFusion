@@ -4,10 +4,10 @@ using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace LemurFusion.Config
 {
@@ -53,7 +53,7 @@ namespace LemurFusion.Config
 
             teleportDistance = BindAndOptionsSlider(GENERAL,
                 "Teleport Distance",
-                100, 
+                150, 
                 "Sets the max distance a Lemurian can be from their owner before teleporting.",
                 50, 400);
 
@@ -122,11 +122,11 @@ namespace LemurFusion.Config
         {
             if (LemurFusionPlugin.rooInstalled)
             {
-                /*var sprite = LoadSprite();
+                var sprite = LoadSprite();
                 if (sprite != null)
                 {
                     ModSettingsManager.SetModIcon(sprite);
-                }*/
+                }
                 ModSettingsManager.SetModDescription("Devotion Artifact but better.");
             }
         }
@@ -138,7 +138,7 @@ namespace LemurFusion.Config
             if (File.Exists(filePath))
             {
                 // i hate this tbh
-                Texture2D texture = new(1, 1);
+                Texture2D texture = new(2, 2);
                 texture.LoadImage(File.ReadAllBytes(filePath));
 
                 if (texture != null)
@@ -176,12 +176,14 @@ namespace LemurFusion.Config
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        public static ConfigEntry<T> BindAndOptionsEnum<T>(string section, string name, T defaultValue, string description = "", bool restartRequired = false)
+        public static ConfigEntry<T> BindAndOptionsSlider<T>(string section, string name, T defaultValue, string description = "", float min = 0, float max = 20, bool restartRequired = false)
         {
             if (string.IsNullOrEmpty(description))
             {
                 description = name;
             }
+
+            description += " (Default: " + defaultValue + ")";
 
             if (restartRequired)
             {
@@ -189,56 +191,6 @@ namespace LemurFusion.Config
             }
 
             ConfigEntry<T> configEntry = myConfig.Bind(section, name, defaultValue, description);
-
-            if (LemurFusionPlugin.rooInstalled)
-            {
-                TryRegisterOption(configEntry, restartRequired);
-            }
-
-            return configEntry;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        public static ConfigEntry<float> BindAndOptionsSlider(string section, string name, float defaultValue, string description = "", float min = 0, float max = 20, bool restartRequired = false)
-        {
-            if (string.IsNullOrEmpty(description))
-            {
-                description = name;
-            }
-
-            description += " (Default: " + defaultValue + ")";
-
-            if (restartRequired)
-            {
-                description += " (restart required)";
-            }
-
-            ConfigEntry<float> configEntry = myConfig.Bind(section, name, defaultValue, description);
-
-            if (LemurFusionPlugin.rooInstalled)
-            {
-                TryRegisterOptionSlider(configEntry, min, max, restartRequired);
-            }
-
-            return configEntry;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        public static ConfigEntry<int> BindAndOptionsSlider(string section, string name, int defaultValue, string description = "", int min = 0, int max = 20, bool restartRequired = false)
-        {
-            if (string.IsNullOrEmpty(description))
-            {
-                description = name;
-            }
-
-            description += " (Default: " + defaultValue + ")";
-
-            if (restartRequired)
-            {
-                description += " (restart required)";
-            }
-
-            ConfigEntry<int> configEntry = myConfig.Bind(section, name, defaultValue, description);
 
             if (LemurFusionPlugin.rooInstalled)
             {
@@ -256,53 +208,66 @@ namespace LemurFusion.Config
             if (entry is ConfigEntry<string> stringEntry)
             {
                 ModSettingsManager.AddOption(new StringInputFieldOption(stringEntry, restartRequired));
+                return;
             }
-            if (entry is ConfigEntry<float>)
+            if (entry is ConfigEntry<float> floatEntry)
             {
-                ModSettingsManager.AddOption(new SliderOption(entry as ConfigEntry<float>, new SliderConfig()
+                ModSettingsManager.AddOption(new SliderOption(floatEntry, new SliderConfig()
                 {
                     min = 0,
                     max = 20,
                     formatString = "{0:0.00}",
                     restartRequired = restartRequired
                 }));
+                return;
             }
-            if (entry is ConfigEntry<int>)
+            if (entry is ConfigEntry<int> intEntry)
             {
-                ModSettingsManager.AddOption(new IntSliderOption(entry as ConfigEntry<int>, restartRequired));
+                ModSettingsManager.AddOption(new IntSliderOption(intEntry, restartRequired));
+                return;
             }
-            if (entry is ConfigEntry<bool>)
+            if (entry is ConfigEntry<bool> boolEntry)
             {
-                ModSettingsManager.AddOption(new CheckBoxOption(entry as ConfigEntry<bool>, restartRequired));
+                ModSettingsManager.AddOption(new CheckBoxOption(boolEntry, restartRequired));
+                return;
             }
-            if (entry is ConfigEntry<KeyboardShortcut>)
+            if (entry is ConfigEntry<KeyboardShortcut> shortCutEntry)
             {
-                ModSettingsManager.AddOption(new KeyBindOption(entry as ConfigEntry<KeyboardShortcut>, restartRequired));
+                ModSettingsManager.AddOption(new KeyBindOption(shortCutEntry, restartRequired));
+                return;
+            }
+            if (typeof(T).IsEnum)
+            {
+                ModSettingsManager.AddOption(new ChoiceOption(entry, restartRequired));
+                return;
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static void TryRegisterOptionSlider(ConfigEntry<int> entry, int min, int max, bool restartRequired)
+        private static void TryRegisterOptionSlider<T>(ConfigEntry<T> entry, float min, float max, bool restartRequired)
         {
-            ModSettingsManager.AddOption(new IntSliderOption(entry as ConfigEntry<int>, new IntSliderConfig()
+            if (entry is ConfigEntry<int> intEntry)
             {
-                min = min,
-                max = max,
-                formatString = "{0:0.00}",
-                restartRequired = restartRequired
-            }));
-        }
+                ModSettingsManager.AddOption(new IntSliderOption(intEntry, new IntSliderConfig()
+                {
+                    min = (int)min,
+                    max = (int)max,
+                    formatString = "{0:0.00}",
+                    restartRequired = restartRequired
+                }));
+                return;
+            }
 
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static void TryRegisterOptionSlider(ConfigEntry<float> entry, float min, float max, bool restartRequired)
-        {
-            ModSettingsManager.AddOption(new SliderOption(entry as ConfigEntry<float>, new SliderConfig()
+            if (entry is ConfigEntry<float> floatEntry)
             {
-                min = min,
-                max = max,
-                formatString = "{0:0.00}",
-                restartRequired = restartRequired
-            }));
+                ModSettingsManager.AddOption(new SliderOption(floatEntry, new SliderConfig()
+                {
+                    min = min,
+                    max = max,
+                    formatString = "{0:0.00}",
+                    restartRequired = restartRequired
+                }));
+            }
         }
         #endregion
     }

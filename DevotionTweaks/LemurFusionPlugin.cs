@@ -8,6 +8,7 @@ using R2API.ContentManagement;
 using RoR2;
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace LemurFusion
 {
@@ -25,7 +26,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.7";
+        public const string PluginVersion = "1.0.8";
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
@@ -52,15 +53,21 @@ namespace LemurFusion
 
             // this is absurd, change anything that this mod references and it instantly explodes.
             // fucking hell man
+            FixLemurianNames();
+
+            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
+
+            GameModeCatalog.availability.CallWhenAvailable(new Action(PostLoad));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private void FixLemurianNames()
+        {
             if (lemNamesInstalled)
             {
                 var harmony = new Harmony(PluginGUID);
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
             }
-
-            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
-
-            GameModeCatalog.availability.CallWhenAvailable(new Action(PostLoad));
         }
 
         private void PostLoad()

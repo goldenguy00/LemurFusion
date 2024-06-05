@@ -10,7 +10,6 @@ namespace LemurFusion.Config
     {
         //internal static ConfigEntry<bool> Enable;
         //internal static ConfigEntry<int> EvoMax;
-        internal static ConfigEntry<bool> DeathDrop_DropEgg;
         //internal static ConfigEntry<int> OnDeathPenalty;
         //internal static ConfigEntry<bool> CapEvo;
 
@@ -21,22 +20,23 @@ namespace LemurFusion.Config
         //internal static List<EliteDef> Elite_Blacklist = [];
 
 
-        internal static ConfigEntry<bool> Blacklist_Enable;
-        internal static ConfigEntry<bool> Blacklist_Filter_SprintRelated;
-        internal static ConfigEntry<bool> Blacklist_Filter_CannotCopy;
-        internal static ConfigEntry<bool> Blacklist_Filter_Scrap;
+        public static ConfigEntry<bool> Blacklist_Enable;
+        public static ConfigEntry<bool> Blacklist_Filter_SprintRelated;
+        public static ConfigEntry<bool> Blacklist_Filter_CannotCopy;
+        public static ConfigEntry<bool> Blacklist_Filter_Scrap;
 
-        internal static ConfigEntry<bool> DeathDrop_Enable;
-        internal static ConfigEntry<int> DeathDrop_ItemType;
-        internal static ConfigEntry<bool> DeathDrop_DropAll;
+        public static ConfigEntry<bool> DeathDrop_Enable;
+        public static ConfigEntry<bool> DeathDrop_DropEgg;
+        public static ConfigEntry<DevotionTweaks.DeathItem> DeathDrop_ItemType;
+        public static ConfigEntry<bool> DeathDrop_DropAll;
 
-        internal static ConfigEntry<string> Blacklisted_ItemTiers_Raw;
-        internal static ConfigEntry<string> Blacklisted_Items_Raw;
-        internal static ConfigEntry<string> DeathDrops_TierToItem_Map_Raw;
+        public static ConfigEntry<string> Blacklisted_ItemTiers_Raw;
+        public static ConfigEntry<string> Blacklisted_Items_Raw;
+        public static ConfigEntry<string> DeathDrops_TierToItem_Map_Raw;
 
-        internal static HashSet<ItemTier> Blacklisted_ItemTiers = [];
-        internal static HashSet<ItemIndex> Blacklisted_Items = [];
-        internal static SortedList<ItemTier, ItemIndex> DeathDrops_TierToItem_Map = [];
+        public static HashSet<ItemTier> Blacklisted_ItemTiers = [];
+        public static HashSet<ItemIndex> Blacklisted_Items = [];
+        public static SortedList<ItemTier, ItemIndex> DeathDrops_TierToItem_Map = [];
         public static Func<ItemIndex, bool> Blacklist_Filter;
 
         private static void BLItems()

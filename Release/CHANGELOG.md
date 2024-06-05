@@ -1,3 +1,9 @@
+# 1.0.8
+
+- Minor Config tweaks
+
+- Additional safeguards against soft dependency errors
+
 # 1.0.7
 
 - Made debug logs optional

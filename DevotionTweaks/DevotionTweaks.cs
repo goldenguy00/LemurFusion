@@ -181,7 +181,7 @@ namespace LemurFusion
         #region Summon
         private static void PickupPickerController_SetOptionsFromInteractor(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
         {
-            if (!self.GetComponent<LemurianEggController>() || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
+            if (!self || !self.TryGetComponent<LemurianEggController>(out _) || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
             {
                 orig(self, activator);
                 return;
