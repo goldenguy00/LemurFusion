@@ -89,7 +89,7 @@ namespace LemurFusion
         {
             //Fix up the tags on the Harness
             LemurFusionPlugin._logger.LogInfo("Changing Lemurian Harness");
-            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/items.LemurianHarness.asset").WaitForCompletion();
+            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {
                 itemDef.tags = [.. itemDef.tags, ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy];
@@ -237,10 +237,10 @@ namespace LemurFusion
             // hijacking ignoreMaxAllies for CreateTwin_ExtraLife
             if (lemCtrlList.Count >= PluginConfig.maxLemurs.Value && lemCtrlList.Any())
             {
-                var meldTarget = lemCtrlList.OrderBy(l => l.MeldCount).First();
+                var meldTarget = lemCtrlList.OrderBy(l => l.FusionCount).First();
                 if (meldTarget && meldTarget.LemurianInventory)
                 {
-                    meldTarget.MeldCount++;
+                    meldTarget.FusionCount++;
                     return meldTarget._lemurianMaster;
                 }
             }
@@ -388,7 +388,7 @@ namespace LemurFusion
                 LemurFusionPlugin._logger.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian");
             }
         }
-
+        
         private static void DevotionInventoryController_GenerateEliteBuff(ILContext ll)
         {
             var c = new ILCursor(ll);

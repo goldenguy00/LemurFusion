@@ -7,14 +7,13 @@ using R2API;
 using R2API.ContentManagement;
 using RoR2;
 using System;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace LemurFusion
 {
     [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("com.RiskyLives.RiskyMod", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(R2API.R2API.PluginGUID, BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency(R2APIContentManager.PluginGUID, BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency(EliteAPI.PluginGUID, BepInDependency.DependencyFlags.HardDependency)]
@@ -26,16 +25,16 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.8";
+        public const string PluginVersion = "1.0.9";
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
 
         public static ManualLogSource _logger;
-         
+        
         public static bool rooInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
-        public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
+        public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
 
         public void Awake()
         {
@@ -53,7 +52,7 @@ namespace LemurFusion
 
             // this is absurd, change anything that this mod references and it instantly explodes.
             // fucking hell man
-            FixLemurianNames();
+            CreateHarmonyPatches();
 
             ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
 
@@ -61,37 +60,38 @@ namespace LemurFusion
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void FixLemurianNames()
+        private void CreateHarmonyPatches()
         {
+            var harmony = new Harmony(PluginGUID);
+
             if (lemNamesInstalled)
             {
-                var harmony = new Harmony(PluginGUID);
-                harmony.PatchAll(Assembly.GetExecutingAssembly());
+                PatchLemurNames(harmony);
+            }
+
+            if (properSaveInstalled)
+            {
+                PatchProperSave(harmony);
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private void PatchLemurNames(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(LemurianNamesPatch)).Patch();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private void PatchProperSave(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(LemurDataPatch)).Patch();
+            harmony.CreateClassProcessor(typeof(ProperSavePatch)).Patch();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void PostLoad()
         {
             ConfigExtended.PostLoad();
-        }
-    }
-
-    [HarmonyPatch(typeof(LemurianNames.LemurianNames), "NameFriend")]
-    public class Class_Method
-    {
-        [HarmonyFinalizer]
-        public static Exception Finalizer(Exception __exception)
-        {
-            if (__exception != null)
-            {
-                // An exception was thrown by the method!
-                LemurFusionPlugin._logger.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames!");
-                LemurFusionPlugin._logger.LogWarning(__exception.Message);
-                LemurFusionPlugin._logger.LogWarning(__exception.StackTrace);
-            }
-
-            // return null so that no Exception is thrown. You could re-throw as a different Exception as well.
-            return null;
         }
     }
 }

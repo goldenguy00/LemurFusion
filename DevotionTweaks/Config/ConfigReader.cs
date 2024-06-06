@@ -10,7 +10,7 @@
 		private const string BLACKLIST = "Item Blacklist";
 		private const string Desc_Enable = "Enables changes for this section.";
 
-		internal static void Setup()
+        internal static void Setup()
         {
             PluginConfig.ReadConfig();
 

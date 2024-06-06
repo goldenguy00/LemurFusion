@@ -1,10 +1,5 @@
 ﻿using BepInEx.Configuration;
-using RiskOfOptions;
-using RiskOfOptions.OptionConfigs;
-using RiskOfOptions.Options;
-using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -35,9 +30,13 @@ namespace LemurFusion.Config
         public const string EXPERIMENTAL = "02 - Experimental";
         public const string STATS = "03 - Fusion Stats";
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal static void ReadConfig()
         {
-            InitROO();
+            if (LemurFusionPlugin.rooInstalled)
+            {
+                InitROO();
+            }
 
             // general
             maxLemurs = BindAndOptionsSlider(GENERAL, 
@@ -120,17 +119,15 @@ namespace LemurFusion.Config
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void InitROO()
         {
-            if (LemurFusionPlugin.rooInstalled)
+            var sprite = LoadSprite();
+            if (sprite != null)
             {
-                var sprite = LoadSprite();
-                if (sprite != null)
-                {
-                    ModSettingsManager.SetModIcon(sprite);
-                }
-                ModSettingsManager.SetModDescription("Devotion Artifact but better.");
+                RiskOfOptions.ModSettingsManager.SetModIcon(sprite);
             }
+            RiskOfOptions.ModSettingsManager.SetModDescription("Devotion Artifact but better.");
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static Sprite LoadSprite()
         {
             var filePath = Path.Combine(Assembly.GetExecutingAssembly().Location, "icon.png");
@@ -207,12 +204,12 @@ namespace LemurFusion.Config
         {
             if (entry is ConfigEntry<string> stringEntry)
             {
-                ModSettingsManager.AddOption(new StringInputFieldOption(stringEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.StringInputFieldOption(stringEntry, restartRequired));
                 return;
             }
             if (entry is ConfigEntry<float> floatEntry)
             {
-                ModSettingsManager.AddOption(new SliderOption(floatEntry, new SliderConfig()
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.SliderOption(floatEntry, new RiskOfOptions.OptionConfigs.SliderConfig()
                 {
                     min = 0,
                     max = 20,
@@ -223,22 +220,22 @@ namespace LemurFusion.Config
             }
             if (entry is ConfigEntry<int> intEntry)
             {
-                ModSettingsManager.AddOption(new IntSliderOption(intEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.IntSliderOption(intEntry, restartRequired));
                 return;
             }
             if (entry is ConfigEntry<bool> boolEntry)
             {
-                ModSettingsManager.AddOption(new CheckBoxOption(boolEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.CheckBoxOption(boolEntry, restartRequired));
                 return;
             }
             if (entry is ConfigEntry<KeyboardShortcut> shortCutEntry)
             {
-                ModSettingsManager.AddOption(new KeyBindOption(shortCutEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.KeyBindOption(shortCutEntry, restartRequired));
                 return;
             }
             if (typeof(T).IsEnum)
             {
-                ModSettingsManager.AddOption(new ChoiceOption(entry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.ChoiceOption(entry, restartRequired));
                 return;
             }
         }
@@ -248,7 +245,7 @@ namespace LemurFusion.Config
         {
             if (entry is ConfigEntry<int> intEntry)
             {
-                ModSettingsManager.AddOption(new IntSliderOption(intEntry, new IntSliderConfig()
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.IntSliderOption(intEntry, new RiskOfOptions.OptionConfigs.IntSliderConfig()
                 {
                     min = (int)min,
                     max = (int)max,
@@ -260,7 +257,7 @@ namespace LemurFusion.Config
 
             if (entry is ConfigEntry<float> floatEntry)
             {
-                ModSettingsManager.AddOption(new SliderOption(floatEntry, new SliderConfig()
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.SliderOption(floatEntry, new RiskOfOptions.OptionConfigs.SliderConfig()
                 {
                     min = min,
                     max = max,

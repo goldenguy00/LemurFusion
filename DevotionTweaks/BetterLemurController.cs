@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.AddressableAssets;
 using UnityEngine;
-using System.Runtime.CompilerServices;
 
 public class BetterLemurController : DevotedLemurianController
 {
@@ -13,7 +12,7 @@ public class BetterLemurController : DevotedLemurianController
     public SortedList<ItemIndex, int> _devotedItemList { get; set; } = [];
     public SortedList<ItemIndex, int> _untrackedItemList { get; set; } = [];
 
-    public int MeldCount
+    public int FusionCount
     {
         get
         {
@@ -24,7 +23,7 @@ public class BetterLemurController : DevotedLemurianController
         {
             if (base.LemurianInventory)
             {
-                var heldItems = MeldCount;
+                var heldItems = FusionCount;
                 if (heldItems != value)
                 {
                     Utils.AddItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value - heldItems);
@@ -228,7 +227,6 @@ else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
         On.DevotedLemurianController.OnDevotedBodyDead += DevotedLemurianController_OnDevotedBodyDead;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     private static void DevotedLemurianController_InitializeDevotedLemurian(On.DevotedLemurianController.orig_InitializeDevotedLemurian orig,
         DevotedLemurianController self, ItemIndex itemIndex, DevotionInventoryController devInvCtrl)
     {
@@ -248,11 +246,6 @@ else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
-
-                if (LemurFusionPlugin.riskyInstalled)
-                {
-                    Utils.SetItem(lemCtrl._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
-                }
             }
         }
     }

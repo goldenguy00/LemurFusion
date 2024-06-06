@@ -169,6 +169,7 @@ namespace LemurFusion.Config
                 }
             }
         }*/
+
         internal static void PostLoad()
         {
             Blacklist_Filter = Inventory.defaultItemCopyFilterDelegate;

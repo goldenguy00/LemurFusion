@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Optimize>True</Optimize>
+    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>True</Optimize>
+    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +31,6 @@
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 	  <PackageReference Include="BepInEx.Core" Version="5.4.21" />
-	  <PackageReference Include="IndexRange" Version="1.0.3" />
 	  <PackageReference Include="R2API.ContentManagement" Version="1.0.4" />
 	  <PackageReference Include="R2API.Core" Version="5.1.0" />
 	  <PackageReference Include="R2API.Elites" Version="1.0.3" />
@@ -77,15 +76,15 @@
       <HintPath>libs\ProBuilderMeshOps.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="ProperSave">
+      <HintPath>..\libs\ProperSave.dll</HintPath>
+    </Reference>
     <Reference Include="Rewired_Windows_Lib">
       <HintPath>libs\Rewired_Windows_Lib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="RiskOfOptions">
       <HintPath>..\libs\RiskOfOptions.dll</HintPath>
-    </Reference>
-    <Reference Include="RiskyMod">
-      <HintPath>..\libs\RiskyMod.dll</HintPath>
     </Reference>
     <Reference Include="SimpleJSON">
       <HintPath>libs\SimpleJSON.dll</HintPath>

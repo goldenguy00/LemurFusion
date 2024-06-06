@@ -16,6 +16,7 @@ namespace LemurFusion
             On.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += FullVision;
             //IL.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += TargetOnlyPlayers;
         }
+
         private void ModifyAI(GameObject masterPrefab)
         {
             foreach (var driver in masterPrefab.GetComponentsInChildren<AISkillDriver>())
