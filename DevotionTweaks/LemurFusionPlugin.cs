@@ -26,6 +26,7 @@ namespace LemurFusion
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
         public const string PluginVersion = "1.1.0";
+
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
@@ -46,9 +47,9 @@ namespace LemurFusion
 
             ConfigReader.Setup();
 
-            new DevotionTweaks();
-            new StatHooks();
-            new AITweaks();
+            DevotionTweaks.Init();
+            StatHooks.Init();
+            AITweaks.Init();
 
             CreateHarmonyPatches();
             CreateProperSaveCompat();
@@ -61,18 +62,12 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void CreateHarmonyPatches()
         {
-            var harmony = new Harmony(PluginGUID);
-
             if (lemNamesInstalled)
             {
-                PatchLemurNames(harmony);
+                var harmony = new Harmony(PluginGUID);
+                harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
+                harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void PatchLemurNames(Harmony harmony)
-        {
-            harmony.CreateClassProcessor(typeof(LemurianNamesPatch)).Patch();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -80,7 +75,7 @@ namespace LemurFusion
         {
             if (properSaveInstalled)
             {
-                ProperSaveManager.Init();
+                new ProperSaveManager();
             }
         }
     }

@@ -1,52 +1,39 @@
-﻿using MonoMod.Cil;
-using Mono.Cecil.Cil;
-using RoR2;
+﻿using LemurFusion.Config;
 using RoR2.CharacterAI;
-using System.Linq;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace LemurFusion
 {
     public class AITweaks
     {
-        public AITweaks()
+        public static AITweaks instance;
+
+        public static void Init()
         {
-            ModifyAI(DevotionTweaks.masterPrefab);
-            On.RoR2.CharacterAI.BaseAI.FindEnemyHurtBox += FullVision;
+            if (instance != null) return;
+
+            instance = new AITweaks();
         }
 
-        private void ModifyAI(GameObject masterPrefab)
+        private AITweaks()
         {
-            foreach (var driver in masterPrefab.GetComponentsInChildren<AISkillDriver>())
+            if (PluginConfig.improveAI.Value)
             {
-                switch (driver.customName)
+                foreach (var driver in DevotionTweaks.masterPrefab.GetComponentsInChildren<AISkillDriver>())
                 {
-                    case "ReturnToLeaderDefault":
-                        driver.driverUpdateTimerOverride = 1f;
-                        driver.resetCurrentEnemyOnNextDriverSelection = true;
-                        break;
-                    case "WaitNearLeader":
-                        driver.driverUpdateTimerOverride = 1f;
-                        driver.resetCurrentEnemyOnNextDriverSelection = true;
-                        break;
-                    case "DevotedSecondarySkill":
-                        driver.shouldSprint = true;
-                        break;
+                    switch (driver.customName)
+                    {
+                        case "ReturnToLeaderDefault":
+                            driver.driverUpdateTimerOverride = 0.2f;
+                            driver.resetCurrentEnemyOnNextDriverSelection = true;
+                            break;
+                        case "WaitNearLeader":
+                            driver.driverUpdateTimerOverride = 0.2f;
+                            driver.resetCurrentEnemyOnNextDriverSelection = true;
+                            break;
+                    }
                 }
             }
-        }
-
-        private HurtBox FullVision(On.RoR2.CharacterAI.BaseAI.orig_FindEnemyHurtBox orig, BaseAI self, float maxDistance, bool full360Vision, bool filterByLoS)
-        {
-            if (self && self.master.name == DevotionTweaks.masterCloneName)
-            {
-                maxDistance = 100;
-                full360Vision = true;
-                filterByLoS = false;
-            }
-
-            return orig(self, maxDistance, full360Vision, filterByLoS);
         }
     }
 }

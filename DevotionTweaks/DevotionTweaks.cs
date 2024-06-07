@@ -50,14 +50,18 @@ namespace LemurFusion
         public const string masterPrefabName = "BetterDevotedLemurianMaster";
         public const string masterCloneName = masterPrefabName + "(Clone)";
 
-        public DevotionTweaks()
+        private DevotionTweaks() { }
+
+        public static void Init()
         {
-            instance = this;
+            if (instance != null) return;
+            instance = new DevotionTweaks();
+
             //        //
             // assets //
             //        //
-            UpdateItemDef();
 
+            UpdateItemDef();
             masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion().InstantiateClone(masterPrefabName, true);
             MonoBehaviour.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
             masterPrefab.AddComponent<BetterLemurController>();
@@ -85,7 +89,7 @@ namespace LemurFusion
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
         }
 
-        private void UpdateItemDef()
+        private static void UpdateItemDef()
         {
             //Fix up the tags on the Harness
             LemurFusionPlugin._logger.LogInfo("Changing Lemurian Harness");

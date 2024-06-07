@@ -42,17 +42,6 @@ namespace LemurFusion
         }
         #endregion
 
-
-        public static string ModifyName(string orig, CharacterBody self)
-        {
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{orig} <style=cStack>x{meldCount}</style>";
-            }
-            return orig;
-        }
-
         public static Vector3 GetScaleFactor(int configValue, int meldCount)
         {
             if (meldCount <= 1) return Vector3.one;

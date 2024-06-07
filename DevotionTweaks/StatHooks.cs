@@ -5,6 +5,7 @@ using UnityEngine;
 using RoR2;
 using System.Linq;
 using LemurFusion.Config;
+using System;
 
 namespace LemurFusion
 {
@@ -14,32 +15,60 @@ namespace LemurFusion
 
         public static Vector3 baseSize = default;
 
-        public StatHooks() 
-        {
-            instance = this;
+        private StatHooks() { }
 
-            On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return Utils.ModifyName(orig(self), self); };
-            //On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
-            //On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
+        public static void Init() 
+        {
+            if (instance != null) return;
+
+            instance = new StatHooks();
+
             if (PluginConfig.miniElders.Value)
-                On.RoR2.CharacterMaster.OnBodyStart += CharacterMaster_OnBodyStart;
+                On.RoR2.CharacterMaster.OnBodyStart += instance.CharacterMaster_OnBodyStart;
         }
 
         public void InitHooks()
         {
-            On.RoR2.UI.ScoreboardController.Rebuild += AddLemurianInventory;
+            On.RoR2.Util.GetBestMasterName += Util_GetBestMasterName;
+            On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
+            On.RoR2.UI.ScoreboardController.Rebuild += ScoreboardController_Rebuild;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
         }
 
         public void RemoveHooks()
         {
-            On.RoR2.UI.ScoreboardController.Rebuild -= AddLemurianInventory;
-            //On.RoR2.CharacterMaster.OnBodyStart -= CharacterMaster_OnBodyStart;
+            On.RoR2.Util.GetBestMasterName -= Util_GetBestMasterName;
+            On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
+            On.RoR2.UI.ScoreboardController.Rebuild -= ScoreboardController_Rebuild;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
         }
 
         #region Hooks
-        private static void AddLemurianInventory(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
+        #region UI
+        private string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
+        {
+            if (characterMaster && characterMaster.name == DevotionTweaks.masterCloneName && characterMaster.hasBody)
+            {
+                return characterMaster.GetBody().GetDisplayName();
+            }
+            return orig(characterMaster);
+        }
+
+        private string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
+        {
+            var baseName = orig(self);
+            if (!string.IsNullOrEmpty(baseName))
+            {
+                var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+                if (meldCount.HasValue && meldCount.Value > 0)
+                {
+                    return $"{baseName} <style=cStack>x{meldCount}</style>";
+                }
+            }
+            return baseName;
+        }
+
+        private void ScoreboardController_Rebuild(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
         {
             orig(self);
             if (!PluginConfig.enableMinionScoreboard.Value)
@@ -55,25 +84,50 @@ namespace LemurFusion
 
             // fuck splitscreen players amirite
             var master = LocalUserManager.readOnlyLocalUsersList.First().cachedMasterController.master;
+            List<BetterLemurController> lemCtrlList = [];
             if (master)
             {
                 foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(master.netId)?.members ?? [])
                 {
                     if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl))
                     {
-                        masters.Add(lemCtrl._lemurianMaster);
+                        lemCtrlList.Add(lemCtrl);
+                        if (!PluginConfig.personalInventory.Value)
+                            break;
                     }
                 }
             }
 
-            self.SetStripCount(masters.Count);
+            self.SetStripCount(masters.Count + lemCtrlList.Count);
             for (int i = 0; i < masters.Count; i++)
             {
                 self.stripAllocator.elements[i].SetMaster(masters[i]);
             }
-        }
+            for (int i = 0; i < lemCtrlList.Count; i++)
+            {
+                var lemCtrl = lemCtrlList[i];
+                var strip = self.stripAllocator.elements[i + masters.Count];
+                
+                strip.SetMaster(lemCtrl._lemurianMaster);
+                //lazy
+                if (!PluginConfig.personalInventory.Value) break;
 
-        private static void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body)
+                lemCtrl.LemurianInventory.onInventoryChanged -= strip.itemInventoryDisplay.OnInventoryChanged;
+
+                strip.itemInventoryDisplay.itemOrderCount = lemCtrl._devotedItemList.Count;
+                Array.Copy(lemCtrl.LemurianInventory.itemStacks, strip.itemInventoryDisplay.itemStacks, strip.itemInventoryDisplay.itemStacks.Length);
+                Array.Copy(lemCtrl._devotedItemList.Keys.ToArray(), strip.itemInventoryDisplay.itemOrder, strip.itemInventoryDisplay.itemOrderCount);
+                foreach (var item in lemCtrl._devotedItemList)
+                {
+                    strip.itemInventoryDisplay.itemStacks[(int)item.Key] = item.Value;
+                }
+                strip.itemInventoryDisplay.RequestUpdateDisplay();
+            }
+        }
+        #endregion
+
+        #region Stats
+        private void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body)
         {
             orig(self, body);
             if (NetworkClient.active)
@@ -85,7 +139,7 @@ namespace LemurFusion
             }
         }
 
-        private static void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
+        private void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
         {
             var meldCount = sender?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
             if (meldCount.HasValue && meldCount.Value > 0 && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
@@ -105,10 +159,8 @@ namespace LemurFusion
                 args.baseRegenAdd += args.baseHealthAdd / (50f * Mathf.Pow(meldCount.Value, PluginConfig.statMultHealth.Value * 0.01f)); 
             }
         }
-        #endregion
 
-        #region Utils
-        internal static void ResizeBody(int meldCount, CharacterBody body)
+        private void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
             if (PluginConfig.miniElders.Value)
@@ -132,6 +184,7 @@ namespace LemurFusion
                 }
             }*/
         }
+        #endregion
         #endregion
     }
 }

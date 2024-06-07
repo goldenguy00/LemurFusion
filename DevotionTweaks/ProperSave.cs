@@ -1,31 +1,34 @@
-﻿using RoR2;
+﻿using ProperSave.Data;
+using ProperSave.SaveData;
+using RoR2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using UnityEngine;
 using UnityEngine.Networking;
 
 namespace LemurFusion
 {
-    [DataContract]
     public class BetterLemurianData
     {
         [DataMember(Name = "bldsi")]
-        public ProperSave.Data.UserIDData summonerId;
+        public UserIDData summonerId;
 
         [DataMember(Name = "bldid")]
-        public ProperSave.Data.ItemData[] itemData;
+        public ItemData[] itemData;
 
         [DataMember(Name = "bldfl")]
         public int fusionLevel;
 
         public BetterLemurianData() { }
 
-        public BetterLemurianData(ProperSave.Data.UserIDData userID, BetterLemurController lemCtrl)
+        public BetterLemurianData(UserIDData userID, BetterLemurController lemCtrl)
         {
             summonerId = userID;
             fusionLevel = lemCtrl.FusionCount;
             itemData = lemCtrl._devotedItemList.Select(kvp =>
-                new ProperSave.Data.ItemData()
+                new ItemData()
                 {
                     itemIndex = (int)kvp.Key,
                     count = kvp.Value
@@ -34,34 +37,38 @@ namespace LemurFusion
 
         public void LoadData(BetterLemurController lemCtrl)
         {
-            lemCtrl.FusionCount = fusionLevel;
             lemCtrl._devotedItemList = [];
-            foreach (var item in itemData)
+            for (int i = 0; i < itemData.Length; i++)
             {
-                lemCtrl._devotedItemList[(ItemIndex)item.itemIndex] = item.count;
+                var item = itemData[i];
+                Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
             }
+
+            lemCtrl._untrackedItemList = [];
+            Utils.SetItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness, fusionLevel);
+            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
+            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
+            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
         }
     }
 
-    public class ProperSaveManager
+    public class ProperSaveManager : MonoBehaviour
     {
-        public static void Init()
+        public ProperSaveManager()
         {
             ProperSave.SaveFile.OnGatherSaveData += SaveFile_OnGatherSaveData;
             ProperSave.Loading.OnLoadingEnded += Loading_OnLoadingEnded;
         }
 
-        private static void SaveFile_OnGatherSaveData(Dictionary<string, object> obj)
+        private void SaveFile_OnGatherSaveData(Dictionary<string, object> obj)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CU8Content.Artifacts.Devotion)) return;
-
             List<BetterLemurianData> lemurData = [];
 
             foreach (PlayerCharacterMasterController player in PlayerCharacterMasterController.instances)
             {
                 if (player.networkUser && player.master)
                 {
-                    var userID = new ProperSave.Data.UserIDData(player.networkUser.id);
+                    var userID = new UserIDData(player.networkUser.id);
                     var lemList = GetLemurControllers(player.master.netId);
 
                     foreach (var lem in lemList)
@@ -74,25 +81,36 @@ namespace LemurFusion
             obj[LemurFusionPlugin.PluginGUID] = lemurData;
         }
 
-        private static void Loading_OnLoadingEnded(ProperSave.SaveFile saveFile)
+        private void Loading_OnLoadingEnded(ProperSave.SaveFile saveFile)
         {
-            if (saveFile.ModdedData.TryGetValue(LemurFusionPlugin.PluginGUID, out var rawData) && rawData != null)
+            if (saveFile.ModdedData.TryGetValue(LemurFusionPlugin.PluginGUID, out var rawData) && 
+                rawData?.Value is List<BetterLemurianData> lemurData && lemurData.Any())
             {
-                if (rawData.Value is List<BetterLemurianData> lemurData && lemurData.Any())
+                CharacterMaster.onStartGlobal += SpawnMinion;
+                void SpawnMinion(CharacterMaster master)
                 {
-                    foreach (NetworkUser user in NetworkUser.readOnlyInstancesList)
+                    if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl))
                     {
-                        var savedLemData = lemurData.Where(lem => lem.summonerId.Load().Equals(user.id)).ToList();
-                        var lemCtrlList = GetLemurControllers(user.Network_masterObjectId);
-                        if (lemCtrlList?.Any() == true && lemCtrlList.Count == savedLemData?.Count())
+                        var netId = master.minionOwnership?.ownerMaster?.playerCharacterMasterController?.networkUser?.id;
+                        if (!netId.HasValue) return;
+
+                        var savedLemData = lemurData.FirstOrDefault(lem => lem.summonerId.Load().Equals(netId));
+                        if (savedLemData != null)
                         {
-                            for(int i = 0; i<lemCtrlList.Count; i++) 
-                            {
-                                savedLemData[i].LoadData(lemCtrlList[i]);
-                            }
+                            savedLemData.LoadData(lemCtrl);
+                            lemurData.Remove(savedLemData);
                         }
 
-                        UpdateDevotionInventoryController(user.master);
+                        if (!lemurData.Any())
+                        {
+                            CharacterMaster.onStartGlobal -= SpawnMinion;
+                            
+                            // sync
+                            foreach (DevotionInventoryController instance in DevotionInventoryController.InstanceList)
+                            {
+                                instance.UpdateAllMinions(false);
+                            }
+                        }
                     }
                 }
             }
@@ -108,19 +126,8 @@ namespace LemurFusion
                     lemCtrlList.Add(lemCtrl);
                 }
             }
-            return lemCtrlList;
-        }
 
-        private static void UpdateDevotionInventoryController(CharacterMaster master)
-        {
-            foreach (DevotionInventoryController instance in DevotionInventoryController.InstanceList)
-            {
-                if (instance.SummonerMaster == master)
-                {
-                    instance.UpdateAllMinions(false);
-                    return;
-                }
-            }
+            return lemCtrlList;
         }
     }
 

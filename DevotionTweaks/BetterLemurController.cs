@@ -21,15 +21,8 @@ public class BetterLemurController : DevotedLemurianController
         }
         set
         {
-            if (base.LemurianInventory)
-            {
-                var heldItems = FusionCount;
-                if (heldItems != value)
-                {
-                    Utils.AddItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value - heldItems);
-                    //StatHooks.ResizeBody(_untrackedItemList[CU8Content.Items.LemurianHarness.itemIndex], base.LemurianBody);
-                }
-            }
+            Utils.SetItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value);
+            //StatHooks.ResizeBody(_untrackedItemList[CU8Content.Items.LemurianHarness.itemIndex], base.LemurianBody);
         }
     }
 
