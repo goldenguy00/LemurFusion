@@ -25,7 +25,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.0.9";
+        public const string PluginVersion = "1.1.0";
         public static PluginInfo pluginInfo;
 
         public static LemurFusionPlugin instance;
@@ -50,13 +50,12 @@ namespace LemurFusion
             new StatHooks();
             new AITweaks();
 
-            // this is absurd, change anything that this mod references and it instantly explodes.
-            // fucking hell man
             CreateHarmonyPatches();
+            CreateProperSaveCompat();
 
             ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
 
-            GameModeCatalog.availability.CallWhenAvailable(new Action(PostLoad));
+            GameModeCatalog.availability.CallWhenAvailable(new Action(ConfigExtended.PostLoad));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -68,11 +67,6 @@ namespace LemurFusion
             {
                 PatchLemurNames(harmony);
             }
-
-            if (properSaveInstalled)
-            {
-                PatchProperSave(harmony);
-            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -82,16 +76,12 @@ namespace LemurFusion
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void PatchProperSave(Harmony harmony)
+        private void CreateProperSaveCompat()
         {
-            harmony.CreateClassProcessor(typeof(LemurDataPatch)).Patch();
-            harmony.CreateClassProcessor(typeof(ProperSavePatch)).Patch();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void PostLoad()
-        {
-            ConfigExtended.PostLoad();
+            if (properSaveInstalled)
+            {
+                ProperSaveManager.Init();
+            }
         }
     }
 }

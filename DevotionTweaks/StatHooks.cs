@@ -18,7 +18,7 @@ namespace LemurFusion
         {
             instance = this;
 
-            On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return ModifyName(orig(self), self); };
+            On.RoR2.CharacterBody.GetDisplayName += (orig, self) => { return Utils.ModifyName(orig(self), self); };
             //On.RoR2.CharacterBody.GetColoredUserName += (orig, self) => { return ModifyName(orig(self), self); };
             //On.RoR2.CharacterBody.GetUserName += (orig, self) => { return ModifyName(orig(self), self); };
             if (PluginConfig.miniElders.Value)
@@ -91,13 +91,13 @@ namespace LemurFusion
             if (meldCount.HasValue && meldCount.Value > 0 && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
             {
                 args.baseHealthAdd += (sender.baseMaxHealth + sender.levelMaxHealth * sender.level) *
-                    GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.MultiplyStatsCount);
+                    Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.MultiplyStatsCount);
 
                 args.baseDamageAdd += (sender.baseDamage + sender.levelDamage * sender.level) *
-                    GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.MultiplyStatsCount);
+                    Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.MultiplyStatsCount);
 
                 args.baseAttackSpeedAdd += (sender.baseAttackSpeed + sender.levelAttackSpeed * sender.level) *
-                    GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value);
+                    Utils.GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value);
 
                 // nerf later stage regen a bit
                 // no clue what kinda curve this is, i just made some shit up.
@@ -108,28 +108,6 @@ namespace LemurFusion
         #endregion
 
         #region Utils
-        private static string ModifyName(string orig, CharacterBody self)
-        {
-            var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0)
-            {
-                return $"{orig} <style=cStack>x{meldCount}</style>";
-            }
-            return orig;
-        }
-
-        private static Vector3 GetScaleFactor(int configValue, int meldCount)
-        {
-            if (meldCount <= 1) return Vector3.one;
-
-            return Vector3.one * ((meldCount - 1) * (configValue * 0.01f) * 0.5f);
-        }
-
-        private static float GetStatModifier(int configValue, int meldCount, int multiplyStatsCount = 0)
-        {
-            return ((meldCount - 1) * (configValue * 0.01f)) + (multiplyStatsCount * 0.1f);
-        }
-
         internal static void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.

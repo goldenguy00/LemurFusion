@@ -66,40 +66,33 @@ public class BetterLemurController : DevotedLemurianController
 
     private PickupIndex FindPickupIndex(ItemIndex itemIndex, DevotionTweaks.DeathItem dropType)
     {
-        PickupIndex pickupIndex = PickupIndex.none;
         if (itemIndex != ItemIndex.None)
         {
             switch (dropType)
             {
                 // this is a warcrime
                 case DevotionTweaks.DeathItem.Scrap:
-                    switch (ItemCatalog.GetItemDef(itemIndex).tier)
+                {
+                    return ItemCatalog.GetItemDef(itemIndex).tier switch
                     {
-                        case ItemTier.Tier1:
-                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapWhite");
-                            break;
-                        case ItemTier.Tier2:
-                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapGreen");
-                            break;
-                        case ItemTier.Tier3:
-                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapRed");
-                            break;
-                        case ItemTier.Boss:
-                            pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapYellow");
-                            break;
-                    }
-                    break;
-                case DevotionTweaks.DeathItem.Original:
-                    pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
-                    break;
-                case DevotionTweaks.DeathItem.Custom:
+                        ItemTier.Tier1 => PickupCatalog.FindPickupIndex("ItemIndex.ScrapWhite"),
+                        ItemTier.Tier2 => PickupCatalog.FindPickupIndex("ItemIndex.ScrapGreen"),
+                        ItemTier.Tier3 => PickupCatalog.FindPickupIndex("ItemIndex.ScrapRed"),
+                        ItemTier.Boss => PickupCatalog.FindPickupIndex("ItemIndex.ScrapYellow"),
+                        _ => PickupIndex.none,
+                    };
+                }
 
+                case DevotionTweaks.DeathItem.Original:
+                    return PickupCatalog.FindPickupIndex(itemIndex);
+
+                case DevotionTweaks.DeathItem.Custom:
                     if (ConfigExtended.DeathDrops_TierToItem_Map.TryGetValue(ItemCatalog.GetItemDef(itemIndex).tier, out var idx) && idx != ItemIndex.None)
-                        pickupIndex = PickupCatalog.FindPickupIndex(idx);
+                        return PickupCatalog.FindPickupIndex(idx);
                     break;
             }
         }
-        return pickupIndex;
+        return PickupIndex.none;
     }
 
     private void DropScrapOnDeath()
@@ -258,22 +251,22 @@ else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
             return;
         }
 
-        if (self._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
+        if (lemCtrl._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
         {
-            self._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex, 1);
+            lemCtrl._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex, 1);
         }
         else
         {
-            self._lemurianMaster.destroyOnBodyDeath = true;
+            lemCtrl._lemurianMaster.destroyOnBodyDeath = true;
             if (ConfigExtended.DeathDrop_ItemType.Value != DevotionTweaks.DeathItem.None)
-                (self as BetterLemurController).DropScrapOnDeath();
+                lemCtrl.DropScrapOnDeath();
 
             if (ConfigExtended.DeathDrop_DropEgg.Value)
-                (self as BetterLemurController).PlaceDevotionEgg(self.LemurianBody.footPosition);
+                lemCtrl.PlaceDevotionEgg(lemCtrl.LemurianBody.footPosition);
 
-            UnityEngine.Object.Destroy(self._lemurianMaster.gameObject, 1f);
+            UnityEngine.Object.Destroy(lemCtrl._lemurianMaster.gameObject, 1f);
         }
-        self._devotionInventoryController.UpdateAllMinions(false);
+        lemCtrl._devotionInventoryController.UpdateAllMinions(false);
 
         // not a fan of doing this but fuck it, the vanilla class is giga hard coded
         // id essentially just have to ILModify it to do literally nothing anyways.

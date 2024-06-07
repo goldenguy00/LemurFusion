@@ -1,3 +1,7 @@
+# 1.0.9
+
+- ACTUALLY FIXED IT THIS TIME >:(
+
 # 1.0.8
 
 - Minor Config tweaks
