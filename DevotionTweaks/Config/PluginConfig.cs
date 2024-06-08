@@ -12,7 +12,8 @@ namespace LemurFusion.Config
 
         public static ConfigEntry<bool> disableFallDamage;
         public static ConfigEntry<bool> enableMinionScoreboard;
-        public static ConfigEntry<bool> personalInventory;
+        public static ConfigEntry<bool> showPersonalInventory;
+        public static ConfigEntry<bool> enableSharedInventory;
         public static ConfigEntry<int> teleportDistance;
         public static ConfigEntry<int> maxLemurs;
         public static ConfigEntry<bool> highTierElitesOnly;
@@ -57,15 +58,22 @@ namespace LemurFusion.Config
                 "Sets the max distance a Lemurian can be from their owner before teleporting.",
                 50, 400);
 
+            enableSharedInventory = BindAndOptions(GENERAL,
+                "Enable Shared Inventory",
+                true,
+                "If set to false, the shared inventory will not be used and instead unique inventory will be used for every lemurian you control.\r\n" +
+                "Disabling this setting will make all lemurians visible on the scoreboard.",
+                true);
+
             enableMinionScoreboard = BindAndOptions(GENERAL,
                 "Enable Minion Scoreboard",
                 true,
                 "Devoted Lemurians will show up on the scoreboard.");
 
-            personalInventory = BindAndOptions(GENERAL,
+            showPersonalInventory = BindAndOptions(GENERAL,
                 "Individual Scoreboard Inventories",
                 true,
-                "Enable to display a scoreboard entry for each lemurian you control. Scoreboard entry will show the items that each minion contributes to the shared inventory. \r\n\r\n" +
+                "Enable to display a scoreboard entry for each lemurian you control. Scoreboard entry will show the items that each minion contributes to the shared inventory.\r\n" +
                 "Purely visual, does not change vanilla item sharing mechanics.");
 
             highTierElitesOnly = BindAndOptions(GENERAL,

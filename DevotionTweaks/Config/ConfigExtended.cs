@@ -90,7 +90,7 @@ namespace LemurFusion.Config
                 if (Blacklist_Filter_CannotCopy.Value)
                     valid &= itemDef.DoesNotContainTag(ItemTag.CannotCopy);
                 if (Blacklist_Filter_Scrap.Value)
-                    valid &= itemDef.DoesNotContainTag(ItemTag.Scrap);
+                    valid &= itemDef.DoesNotContainTag(ItemTag.Scrap) && itemDef.DoesNotContainTag(ItemTag.PriorityScrap);
 
                 return valid;
             };

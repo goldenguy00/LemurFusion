@@ -40,6 +40,27 @@ namespace LemurFusion
             else
                 target.Add(itemIndex, count);
         }
+
+        public static void RemoveItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
+        {
+            if (!itemDef) return;
+            RemoveItem(target, itemDef.itemIndex, count);
+        }
+
+        public static void RemoveItem(SortedList<ItemIndex, int> target, ItemIndex itemIndex, int count = 1)
+        {
+            if (itemIndex == ItemIndex.None || target == null) return;
+
+            if (target.TryGetValue(itemIndex, out var heldCount))
+            {
+                var newVal = System.Math.Max(0, heldCount - count);
+
+                if (newVal == 0)
+                    target.Remove(itemIndex);
+                else
+                    target[itemIndex] = newVal;
+            }
+        }
         #endregion
 
         public static Vector3 GetScaleFactor(int configValue, int meldCount)

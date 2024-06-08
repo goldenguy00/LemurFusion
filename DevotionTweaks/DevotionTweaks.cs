@@ -50,12 +50,15 @@ namespace LemurFusion
         public const string masterPrefabName = "BetterDevotedLemurianMaster";
         public const string masterCloneName = masterPrefabName + "(Clone)";
 
+        public static bool EnableSharedInventory { get; private set; }
+
         private DevotionTweaks() { }
 
         public static void Init()
         {
             if (instance != null) return;
             instance = new DevotionTweaks();
+            EnableSharedInventory = PluginConfig.enableSharedInventory.Value;
 
             //        //
             // assets //
@@ -329,20 +332,26 @@ namespace LemurFusion
                 LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
             }
 
-            if (ConfigExtended.Blacklist_Enable.Value)
+            if (c.TryGotoNext(MoveType.Before,
+                    i => i.MatchCallvirt<Inventory>(nameof(Inventory.AddItemsFrom))
+                ))
             {
-                if (c.TryGotoNext(MoveType.Before,
-                       i => i.MatchCallvirt<Inventory>(nameof(Inventory.AddItemsFrom))
-                    ))
+                if (ConfigExtended.Blacklist_Enable.Value && EnableSharedInventory)
                 {
                     c.Remove();
                     c.Emit<ConfigExtended>(OpCodes.Ldsfld, nameof(ConfigExtended.Blacklist_Filter));
                     c.Emit(OpCodes.Callvirt, typeof(Inventory).GetMethod(nameof(Inventory.AddItemsFrom), [typeof(Inventory), typeof(Func<ItemIndex, bool>)]));
                 }
-                else
+                if (!EnableSharedInventory)
                 {
-                    LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #3");
+                    c.Remove();
+                    c.Emit(OpCodes.Pop);
+                    c.Emit(OpCodes.Pop);
                 }
+            }
+            else
+            {
+                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #3");
             }
         }
 
@@ -359,14 +368,16 @@ namespace LemurFusion
             {
                 foreach (var item in lemCtrl._devotedItemList.Keys.ToList())
                 {
-                    self.GiveItem(item);
+                    if (EnableSharedInventory)
+                        self.GiveItem(item);
+
                     lemCtrl._devotedItemList[item]++;
                 }
             }
 
             orig(self, lem, shouldEvolve);
 
-            lemCtrl.ReturnUntrackedItems();
+            lemCtrl.ReturnItems();
         }
 
         private static void DevotionInventoryController_EvolveDevotedLumerian(ILContext il)

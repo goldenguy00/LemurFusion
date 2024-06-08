@@ -40,7 +40,7 @@ public class BetterLemurController : DevotedLemurianController
         }
     }
 
-    public void ReturnUntrackedItems()
+    public void ReturnItems()
     {
         // mechanics
         if (base.LemurianBody && PluginConfig.disableFallDamage.Value)
@@ -48,11 +48,22 @@ public class BetterLemurController : DevotedLemurianController
             base.LemurianBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
         }
 
-        if (base.LemurianInventory && _untrackedItemList.Any())
+        if (base.LemurianInventory)
         {
-            foreach (var item in _untrackedItemList)
+            if (_untrackedItemList != null)
             {
-                base.LemurianInventory.GiveItem(item.Key, item.Value);
+                foreach (var item in _untrackedItemList)
+                {
+                    base.LemurianInventory.GiveItem(item.Key, item.Value);
+                }
+            }
+
+            if (!DevotionTweaks.EnableSharedInventory && _devotedItemList != null)
+            {
+                foreach (var item in _devotedItemList)
+                {
+                    base.LemurianInventory.GiveItem(item.Key, item.Value);
+                }
             }
         }
     }
@@ -93,6 +104,12 @@ public class BetterLemurController : DevotedLemurianController
         var dropType = ConfigExtended.DeathDrop_ItemType.Value;
         foreach (var item in this._devotedItemList)
         {
+            if (DevotionTweaks.EnableSharedInventory)
+                this._devotionInventoryController.RemoveItem(item.Key, item.Value);
+
+            if (dropType == DevotionTweaks.DeathItem.None)
+                continue;
+
             var pickupIndex = FindPickupIndex(item.Key, dropType);
             if (pickupIndex != PickupIndex.none)
             {
@@ -101,8 +118,6 @@ public class BetterLemurController : DevotedLemurianController
                 {
                     PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
                 }
-
-                this._devotionInventoryController.RemoveItem(item.Key, item.Value);
             }
         }
     }
@@ -244,21 +259,47 @@ else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
             return;
         }
 
-        if (lemCtrl._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
+        bool killYourSelf = true;
+        if (!DevotionTweaks.EnableSharedInventory)
         {
-            lemCtrl._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex, 1);
+            if (lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
+            {
+                killYourSelf = false;
+                Utils.RemoveItem(lemCtrl._devotedItemList, RoR2Content.Items.ExtraLife);
+                Utils.AddItem(lemCtrl._devotedItemList, RoR2Content.Items.ExtraLifeConsumed);
+            }
+            else if (lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
+            {
+                killYourSelf = false;
+                Utils.RemoveItem(lemCtrl._devotedItemList, DLC1Content.Items.ExtraLifeVoid);
+                Utils.AddItem(lemCtrl._devotedItemList, DLC1Content.Items.ExtraLifeVoidConsumed);
+            }
         }
         else
         {
+            if (lemCtrl._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
+            {
+                killYourSelf = false;
+                lemCtrl._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex);
+            }
+            else if (lemCtrl._devotionInventoryController.HasItem(DLC1Content.Items.ExtraLifeVoid))
+            {
+                killYourSelf = false;
+                lemCtrl._devotionInventoryController.RemoveItem(DLC1Content.Items.ExtraLifeVoid.itemIndex);
+            }
+        }
+
+        if (killYourSelf)
+        {
             lemCtrl._lemurianMaster.destroyOnBodyDeath = true;
-            if (ConfigExtended.DeathDrop_ItemType.Value != DevotionTweaks.DeathItem.None)
-                lemCtrl.DropScrapOnDeath();
+            lemCtrl.DropScrapOnDeath();
 
             if (ConfigExtended.DeathDrop_DropEgg.Value)
                 lemCtrl.PlaceDevotionEgg(lemCtrl.LemurianBody.footPosition);
 
             UnityEngine.Object.Destroy(lemCtrl._lemurianMaster.gameObject, 1f);
         }
+
         lemCtrl._devotionInventoryController.UpdateAllMinions(false);
 
         // not a fan of doing this but fuck it, the vanilla class is giga hard coded

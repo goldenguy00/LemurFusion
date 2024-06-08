@@ -92,7 +92,7 @@ namespace LemurFusion
                     if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl))
                     {
                         lemCtrlList.Add(lemCtrl);
-                        if (!PluginConfig.personalInventory.Value)
+                        if (!PluginConfig.showPersonalInventory.Value)
                             break;
                     }
                 }
@@ -110,7 +110,7 @@ namespace LemurFusion
                 
                 strip.SetMaster(lemCtrl._lemurianMaster);
                 //lazy
-                if (!PluginConfig.personalInventory.Value) break;
+                if (!PluginConfig.showPersonalInventory.Value) break;
 
                 lemCtrl.LemurianInventory.onInventoryChanged -= strip.itemInventoryDisplay.OnInventoryChanged;
 

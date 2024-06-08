@@ -1,3 +1,15 @@
+# 1.1.0
+
+- Propersave support! Return to your lemur buddies at any time :)
+
+- Config option to disable shared inventory, and instead use a unique inventory for every lemur friend
+
+- Scoreboard features, can group all minions into one entry or split them up, displaying their contribution to the shared inventory
+
+- Displays the correct lemur name on the scoreboard.
+
+- Risky Compat temporarily removed, will be readded in a future patch :(
+
 # 1.0.9
 
 - ACTUALLY FIXED IT THIS TIME >:(
