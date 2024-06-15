@@ -148,7 +148,8 @@ namespace LemurFusion
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
                     args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.levelArmorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.armorAdd += 20;
+                    args.levelArmorAdd += 2;
                     args.levelHealthAdd = 43 * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);

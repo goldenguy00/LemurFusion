@@ -1,3 +1,15 @@
+# 1.1.1
+
+- Big AI changes, allies will avoid aoe damage zones and damage immunities work properly now. Disable "Improve AI" if this breaks...
+
+- Health scaling changes, makes summoning new lemurians on later stages more viable. Configurable.
+
+- Config restructuring, deleting config shouldn't be necessary but I'm not entirely certain.
+
+- Experimental revive changes, summon clone when giving revival items. Disabled by default.
+
+- Further attempts at making item transformations work have been made but it's still not perfect.
+
 # 1.1.0
 
 - Propersave support! Return to your lemur buddies at any time :)

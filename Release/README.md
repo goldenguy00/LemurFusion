@@ -10,6 +10,8 @@ Makes your lemurians fuse together like dragonball!
 
 - Contact me at
 
+    >https://ko-fi.com/score_
+
     >https://discord.com/channels/1214643706490257549/1219963478765207622
 
     >https://github.com/goldenguy00/LemurFusion/issues
@@ -31,22 +33,23 @@ Makes your lemurians fuse together like dragonball!
 
 - Lemurians will drop their tributed items on death and will remove their contribution to the shared inventory on death.
 
+- Lemurians can use the vanilla shared inventory or have an inventory entirely to themselves.
+
 - Stat multipliers per fusion, similar to dronemeld, while still retaining the vanilla HP and damage buffs that they would get on evolution.
 
+- ... And much, much more! Nearly all features are configurable.
 
 
 ### *(WORK IN PROGRESS, SOME FUTURE PLANS COMING SOON)*
-
-- Can make them share a single inventory or have their own unique inventories with a limited amount of item sharing.
 
 - Multiple elite types on a single guy.
 
 - Resize Lemur buddies based on fusion count
 
-- Scoreboard entry for each lemur, or one entry per owner
-
 ---
 ## Config Options
+
+- !!! Subject to Change, this list may not be entirely accurate.
 
 - Total number of lemur buddies you can have
 
@@ -88,6 +91,18 @@ Makes your lemurians fuse together like dragonball!
 
 ---
 ## Changelog
+
+# 1.1.1
+
+- Big AI changes, allies will avoid aoe damage zones and damage immunities work properly now. Disable "Improve AI" if this breaks...
+
+- Health scaling changes, makes summoning new lemurians on later stages more viable. Configurable.
+
+- Config restructuring, deleting config shouldn't be necessary but I'm not entirely certain.
+
+- Experimental revive changes, summon clone when giving revival items. Disabled by default.
+
+- Further attempts at making item transformations work have been made but it's still not perfect.
 
 # 1.1.0
 

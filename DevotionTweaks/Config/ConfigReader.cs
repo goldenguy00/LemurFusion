@@ -78,7 +78,7 @@ namespace LemurFusion.Config
 
             PluginConfig.cloneReplacesRevive = PluginConfig.BindOption(EXPERIMENTAL,
                 "Clone Replaces Revive",
-                true,
+                false,
                 "Spawns a clone of the target lemurian when a Dio's or Larva is given.");
 
             PluginConfig.miniElders = PluginConfig.BindOption(EXPERIMENTAL,
@@ -118,7 +118,7 @@ namespace LemurFusion.Config
 
             PluginConfig.statMultEvo = PluginConfig.BindOptionSlider(STATS,
                 "Evolution Stat Modifier",
-                20,
+                100,
                 "Additional Health and Damage Multiplier for per Evolution Stage, in percent. Vanilla is 100.",
                 0, 200);
             /*

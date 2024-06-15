@@ -6,7 +6,6 @@ using System.Linq;
 using UnityEngine.AddressableAssets;
 using UnityEngine;
 using System.Runtime.CompilerServices;
-using LemurFusion.AI;
 
 public class BetterLemurController : DevotedLemurianController
 {
@@ -191,10 +190,10 @@ public class BetterLemurController : DevotedLemurianController
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
-                if (LemurFusionPlugin.riskyInstalled)
-                {
-                    lemCtrl.AddRiskyAllyItem();
-                }
+                //if (LemurFusionPlugin.riskyInstalled)
+                //{
+                //    lemCtrl.AddRiskyAllyItem();
+                //}
             }
         }
     }
