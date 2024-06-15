@@ -1,21 +1,151 @@
-﻿namespace LemurFusion.Config
+﻿using LemurFusion.AI;
+using System.Runtime.CompilerServices;
+
+namespace LemurFusion.Config
 {
     // > "99% of this is practically ripped off from RiskyMod, ain't gonna lie."
     //and now it's been ported entirely into LemurFusion. Common Moffein W, once again.
     internal static class ConfigReader
 	{
-		//private const string Section_BaseStats = "Minion Base Stats";
-		//private const string Section_Evolution = "Evolution Settings";
-		private const string DEATH = "Death Settings";
+        //private const string Section_BaseStats = "Minion Base Stats";
+        //private const string Section_Evolution = "Evolution Settings";
+        public const string GENERAL = "01 - General";
+        public const string EXPERIMENTAL = "02 - Experimental";
+        public const string STATS = "03 - Fusion Stats";
+        private const string DEATH = "Death Settings";
 		private const string BLACKLIST = "Item Blacklist";
 		private const string Desc_Enable = "Enables changes for this section.";
+        public const string AI_CONFIG = "AI Changes";
 
         internal static void Setup()
         {
-            PluginConfig.ReadConfig();
+            ReadConfig();
+            ReadAIConfig();
+            ReadConfigExtended();
+        }
 
-			ReadConfigExtended();
-            new ConfigExtended();
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        internal static void ReadConfig()
+        {
+            if (LemurFusionPlugin.rooInstalled)
+            {
+                PluginConfig.InitRoO();
+            }
+
+            // general
+            PluginConfig.maxLemurs = PluginConfig.BindOptionSlider(GENERAL,
+                "Max Lemurs",
+                1,
+                "Max dudes",
+                1, 20);
+
+            PluginConfig.teleportDistance = PluginConfig.BindOptionSlider(GENERAL,
+                "Teleport Distance",
+                100,
+                "Sets the max distance a Lemurian can be from their owner before teleporting.",
+                50, 400);
+
+            PluginConfig.enableMinionScoreboard = PluginConfig.BindOption(GENERAL,
+                "Enable Minion Scoreboard",
+                true,
+                "Devoted Lemurians will show up on the scoreboard.");
+
+            PluginConfig.showPersonalInventory = PluginConfig.BindOption(GENERAL,
+                "Individual Scoreboard Inventories",
+                true,
+                "Enable to display a scoreboard entry for each lemurian you control. Scoreboard entry will show the items that each minion contributes to the shared inventory.\r\n" +
+                "Purely visual, does not change vanilla item sharing mechanics.");
+
+            PluginConfig.highTierElitesOnly = PluginConfig.BindOption(GENERAL,
+                "High Tier Elites Only For Final Evolution",
+                true,
+                "When rerolling the fully evolved elite elder lemurian aspects, should it always be a lategame elite type?");
+
+            // misc
+
+            PluginConfig.enableSharedInventory = PluginConfig.BindOption(EXPERIMENTAL,
+                "Enable Shared Inventory",
+                true,
+                "If set to false, the shared inventory will not be used and instead unique inventory will be used for every lemurian you control.\r\n" +
+                "Disabling this setting will make all lemurians visible on the scoreboard.",
+                true);
+
+            PluginConfig.rebalanceHealthScaling = PluginConfig.BindOption(EXPERIMENTAL,
+                "Rebalance Health Scaling",
+                true,
+                "Rebalances health scaling so that new summons on later stages have an easier time surviving");
+
+            PluginConfig.cloneReplacesRevive = PluginConfig.BindOption(EXPERIMENTAL,
+                "Clone Replaces Revive",
+                true,
+                "Spawns a clone of the target lemurian when a Dio's or Larva is given.");
+
+            PluginConfig.miniElders = PluginConfig.BindOption(EXPERIMENTAL,
+                "Mini Elder Lemurians",
+                true,
+                "Theyre so cute omg");
+
+            PluginConfig.enableDetailedLogs = PluginConfig.BindOption(EXPERIMENTAL,
+                "Enable Detailed Logs",
+                true,
+                "For dev use/debugging. Keep this on if you want to submit a bug report.",
+                true);
+
+            /*fixEvoWhenDisabled = BindAndOptions(EXPERIMENTAL,
+                "Fix When Disabled",
+                true,
+                "Fixes the item orb not showing when giving items to eggs and allows devotion minions to evolve even when the Artifact is disabled.", true);
+            */
+            // stats
+            PluginConfig.statMultHealth = PluginConfig.BindOptionSlider(STATS,
+                "Fusion Health Increase",
+                20,
+                "Health multiplier for each lemur fusion, in percent.",
+                0, 100);
+
+            PluginConfig.statMultDamage = PluginConfig.BindOptionSlider(STATS,
+                "Fusion Damage Increase",
+                20,
+                "Damage multiplier for each lemur fusion, in percent.",
+                0, 100);
+
+            PluginConfig.statMultAttackSpeed = PluginConfig.BindOptionSlider(STATS,
+                "Fusion Attack Speed Increase",
+                20,
+                "Attack speed multiplier for each lemur fusion, in percent.",
+                0, 100);
+
+            PluginConfig.statMultEvo = PluginConfig.BindOptionSlider(STATS,
+                "Evolution Stat Modifier",
+                20,
+                "Additional Health and Damage Multiplier for per Evolution Stage, in percent. Vanilla is 100.",
+                0, 200);
+            /*
+            statMultSize = BindAndOptionsSlider(STATS, 
+                "Fusion Size Increase",
+                2,
+                "Base size multiplier for each lemur fusion, in percent.",
+                0, 10);*/
+        }
+
+        internal static void ReadAIConfig()
+        {
+            AITweaks.improveAI = PluginConfig.BindOption(AI_CONFIG,
+                "Improve AI",
+                true,
+                "Makes minions less likely to stand around and makes them better at not dying to void explosions/aoe zones like beetle queen spit.",
+                true);
+
+            AITweaks.disableFallDamage = PluginConfig.BindOption(AI_CONFIG,
+                "Disable Fall Damage",
+                true,
+                "If true, prevents Lemurians from taking fall damage.");
+
+            AITweaks.immuneToVoidDeath = PluginConfig.BindOption(AI_CONFIG,
+                "Immune To Void Death",
+                false,
+                "If true, prevents Lemurians from dying to void insta-kill explosions.");
         }
 
         private static void ReadConfigExtended()
@@ -54,55 +184,55 @@
                 $"{nameof(DevotionTweaks.DeathPenalty.ResetToBaby)}\t", 
 				0, System.Enum.GetValues(typeof(DevotionTweaks.DeathPenalty)).Length);
 			*/
-            ConfigExtended.DeathDrop_Enable = PluginConfig.BindAndOptions(DEATH, "Enable Death Changes", true, Desc_Enable, true);
+            ConfigExtended.DeathDrop_Enable = PluginConfig.BindOption(DEATH, "Enable Death Changes", true, Desc_Enable, true);
 
-            ConfigExtended.DeathDrop_DropEgg = PluginConfig.BindAndOptions(DEATH,
+            ConfigExtended.DeathDrop_DropEgg = PluginConfig.BindOption(DEATH,
 				"Egg On Death", 
 				false, 
 				"Should minions revert to an egg when they are killed off?");
 
-            ConfigExtended.DeathDrop_DropAll = PluginConfig.BindAndOptions(DEATH,
+            ConfigExtended.DeathDrop_DropAll = PluginConfig.BindOption(DEATH,
                 "Drop Duplicate Items",
                 false,
                 "When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you gave originally.");
 
-            ConfigExtended.DeathDrop_ItemType = PluginConfig.BindAndOptions(DEATH, 
+            ConfigExtended.DeathDrop_ItemType = PluginConfig.BindOption(DEATH, 
 				"Item Dropped On Death",
 				DevotionTweaks.DeathItem.Scrap, 
 				"What kind of item to drop when minions are killed.",
 				true);
 
-            ConfigExtended.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindAndOptions(DEATH, 
+            ConfigExtended.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindOption(DEATH, 
 				"Custom Item Map", 
 				"Tier1Def, ScrapWhite; Tier2Def, ScrapGreen; Tier3Def, ScrapRed; BossTierDef, ScrapYellow; LunarTierDef, LunarTrinket; VoidTier1Def, TreasureCacheVoid; VoidTier2Def, TreasureCacheVoid; VoidTier3Def, TreasureCacheVoid; VoidBossDef, TreasureCacheVoid", 
 				"Requires \"Item Dropped On Death\" set to Custom. Maps out the Item to drop for each held Item Tier, in the format \"TierDef,ItemDef;\" (whitespace ignored)",
 				true);
 
 			//Blacklist
-			ConfigExtended.Blacklist_Enable = PluginConfig.BindAndOptions(BLACKLIST, "Enable Blacklist Changes", true, Desc_Enable, true);
+			ConfigExtended.Blacklist_Enable = PluginConfig.BindOption(BLACKLIST, "Enable Blacklist Changes", true, Desc_Enable, true);
 
-            ConfigExtended.Blacklist_Filter_SprintRelated = PluginConfig.BindAndOptions(BLACKLIST,
+            ConfigExtended.Blacklist_Filter_SprintRelated = PluginConfig.BindOption(BLACKLIST,
                 "Blacklist Sprint Related Items",
                 true,
                 "Automatically blacklist items that are tagged as Sprint Related. Lemurs can't sprint. Sorry.");
 
-            ConfigExtended.Blacklist_Filter_CannotCopy = PluginConfig.BindAndOptions(BLACKLIST, 
+            ConfigExtended.Blacklist_Filter_CannotCopy = PluginConfig.BindOption(BLACKLIST, 
 				"Blacklist CannotCopy", 
 				true,
 				"Automatically blacklist items that are tagged as CannotCopy. (The same filter used for Engineer Turrets)");
 
-			ConfigExtended.Blacklist_Filter_Scrap = PluginConfig.BindAndOptions(BLACKLIST, 
+			ConfigExtended.Blacklist_Filter_Scrap = PluginConfig.BindOption(BLACKLIST, 
 				"Blacklist Scrap",
 				true,
 				"Automatically blacklist items that are tagged as Scrap.");
 
-			ConfigExtended.Blacklisted_Items_Raw = PluginConfig.BindAndOptions(BLACKLIST, 
+			ConfigExtended.Blacklisted_Items_Raw = PluginConfig.BindOption(BLACKLIST, 
 				"Item Blacklist",
 				"WardOnLevel, BeetleGland",
 				"Items prevented from being given to minions. Items not on this list may still get filtered by other settings.",
 				true);
 
-			ConfigExtended.Blacklisted_ItemTiers_Raw = PluginConfig.BindAndOptions(BLACKLIST, 
+			ConfigExtended.Blacklisted_ItemTiers_Raw = PluginConfig.BindOption(BLACKLIST, 
 				"Tier Blacklist",
 				"LunarTierDef, VoidTier1Def, VoidTier2Def, VoidTier3Def, VoidBossDef",
 				"Item tiers prevented from being given to minions.",

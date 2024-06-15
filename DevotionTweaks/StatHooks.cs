@@ -6,14 +6,13 @@ using RoR2;
 using System.Linq;
 using LemurFusion.Config;
 using System;
+using LemurFusion.AI;
 
 namespace LemurFusion
 {
     internal class StatHooks
     {
         public static StatHooks instance;
-
-        public static Vector3 baseSize = default;
 
         private StatHooks() { }
 
@@ -22,9 +21,6 @@ namespace LemurFusion
             if (instance != null) return;
 
             instance = new StatHooks();
-
-            if (PluginConfig.miniElders.Value)
-                On.RoR2.CharacterMaster.OnBodyStart += instance.CharacterMaster_OnBodyStart;
         }
 
         public void InitHooks()
@@ -33,6 +29,7 @@ namespace LemurFusion
             On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
             On.RoR2.UI.ScoreboardController.Rebuild += ScoreboardController_Rebuild;
             RecalculateStatsAPI.GetStatCoefficients += RecalculateStatsAPI_GetStatCoefficients;
+            CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
         }
 
         public void RemoveHooks()
@@ -41,6 +38,7 @@ namespace LemurFusion
             On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
             On.RoR2.UI.ScoreboardController.Rebuild -= ScoreboardController_Rebuild;
             RecalculateStatsAPI.GetStatCoefficients -= RecalculateStatsAPI_GetStatCoefficients;
+            CharacterBody.onBodyStartGlobal -= CharacterBody_onBodyStartGlobal;
         }
 
         #region Hooks
@@ -127,15 +125,18 @@ namespace LemurFusion
         #endregion
 
         #region Stats
-        private void CharacterMaster_OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body)
+        private void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-            orig(self, body);
-            if (NetworkClient.active)
-            {
-                var count = body?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
+            var count = body?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
 
-                if (count.HasValue && count.Value > 0)
-                    ResizeBody(count.Value, body);
+            if (count.HasValue && count.Value > 0)
+            {
+                if (AITweaks.disableFallDamage.Value)
+                    body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+                if (AITweaks.immuneToVoidDeath.Value)
+                    body.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath;
+
+                ResizeBody(count.Value, body);
             }
         }
 
@@ -144,33 +145,34 @@ namespace LemurFusion
             var meldCount = sender?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
             if (meldCount.HasValue && meldCount.Value > 0 && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
             {
-                args.baseHealthAdd += (sender.baseMaxHealth + sender.levelMaxHealth * sender.level) *
-                    Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.MultiplyStatsCount);
+                if (PluginConfig.rebalanceHealthScaling.Value)
+                {
+                    args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.levelArmorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.levelHealthAdd = 43 * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
-                args.baseDamageAdd += (sender.baseDamage + sender.levelDamage * sender.level) *
-                    Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.MultiplyStatsCount);
-
-                args.baseAttackSpeedAdd += (sender.baseAttackSpeed + sender.levelAttackSpeed * sender.level) *
-                    Utils.GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value);
-
-                // nerf later stage regen a bit
-                // no clue what kinda curve this is, i just made some shit up.
-                // I think regen to full starts at 50seconds and increases pretty quickly but idk i failed math
-                args.baseRegenAdd += args.baseHealthAdd / (50f * Mathf.Pow(meldCount.Value, PluginConfig.statMultHealth.Value * 0.01f)); 
+                    args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                }
+                else
+                {
+                    args.healthMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, 0);
+                }
             }
         }
 
         private void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
-            if (PluginConfig.miniElders.Value)
+            if (NetworkClient.active && PluginConfig.miniElders.Value)
             {
                 var transform = body?.modelLocator?.modelTransform;
                 if (transform)
                 {
-                    if (baseSize == default)
-                        baseSize = transform.localScale;
-                    transform.localScale = baseSize;
+                    transform.localScale = Vector3.one * 0.2f;
                 }
             }
             /*

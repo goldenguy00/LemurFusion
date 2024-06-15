@@ -1,6 +1,4 @@
-﻿using ProperSave.Data;
-using ProperSave.SaveData;
-using RoR2;
+﻿using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,22 +11,22 @@ namespace LemurFusion
     public class BetterLemurianData
     {
         [DataMember(Name = "bldsi")]
-        public UserIDData summonerId;
+        public ProperSave.Data.UserIDData summonerId;
 
         [DataMember(Name = "bldid")]
-        public ItemData[] itemData;
+        public ProperSave.Data.ItemData[] itemData;
 
         [DataMember(Name = "bldfl")]
         public int fusionLevel;
 
         public BetterLemurianData() { }
 
-        public BetterLemurianData(UserIDData userID, BetterLemurController lemCtrl)
+        public BetterLemurianData(ProperSave.Data.UserIDData userID, BetterLemurController lemCtrl)
         {
             summonerId = userID;
             fusionLevel = lemCtrl.FusionCount;
             itemData = lemCtrl._devotedItemList.Select(kvp =>
-                new ItemData()
+                new ProperSave.Data.ItemData()
                 {
                     itemIndex = (int)kvp.Key,
                     count = kvp.Value
@@ -68,7 +66,7 @@ namespace LemurFusion
             {
                 if (player.networkUser && player.master)
                 {
-                    var userID = new UserIDData(player.networkUser.id);
+                    var userID = new ProperSave.Data.UserIDData(player.networkUser.id);
                     var lemList = GetLemurControllers(player.master.netId);
 
                     foreach (var lem in lemList)

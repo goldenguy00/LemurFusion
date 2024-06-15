@@ -19,19 +19,6 @@ namespace LemurFusion
 {
     public class DevotionTweaks
     {
-        public class BodyEvolutionStage
-        {
-            public string BodyName = "LemurianBody";
-            public int EvolutionStage = -1;
-        }
-
-        public enum DeathPenalty
-        {
-            TrueDeath,
-            Devolve,
-            ResetToBaby
-        }
-
         public enum DeathItem
         {
             None,
@@ -95,11 +82,11 @@ namespace LemurFusion
         private static void UpdateItemDef()
         {
             //Fix up the tags on the Harness
-            LemurFusionPlugin._logger.LogInfo("Changing Lemurian Harness");
+            LemurFusionPlugin._logger.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy Lemurian Harness.");
             ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {
-                itemDef.tags = [.. itemDef.tags, ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy];
+                itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy]).Distinct().ToArray();
             }
         }
 
@@ -188,7 +175,7 @@ namespace LemurFusion
         #region Summon
         private static void PickupPickerController_SetOptionsFromInteractor(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
         {
-            if (!self || !self.TryGetComponent<LemurianEggController>(out _) || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
+            if (!self.GetComponent<LemurianEggController>() || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
             {
                 orig(self, activator);
                 return;
@@ -215,7 +202,7 @@ namespace LemurFusion
 
         private static CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
-            if (self?.masterPrefab == masterPrefab && self.summonerBodyObject?.TryGetComponent<CharacterBody>(out var body) == true)
+            if (self?.masterPrefab == masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body)
             {
                 // successful lemurmeld
                 // hijacking this var for CreateTwin_ExtraLife. fuck your config, you get another friend.
@@ -234,7 +221,7 @@ namespace LemurFusion
             List<BetterLemurController> lemCtrlList = [];
             foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(summoner)?.members ?? [])
             {
-                if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl)
                 {
                     lemCtrlList.Add(lemCtrl);
                 }
@@ -244,8 +231,8 @@ namespace LemurFusion
             // hijacking ignoreMaxAllies for CreateTwin_ExtraLife
             if (lemCtrlList.Count >= PluginConfig.maxLemurs.Value && lemCtrlList.Any())
             {
-                var meldTarget = lemCtrlList.OrderBy(l => l.FusionCount).First();
-                if (meldTarget && meldTarget.LemurianInventory)
+                var meldTarget = lemCtrlList.OrderBy(l => l.FusionCount).FirstOrDefault();
+                if (meldTarget && meldTarget._lemurianMaster)
                 {
                     meldTarget.FusionCount++;
                     return meldTarget._lemurianMaster;
