@@ -15,15 +15,12 @@ namespace AlliesAvoidImplosions
     public class GTFOHController : MonoBehaviour
     {
         private BaseAI ai;
-        private TeamIndex teamIndex;
-        private float searchRadius;
+        private CharacterMaster master;
 
         private void Awake()
         {
-            this.ai = base.GetComponent<BaseAI>();
-            teamIndex = this.ai.body.teamComponent.teamIndex;
-            searchRadius = this.ai.body.radius * this.ai.body.radius;
-            LemurFusionPlugin._logger.LogInfo("awake with body radius " + this.ai.body.radius);
+            this.ai = base.gameObject.GetComponent<BaseAI>();
+            this.master = base.gameObject.GetComponent<CharacterMaster>();
         }
 
         private void Start()
@@ -33,14 +30,16 @@ namespace AlliesAvoidImplosions
 
         private IEnumerator UpdateSkillDrivers()
         {
-            while (ai.master != null)
+            while (master != null)
             {
-                while (!ai.body)
+                var body = master.GetBody();
+                while (!body)
                 {
                     yield return new WaitForSeconds(1);
+                    body = master.GetBody();
                 }
 
-                var target = FindNearbyProjectiles(out var distance);
+                var target = FindNearbyProjectiles(body.footPosition, body.radius, out var distance);
                 if (target)
                 {
                     ai.customTarget.gameObject = target;
@@ -48,39 +47,40 @@ namespace AlliesAvoidImplosions
                     {
                         target = ai.customTarget,
                         aimTarget = ai.customTarget,
-                        dominantSkillDriver = ai.skillDrivers[0],
+                        dominantSkillDriver = ai.skillDrivers[ai.skillDrivers.Length - 1],
                         separationSqrMagnitude = distance,
                     });
-
                     yield return new WaitForSeconds(0.2f);
                 }
                 else
                 {
-                    ai.customTarget.Reset();
                     yield return new WaitForSeconds(1);
                 }
             }
             yield break;
         }
 
-        private GameObject FindNearbyProjectiles(out float distance)
+        private GameObject FindNearbyProjectiles(Vector3 footPosition, float bodyRadius, out float distance)
         {
             GameObject target = null;
-            Vector3 vector = this.ai.body.footPosition;
             distance = float.PositiveInfinity;
+            bodyRadius = Mathf.Max(bodyRadius, 5f);
+            float searchRadius = bodyRadius * bodyRadius;
             List<ProjectileController> instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
 
             foreach (var projectileController in instancesList)
             {
-                var projectileDistance = (projectileController.transform.position - vector).sqrMagnitude;
-
-                if (projectileController.teamFilter.teamIndex != teamIndex && 
-                    projectileDistance < searchRadius && projectileDistance < distance &&
-                    AITweaks.projectileIds.Contains(projectileController.catalogIndex))
+                if (projectileController && projectileController.transform)
                 {
-                    LemurFusionPlugin._logger.LogInfo("Potential danger " + projectileDistance);
-                    target = projectileController.gameObject;
-                    distance = projectileDistance;
+                    var projectileDistance = (projectileController.transform.position - footPosition).sqrMagnitude;
+
+                    if (projectileDistance < searchRadius && projectileDistance < distance &&
+                        AITweaks.projectileIds.Contains(projectileController.catalogIndex))
+                    {
+                        LemurFusionPlugin._logger.LogInfo("Potential danger " + projectileDistance);
+                        target = projectileController.gameObject;
+                        distance = projectileDistance;
+                    }
                 }
             }
             return target;

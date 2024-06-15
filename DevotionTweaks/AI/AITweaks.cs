@@ -18,10 +18,9 @@ namespace LemurFusion.AI
 
         public static ConfigEntry<bool> disableFallDamage;
         public static ConfigEntry<bool> immuneToVoidDeath;
-        public static ConfigEntry<float> evasionDistance;
         public static ConfigEntry<bool> improveAI;
 
-        public static HashSet<int> projectileIds { get; private set; } = [];
+        public static HashSet<int> projectileIds = [];
 
         public const string SKILL_DRIVER_NAME = "BackUpFromImplosion";
 
@@ -37,7 +36,6 @@ namespace LemurFusion.AI
             if (improveAI.Value)
             {
                 RoR2Application.onLoad += PostLoad;
-                CharacterMaster.onStartGlobal += CharacterMaster_onStartGlobal;
 
                 foreach (var driver in DevotionTweaks.masterPrefab.GetComponentsInChildren<AISkillDriver>())
                 {
@@ -57,11 +55,10 @@ namespace LemurFusion.AI
                 var component = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component.customName = SKILL_DRIVER_NAME;
                 component.skillSlot = SkillSlot.None;
-                component.maxDistance = 10f;
+                component.maxDistance = 25f;
                 component.moveTargetType = AISkillDriver.TargetType.Custom;
                 component.aimType = AISkillDriver.AimType.AtMoveTarget;
                 component.movementType = AISkillDriver.MovementType.FleeMoveTarget;
-                component.resetCurrentEnemyOnNextDriverSelection = true;
                 component.ignoreNodeGraph = true;
                 component.driverUpdateTimerOverride = 0.5f;
 
@@ -69,7 +66,7 @@ namespace LemurFusion.AI
             }
         }
 
-        public void PostLoad()
+        public static void PostLoad()
         {
             string[] list = ["BeetleQueenAcid", "DotZone", "DeathBomb"];
             foreach (var projectile in ProjectileCatalog.projectilePrefabProjectileControllerComponents)
@@ -87,26 +84,6 @@ namespace LemurFusion.AI
                 else if (projectile.TryGetComponent<ProjectileDamageTrail>(out var trail))
                 {
                     projectileIds.Add(projectile.catalogIndex);
-                }
-            }
-        }
-
-        private void CharacterMaster_onStartGlobal(CharacterMaster self)
-        {
-            if (self.name == DevotionTweaks.masterCloneName)
-            {
-                AISkillDriver[] arr = self.gameObject.GetComponent<BaseAI>().skillDrivers;
-                if (arr.Length > 0 && arr[0].customName != SKILL_DRIVER_NAME)
-                {
-                    var list = new AISkillDriver[arr.Length];
-                    for (int i = 0; i < arr.Length - 1; i++)
-                    {
-                        if (i == arr.Length - 1)
-                            list[0] = arr[i];
-                        else
-                            list[i + 1] = arr[i];
-                    }
-                    self.gameObject.GetComponent<BaseAI>().skillDrivers = list;
                 }
             }
         }

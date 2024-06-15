@@ -5,8 +5,6 @@ using HarmonyLib;
 using LemurFusion.AI;
 using LemurFusion.Config;
 using R2API;
-using R2API.ContentManagement;
-using R2API.Utils;
 using RoR2;
 using System;
 using System.Runtime.CompilerServices;
