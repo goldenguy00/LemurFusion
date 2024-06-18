@@ -57,6 +57,7 @@ namespace LemurFusion
         {
             if (itemIndex == ItemIndex.None || target == null) return;
 
+            target ??= [];
             if (target.TryGetValue(itemIndex, out var heldCount))
             {
                 var newVal = System.Math.Max(0, heldCount - count);

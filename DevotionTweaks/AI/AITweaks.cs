@@ -2,7 +2,6 @@
 using BepInEx.Configuration;
 using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
-using LemurFusion.Config;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using RoR2;
@@ -11,10 +10,7 @@ using RoR2.Projectile;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.Networking;
 
 namespace LemurFusion.AI
 {
@@ -30,7 +26,8 @@ namespace LemurFusion.AI
 
         public static float basePredictionAngle = 45f;
 
-        public const string SKILL_DRIVER_NAME = "BackUpFromImplosion";
+        public const string SKILL_STRAFE_NAME = "StrafeAroundExplosion";
+        public const string SKILL_ESCAPE_NAME = "BackUpFromExplosion";
 
         public static void Init()
         {
@@ -51,7 +48,6 @@ namespace LemurFusion.AI
                     {
                         case "ReturnToLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;
-                            driver.shouldSprint = true;
                             driver.resetCurrentEnemyOnNextDriverSelection = true;
                             break;
                         case "WaitNearLeader":
@@ -62,15 +58,32 @@ namespace LemurFusion.AI
                 }
 
                 var component = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
-                component.customName = SKILL_DRIVER_NAME;
+                component.customName = SKILL_ESCAPE_NAME;
                 component.skillSlot = SkillSlot.None;
-                component.maxDistance = 25f;
+                component.maxDistance = 20f;
+                component.minDistance = 0f;
                 component.moveTargetType = AISkillDriver.TargetType.Custom;
-                component.aimType = AISkillDriver.AimType.AtMoveTarget;
+                component.aimType = AISkillDriver.AimType.AtCurrentEnemy;
                 component.movementType = AISkillDriver.MovementType.FleeMoveTarget;
-                component.shouldSprint = true;
                 component.ignoreNodeGraph = true;
-                component.driverUpdateTimerOverride = 0.5f;
+                component.shouldSprint = true;
+                component.driverUpdateTimerOverride = 0.2f;
+                component.resetCurrentEnemyOnNextDriverSelection = true;
+
+                var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
+                component2.customName = SKILL_STRAFE_NAME;
+                component2.skillSlot = SkillSlot.None;
+                component2.maxDistance = 30f;
+                component2.minDistance = 20f;
+                component2.moveTargetType = AISkillDriver.TargetType.Custom;
+                component2.aimType = AISkillDriver.AimType.AtCurrentEnemy;
+                component2.movementType = AISkillDriver.MovementType.StrafeMovetarget;
+                component2.ignoreNodeGraph = false;
+                component2.driverUpdateTimerOverride = 0.4f;
+                component2.moveInputScale = 0.8f;
+                component2.resetCurrentEnemyOnNextDriverSelection = true;
+
+                component.nextHighPriorityOverride = component2;
 
                 DevotionTweaks.masterPrefab.AddComponent<GTFOHController>();
 
@@ -80,11 +93,19 @@ namespace LemurFusion.AI
 
         public static void PostLoad()
         {
-            string[] list = ["Acid", "DotZone", "DeathBomb"];
+            //string[] list = ["Acid", "DotZone", "DeathBomb"];
             foreach (var projectile in ProjectileCatalog.projectilePrefabProjectileControllerComponents)
             {
                 var prefab = ProjectileCatalog.GetProjectilePrefab(projectile.catalogIndex);
-                if (prefab && list.Any(prefab.name.Contains))
+                if (projectile.GetComponent<ProjectileDotZone>() || projectile.GetComponent<ProjectileFuse>() ||
+                    projectile.GetComponent<DeathProjectile>() || //projectile.GetComponent<ProjectileStickOnImpact>() || 
+                    //projectile.GetComponent<ProjectileIntervalOverlapAttack>() || projectile.GetComponent<ProjectileOverlapAttack>() || 
+                    projectile.GetComponent<ProjectileImpactExplosion>())
+                {
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin._logger.LogInfo($"Adding projectile by component {prefab.name}");
+                }
+                /*else if (prefab && list.Any(prefab.name.Contains))
                 {
                     projectileIds.Add(projectile.catalogIndex);
                     LemurFusionPlugin._logger.LogInfo($"Adding projectile by name {prefab.name}");
@@ -94,12 +115,7 @@ namespace LemurFusion.AI
                 {
                     projectileIds.Add(projectile.catalogIndex);
                     LemurFusionPlugin._logger.LogInfo($"Adding void death projectile {prefab.name}");
-                }
-                else if (projectile.GetComponent<ProjectileDamageTrail>() || projectile.GetComponent<ProjectileDotZone>() || projectile.GetComponent<ProjectileFuse>())
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin._logger.LogInfo($"Adding projectile by component {prefab.name}");
-                }
+                }*/
             }
         }
 
@@ -169,7 +185,7 @@ namespace LemurFusion.AI
 
         private static bool AllowPrediction(CharacterBody body)
         {
-            return body && body.master && body.master.name == DevotionTweaks.masterCloneName;
+            return body && body.master && body.master.name.Contains(DevotionTweaks.masterPrefabName);
         }
 
         private static Ray PredictAimrayPS(Ray aimRay, GameObject projectilePrefab, HurtBox targetHurtBox)
@@ -221,18 +237,18 @@ namespace LemurFusion.AI
                     float timeToImpact = currentDistance.magnitude / projectileSpeed;
 
                     //Vertical movenent isn't predicted well by this, so just use the target's current Y
-                    Vector3 lateralVelocity = new(targetVelocity.x, 0f, targetVelocity.z);
-                    Vector3 futurePosition = targetPosition + lateralVelocity * timeToImpact;
+                    //Vector3 lateralVelocity = new(targetVelocity.x, 0f, targetVelocity.z);
+                    Vector3 futurePosition = targetPosition + targetVelocity * timeToImpact;
 
                     //Only attempt prediction if player is jumping upwards.
                     //Predicting downwards movement leads to groundshots.
-                    if (targetBody.characterMotor && !targetBody.characterMotor.isGrounded && targetVelocity.y > 0f)
-                    {
+                    //if (targetBody.characterMotor && !targetBody.characterMotor.isGrounded && targetVelocity.y > 0f)
+                    //{
                         //point + vt + 0.5at^2
-                        float futureY = targetPosition.y + targetVelocity.y * timeToImpact;
-                        futureY += 0.5f * Physics.gravity.y * timeToImpact * timeToImpact;
-                        futurePosition.y = futureY;
-                    }
+                    //    float futureY = targetPosition.y + targetVelocity.y * timeToImpact;
+                    //    futureY += 0.5f * Physics.gravity.y * timeToImpact * timeToImpact;
+                    //    futurePosition.y = futureY;
+                    //}
 
                     Ray newAimray = new()
                     {

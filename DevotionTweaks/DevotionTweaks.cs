@@ -82,7 +82,7 @@ namespace LemurFusion
         private static void UpdateItemDef()
         {
             //Fix up the tags on the Harness
-            LemurFusionPlugin._logger.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy Lemurian Harness.");
+            LemurFusionPlugin._logger.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
             ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {

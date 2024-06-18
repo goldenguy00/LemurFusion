@@ -147,10 +147,10 @@ namespace LemurFusion
             {
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
+                    sender.baseMaxHealth = 180;
                     args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.armorAdd += 20;
-                    args.levelArmorAdd += 2;
                     args.levelHealthAdd = 43 * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+
 
                     args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
                     args.damageMultAdd += Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
@@ -173,7 +173,7 @@ namespace LemurFusion
                 var transform = body?.modelLocator?.modelTransform;
                 if (transform)
                 {
-                    transform.localScale = Vector3.one * 0.2f;
+                    transform.localScale = Vector3.one * 0.15f;
                 }
             }
             /*

@@ -4,10 +4,8 @@ using LemurFusion.AI;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace AlliesAvoidImplosions
@@ -16,93 +14,115 @@ namespace AlliesAvoidImplosions
     {
         private BaseAI ai;
         private CharacterMaster master;
-        private int skillDriverIndex;
-        private SphereSearch sphereSearch;
+        private int escapeSkillIndex;
+        private int strafeSkillIndex;
+        private float escapeDistance;
+        private float safeDistance;
 
         private void Awake()
         {
             this.ai = base.gameObject.GetComponent<BaseAI>();
             this.master = base.gameObject.GetComponent<CharacterMaster>();
-            this.sphereSearch = new SphereSearch
-            {
-                mask = LayerIndex.entityPrecise.mask,
-                queryTriggerInteraction = QueryTriggerInteraction.UseGlobal
-            };
         }
 
         private void Start()
         {
+            escapeSkillIndex = -1;
+            strafeSkillIndex = -1;
             for (int i = 0; i < ai.skillDrivers.Length; i++)
             {
-                if (ai.skillDrivers[i].customName == AITweaks.SKILL_DRIVER_NAME)
+                if (ai.skillDrivers[i].customName == AITweaks.SKILL_ESCAPE_NAME)
                 {
-                    skillDriverIndex = i;
-                    break;
+                    escapeSkillIndex = i;
+                }
+                else if (ai.skillDrivers[i].customName == AITweaks.SKILL_STRAFE_NAME)
+                {
+                    strafeSkillIndex = i;
                 }
             }
-            base.StartCoroutine(nameof(UpdateSkillDrivers));
+
+            if (escapeSkillIndex != -1 && strafeSkillIndex != -1)
+            {
+                escapeDistance = ai.skillDrivers[escapeSkillIndex].maxDistanceSqr;
+                safeDistance = ai.skillDrivers[strafeSkillIndex].maxDistanceSqr;
+                base.StartCoroutine(nameof(UpdateSkillDrivers));
+            }
         }
 
         private IEnumerator UpdateSkillDrivers()
         {
             LemurFusionPlugin._logger.LogInfo("Begin coroutine of running the fuck away");
-            while (master != null)
+            while (master)
             {
                 var body = master.GetBody();
-                while (!body || !AITweaks.improveAI.Value)
+                while (!AITweaks.improveAI.Value || !body)
                 {
-                    yield return new WaitForSeconds(1);
+                    yield return new WaitForSeconds(2);
                     body = master.GetBody();
                 }
 
-                while (FindNearbyProjectiles(body.footPosition, body.radius, out var distance))
+                ai.customTarget.Reset();
+                var target = FindProjectiles(body.footPosition, out var distance);
+                while (target)
                 {
-                    LemurFusionPlugin._logger.LogInfo("Running the fuck away");
-                    ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
+                    AISkillDriver driver = null;
+                    if (distance < escapeDistance)
+                        driver = ai.skillDrivers[escapeSkillIndex];
+                    else if (distance < safeDistance)
+                        driver = ai.skillDrivers[strafeSkillIndex];
+
+                    if (driver != null)
                     {
-                        target = ai.customTarget,
-                        aimTarget = ai.customTarget,
-                        dominantSkillDriver = ai.skillDrivers[skillDriverIndex],
-                        separationSqrMagnitude = distance,
-                    });
+                        if (ai.selectedSkilldriverName != driver.customName || target != ai.customTarget.gameObject)
+                        {
+                            ai.customTarget.gameObject = target;
+                            ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
+                            {
+                                target = ai.customTarget,
+                                aimTarget = ai.customTarget,
+                                dominantSkillDriver = driver,
+                                separationSqrMagnitude = distance,
+                            });
+                        }
+                        else
+                        {
+                            ai.skillDriverUpdateTimer = driver.driverUpdateTimerOverride;
+                            ai.skillDriverEvaluation.separationSqrMagnitude = distance;
+                            ai.customTarget.Update();
+                        }
+                    }
+                    yield return new WaitForSeconds(0.1f);
 
-                    yield return new WaitForSeconds(0.2f);
+                    if (!body) break;
+
+                    target = FindProjectiles(body.footPosition, out distance);
                 }
 
-                if (ai.customTarget.gameObject)
-                {
-                    LemurFusionPlugin._logger.LogInfo("i am now safe :)");
-                    ai.customTarget.Reset();
-                }
-
-                yield return new WaitForSeconds(2);
+                yield return new WaitForSeconds(1f);
             }
-            LemurFusionPlugin._logger.LogInfo("End coroutine of running the fuck away");
             yield break;
         }
 
-        private bool FindNearbyProjectiles(Vector3 footPosition, float bodyRadius, out float distance)
+        private GameObject FindProjectiles(Vector3 position, out float distance)
         {
-            distance = float.PositiveInfinity;
-            List<ProjectileController> instanceList = CollectionPool<ProjectileController, List<ProjectileController>>.RentCollection();
-
-            this.sphereSearch.origin = footPosition;
-            this.sphereSearch.radius = bodyRadius * 2f;
-            this.sphereSearch.ClearCandidates().RefreshCandidates().FilterCandidatesByProjectileControllers().OrderCandidatesByDistance();
-            this.sphereSearch.GetProjectileControllers(instanceList);
-
-            foreach (var projectileController in instanceList)
+            GameObject target = null;
+            distance = safeDistance;
+            List<ProjectileController> instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
+            var count = instancesList.Count;
+            for (int i = 0; i < count; i++)
             {
-                if (projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
+                ProjectileController projectileController = ListUtils.GetSafe(instancesList, i);
+                if (projectileController  && projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
                 {
-                    distance = (projectileController.transform.position - footPosition).sqrMagnitude;
-                    ai.customTarget.gameObject = projectileController.gameObject;
-                    break;
+                    var other = (projectileController.transform.position - position).sqrMagnitude;
+                    if (other < distance)
+                    {
+                        distance = other;
+                        target = projectileController.gameObject;
+                    }
                 }
             }
-
-            CollectionPool<ProjectileController, List<ProjectileController>>.ReturnCollection(instanceList);
-            return distance != float.PositiveInfinity;
+            return target;
         }
     }
 }
