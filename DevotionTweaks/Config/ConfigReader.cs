@@ -86,8 +86,7 @@ namespace LemurFusion.Config
             PluginConfig.enableDetailedLogs = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Detailed Logs",
                 false,
-                "For dev use/debugging. Keep this on if you want to submit a bug report.",
-                true);
+                "For dev use/debugging. Keep this on if you want to submit a bug report.");
 
             //
             // stats

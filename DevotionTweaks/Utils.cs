@@ -91,7 +91,7 @@ namespace LemurFusion
 
         public static float GetStatModifier(int configValue, int meldCount, int evolutionCount)
         {
-            return (meldCount * (configValue * 0.01f));// + (GetLevelModifier(evolutionCount) * 0.1f);
+            return (meldCount * (configValue * 0.01f)) + (GetLevelModifier(evolutionCount) * 0.1f);
         }
 
         public static float GetLevelModifier(int evolutionCount)
