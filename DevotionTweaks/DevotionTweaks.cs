@@ -82,7 +82,7 @@ namespace LemurFusion
         private static void UpdateItemDef()
         {
             //Fix up the tags on the Harness
-            LemurFusionPlugin._logger.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
+            LemurFusionPlugin.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
             ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {
@@ -257,7 +257,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 1");
+                LemurFusionPlugin.LogError("Hook failed for LemurianEggController_SummonLemurian # 1");
             }
 
             if (c.TryGotoNext(MoveType.Before,
@@ -268,7 +268,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("Hook failed for LemurianEggController_SummonLemurian # 2");
+                LemurFusionPlugin.LogError("Hook failed for LemurianEggController_SummonLemurian # 2");
             }
         }
         #endregion
@@ -300,7 +300,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #1");
+                LemurFusionPlugin.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #1");
             }
 
             if (c.TryGotoNext(MoveType.After,
@@ -316,7 +316,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
+                LemurFusionPlugin.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #2");
             }
 
             if (c.TryGotoNext(MoveType.Before,
@@ -338,7 +338,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #3");
+                LemurFusionPlugin.LogError("IL Hook failed for DevotionInventoryController_UpdateMinionInventory #3");
             }
         }
 
@@ -387,7 +387,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian");
+                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian");
             }
         }
         
@@ -411,7 +411,7 @@ namespace LemurFusion
             }
             else
             {
-                LemurFusionPlugin._logger.LogError("Hook failed for DevotionInventoryController_GenerateEliteBuff");
+                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_GenerateEliteBuff");
             }
         }
         #endregion

@@ -69,30 +69,30 @@ namespace LemurFusion.Config
                     var split = itemPair.Split(',');
                     if (split.Length != 2)
                     {
-                        LemurFusionPlugin._logger.LogWarning($"String parsing error for (TierDef, ItemDef) pair '({itemPair})' for Custom Drop List.");
+                        LemurFusionPlugin.LogWarning($"String parsing error for (TierDef, ItemDef) pair '({itemPair})' for Custom Drop List.");
                         continue;
                     }
 
                     var tierDef = ItemTierCatalog.FindTierDef(split[0]);
                     var itemIndex = ItemCatalog.FindItemIndex(split[1]);
 
-                    if (PluginConfig.enableDetailedLogs.Value) LemurFusionPlugin._logger.LogInfo($"Attemping to add ({tierDef}, {itemIndex}) pair parsed from string'({itemPair})' for Custom Drop List.");
+                    if (PluginConfig.enableDetailedLogs.Value) LemurFusionPlugin.LogInfo($"Attemping to add ({tierDef}, {itemIndex}) pair parsed from string'({itemPair})' for Custom Drop List.");
                     if (tierDef && itemIndex != ItemIndex.None)
                     {
                         if (DeathDrops_TierToItem_Map.ContainsKey(tierDef.tier) && PluginConfig.enableDetailedLogs.Value)
-                            LemurFusionPlugin._logger.LogWarning($"Overwriting duplicate {tierDef?.name} with '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                            LemurFusionPlugin.LogWarning($"Overwriting duplicate {tierDef?.name} with '({tierDef?.name},{itemIndex})' for Custom Drop List.");
                         DeathDrops_TierToItem_Map[tierDef.tier] = itemIndex;
                     }
                     else
                     {
-                        LemurFusionPlugin._logger.LogWarning($"Could not find (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                        LemurFusionPlugin.LogWarning($"Could not find (TierDef, ItemDef) pair '({tierDef?.name},{itemIndex})' for Custom Drop List.");
                     }
                 }
             }
             catch (Exception e)
             {
-                LemurFusionPlugin._logger.LogWarning(e.Message);
-                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+                LemurFusionPlugin.LogWarning(e.Message);
+                LemurFusionPlugin.LogWarning(e.StackTrace);
             }
         }
         #endregion
@@ -100,7 +100,7 @@ namespace LemurFusion.Config
         #region Blacklist
         private static void BLItems()
         {
-            LemurFusionPlugin._logger.LogInfo("Blacklisting items...");
+            LemurFusionPlugin.LogInfo("Blacklisting items...");
 
             try
             {
@@ -115,19 +115,19 @@ namespace LemurFusion.Config
                 if (!PluginConfig.enableDetailedLogs.Value) return;
                 foreach (var item in Blacklisted_Items)
                 {
-                    LemurFusionPlugin._logger.LogInfo(ItemCatalog.GetItemDef(item)?.nameToken);
+                    LemurFusionPlugin.LogInfo(ItemCatalog.GetItemDef(item)?.nameToken);
                 }
             }
             catch (Exception e)
             {
-                LemurFusionPlugin._logger.LogWarning(e.Message);
-                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+                LemurFusionPlugin.LogWarning(e.Message);
+                LemurFusionPlugin.LogWarning(e.StackTrace);
             }
         }
 
         private static void BLItemTiers()
         {
-            LemurFusionPlugin._logger.LogInfo("Blacklisting tiers...");
+            LemurFusionPlugin.LogInfo("Blacklisting tiers...");
             try
             {
                 Blacklisted_ItemTiers = [.. from tier in Blacklisted_ItemTiers_Raw.Value.Split(',') ?? []
@@ -138,13 +138,13 @@ namespace LemurFusion.Config
                 if (!PluginConfig.enableDetailedLogs.Value) return;
                 foreach (var item in Blacklisted_ItemTiers)
                 {
-                    LemurFusionPlugin._logger.LogInfo(ItemTierCatalog.GetItemTierDef(item)?.name);
+                    LemurFusionPlugin.LogInfo(ItemTierCatalog.GetItemTierDef(item)?.name);
                 }
             }
             catch (Exception e)
             {
-                LemurFusionPlugin._logger.LogWarning(e.Message);
-                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+                LemurFusionPlugin.LogWarning(e.Message);
+                LemurFusionPlugin.LogWarning(e.StackTrace);
             }
         }
 
@@ -175,8 +175,8 @@ namespace LemurFusion.Config
             }
             catch (Exception e)
             {
-                LemurFusionPlugin._logger.LogWarning(e.Message);
-                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+                LemurFusionPlugin.LogWarning(e.Message);
+                LemurFusionPlugin.LogWarning(e.StackTrace);
             }
 
         }
@@ -185,7 +185,7 @@ namespace LemurFusion.Config
         {
             if (!PluginConfig.enableDetailedLogs.Value) return;
 
-            LemurFusionPlugin._logger.LogInfo("Testing blacklist function...");
+            LemurFusionPlugin.LogInfo("Testing blacklist function...");
             try
             {
                 foreach (var item in ItemCatalog.allItemDefs.ToList())
@@ -198,7 +198,7 @@ namespace LemurFusion.Config
 
                     if (result && !defaultResult)
                     {
-                        LemurFusionPlugin._logger.LogInfo(
+                        LemurFusionPlugin.LogInfo(
                             $"\t{item?.nameToken} | {item.tier}\r\n" +
                             $"\tDefault: {defaultResult}\t New: {result}\r\n" +
                             $"\tHidden? {item.hidden}\t CanRemove? {item.canRemove}\t CanScrap? {ItemTierCatalog.GetItemTierDef(item.tier)?.canScrap}\r\n" +
@@ -209,8 +209,8 @@ namespace LemurFusion.Config
             }
             catch (Exception e)
             {
-                LemurFusionPlugin._logger.LogWarning(e.Message);
-                LemurFusionPlugin._logger.LogWarning(e.StackTrace);
+                LemurFusionPlugin.LogWarning(e.Message);
+                LemurFusionPlugin.LogWarning(e.StackTrace);
             }
         }
         #endregion
@@ -258,18 +258,18 @@ public enum DeathPenalty
                     }
                     else
                     {
-                        LemurFusionPlugin._logger.LogWarning(string.Format("'{1}' Is being assigned to an invalid evolution stage, ignoring.", itemString[i]));
+                        LemurFusionPlugin.LogWarning(string.Format("'{1}' Is being assigned to an invalid evolution stage, ignoring.", itemString[i]));
                     }
                 }
 
                 var Evo_BaseMaster = MasterCatalog.FindMasterPrefab(DevotionTweaks.masterPrefabName);
                 if (Evo_BaseMaster)
                 {
-                    LemurFusionPlugin._logger.LogInfo("Set [" + Evo_BaseMaster.name + "] as base master form.");
+                    LemurFusionPlugin.LogInfo("Set [" + Evo_BaseMaster.name + "] as base master form.");
                 }
                 else
                 {
-                    LemurFusionPlugin._logger.LogWarning(string.Format("Could not find master for [{0}] this will cause errors.", DevotionTweaks.masterPrefabName));
+                    LemurFusionPlugin.LogWarning(string.Format("Could not find master for [{0}] this will cause errors.", DevotionTweaks.masterPrefabName));
                 }
 
                 CharacterMaster master = Evo_BaseMaster.GetComponent<CharacterMaster>();
@@ -278,7 +278,7 @@ public enum DeathPenalty
                     GameObject bodyPrefab = master.bodyPrefab;
                     if (bodyPrefab)
                     {
-                        LemurFusionPlugin._logger.LogInfo("Base Master has [" + bodyPrefab.name + "] as base body form.");
+                        LemurFusionPlugin.LogInfo("Base Master has [" + bodyPrefab.name + "] as base body form.");
                     }
                 }
             }

@@ -148,9 +148,11 @@ namespace LemurFusion
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
                     sender.baseMaxHealth = 180;
-                    args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    sender.levelMaxHealth = 43;
+                    sender.baseMoveSpeed = 7f;
+                    args.baseHealthAdd = 90;
                     args.levelHealthAdd = 43 * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-
+                    args.levelRegenAdd = Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
                     args.damageMultAdd += Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
@@ -168,12 +170,19 @@ namespace LemurFusion
         private void ResizeBody(int meldCount, CharacterBody body)
         {
             // todo: fix this shit.
-            if (NetworkClient.active && PluginConfig.miniElders.Value)
+            if (NetworkClient.active)
             {
                 var transform = body?.modelLocator?.modelTransform;
                 if (transform)
                 {
-                    transform.localScale = Vector3.one * 0.15f;
+                    if (PluginConfig.miniElders.Value)
+                        transform.localScale = Vector3.one * 0.2f;
+
+                    if (transform.gameObject.TryGetComponent<FootstepHandler>(out var footstep))
+                    {
+                        //holy fuck its annoying
+                        footstep.baseFootstepString = "";
+                    }
                 }
             }
             /*

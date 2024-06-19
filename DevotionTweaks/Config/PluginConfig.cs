@@ -8,23 +8,22 @@ namespace LemurFusion.Config
         public static ConfigFile myConfig;
 
         #region Config Entries
+        public static ConfigEntry<int> maxLemurs;
+        public static ConfigEntry<int> teleportDistance;
         public static ConfigEntry<bool> enableMinionScoreboard;
         public static ConfigEntry<bool> showPersonalInventory;
-        public static ConfigEntry<bool> enableSharedInventory;
-        public static ConfigEntry<int> teleportDistance;
-        public static ConfigEntry<int> maxLemurs;
         public static ConfigEntry<bool> highTierElitesOnly;
 
-        public static ConfigEntry<bool> rebalanceHealthScaling;
+        public static ConfigEntry<bool> enableSharedInventory;
         public static ConfigEntry<bool> cloneReplacesRevive;
-        public static ConfigEntry<bool> enableDetailedLogs;
         public static ConfigEntry<bool> miniElders;
+        public static ConfigEntry<bool> enableDetailedLogs;
 
+        public static ConfigEntry<bool> rebalanceHealthScaling;
         public static ConfigEntry<int> statMultHealth;
         public static ConfigEntry<int> statMultDamage;
         public static ConfigEntry<int> statMultAttackSpeed;
         public static ConfigEntry<int> statMultEvo;
-        //public static ConfigEntry<int> statMultSize;
         #endregion
 
         #region Config Binding

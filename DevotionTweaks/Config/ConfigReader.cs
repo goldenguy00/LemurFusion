@@ -7,15 +7,14 @@ namespace LemurFusion.Config
     //and now it's been ported entirely into LemurFusion. Common Moffein W, once again.
     internal static class ConfigReader
 	{
-        //private const string Section_BaseStats = "Minion Base Stats";
-        //private const string Section_Evolution = "Evolution Settings";
-        public const string GENERAL = "01 - General";
-        public const string EXPERIMENTAL = "02 - Experimental";
-        public const string STATS = "03 - Fusion Stats";
-        private const string DEATH = "Death Settings";
-		private const string BLACKLIST = "Item Blacklist";
-		private const string Desc_Enable = "Enables changes for this section.";
-        public const string AI_CONFIG = "AI Changes";
+        private const string GENERAL = "01 - General";
+        private const string EXPERIMENTAL = "02 - Experimental";
+        private const string STATS = "03 - Fusion Stats";
+        private const string AI_CONFIG = "04 - AI Changes";
+        private const string DEATH = " 05 - Death Settings";
+		private const string BLACKLIST = "06 - Item Blacklist";
+
+        private const string Desc_Enable = "Enables changes for this section.";
 
         internal static void Setup()
         {
@@ -33,7 +32,9 @@ namespace LemurFusion.Config
                 PluginConfig.InitRoO();
             }
 
+            //
             // general
+            //
             PluginConfig.maxLemurs = PluginConfig.BindOptionSlider(GENERAL,
                 "Max Lemurs",
                 1,
@@ -61,20 +62,16 @@ namespace LemurFusion.Config
                 "High Tier Elites Only For Final Evolution",
                 true,
                 "When rerolling the fully evolved elite elder lemurian aspects, should it always be a lategame elite type?");
-
+            
+            //
             // misc
-
+            //
             PluginConfig.enableSharedInventory = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Shared Inventory",
                 true,
                 "If set to false, the shared inventory will not be used and instead unique inventory will be used for every lemurian you control.\r\n" +
                 "Disabling this setting will make all lemurians visible on the scoreboard.",
                 true);
-
-            PluginConfig.rebalanceHealthScaling = PluginConfig.BindOption(EXPERIMENTAL,
-                "Rebalance Health Scaling",
-                true,
-                "Rebalances health scaling so that new summons on later stages have an easier time surviving");
 
             PluginConfig.cloneReplacesRevive = PluginConfig.BindOption(EXPERIMENTAL,
                 "Clone Replaces Revive",
@@ -88,16 +85,18 @@ namespace LemurFusion.Config
 
             PluginConfig.enableDetailedLogs = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Detailed Logs",
-                true,
+                false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.",
                 true);
 
-            /*fixEvoWhenDisabled = BindAndOptions(EXPERIMENTAL,
-                "Fix When Disabled",
-                true,
-                "Fixes the item orb not showing when giving items to eggs and allows devotion minions to evolve even when the Artifact is disabled.", true);
-            */
+            //
             // stats
+            //
+            PluginConfig.rebalanceHealthScaling = PluginConfig.BindOption(STATS,
+                "Rebalance Health Scaling",
+                true,
+                "Rebalances health scaling so that new summons on later stages have an easier time surviving");
+
             PluginConfig.statMultHealth = PluginConfig.BindOptionSlider(STATS,
                 "Fusion Health Increase",
                 20,
@@ -121,22 +120,10 @@ namespace LemurFusion.Config
                 100,
                 "Additional Health and Damage Multiplier for per Evolution Stage, in percent. Vanilla is 100.",
                 0, 200);
-            /*
-            statMultSize = BindAndOptionsSlider(STATS, 
-                "Fusion Size Increase",
-                2,
-                "Base size multiplier for each lemur fusion, in percent.",
-                0, 10);*/
         }
 
         internal static void ReadAIConfig()
         {
-            AITweaks.improveAI = PluginConfig.BindOption(AI_CONFIG,
-                "Improve AI",
-                true,
-                "Makes minions less likely to stand around and makes them better at not dying to void explosions/aoe zones like beetle queen spit.",
-                true);
-
             AITweaks.disableFallDamage = PluginConfig.BindOption(AI_CONFIG,
                 "Disable Fall Damage",
                 true,
@@ -146,11 +133,31 @@ namespace LemurFusion.Config
                 "Immune To Void Death",
                 false,
                 "If true, prevents Lemurians from dying to void insta-kill explosions.");
+
+            AITweaks.improveAI = PluginConfig.BindOption(AI_CONFIG,
+                "Improve AI",
+                true,
+                "Makes minions less likely to stand around and makes them better at not dying.",
+                true);
+
+            AITweaks.enablePredictiveAiming = PluginConfig.BindOption(AI_CONFIG,
+                "Enable Predictive Aiming",
+                true,
+                "Requires \"Improve AI\". Predicts target movement based on velocity.");
+
+            AITweaks.enableProjectileTracking = PluginConfig.BindOption(AI_CONFIG,
+                "Enable Projectile Tracking",
+                true,
+                "Requires \"Improve AI\". Tracks and attempts to dodge most projectiles that come close.");
+
+            AITweaks.visualizeProjectileTracking = PluginConfig.BindOption(AI_CONFIG,
+                "Visualize Projectile Tracking",
+                false,
+                "Requires \"Enable Projectile Tracking\". Creates a line connecting the foot position to the tracked projectile.");
         }
 
         private static void ReadConfigExtended()
         {
-            LemurFusionPlugin._logger.LogInfo("Reading config extended");
             /*
             ConfigExtended.CapEvo = PluginConfig.BindAndOptions(Section_Evolution, 
 				"Enable Evolution Cap",
@@ -184,7 +191,11 @@ namespace LemurFusion.Config
                 $"{nameof(DevotionTweaks.DeathPenalty.ResetToBaby)}\t", 
 				0, System.Enum.GetValues(typeof(DevotionTweaks.DeathPenalty)).Length);
 			*/
-            ConfigExtended.DeathDrop_Enable = PluginConfig.BindOption(DEATH, "Enable Death Changes", true, Desc_Enable, true);
+            ConfigExtended.DeathDrop_Enable = PluginConfig.BindOption(DEATH,
+                "Enable Death Changes",
+                true,
+                Desc_Enable,
+                true);
 
             ConfigExtended.DeathDrop_DropEgg = PluginConfig.BindOption(DEATH,
 				"Egg On Death", 
@@ -209,7 +220,11 @@ namespace LemurFusion.Config
 				true);
 
 			//Blacklist
-			ConfigExtended.Blacklist_Enable = PluginConfig.BindOption(BLACKLIST, "Enable Blacklist Changes", true, Desc_Enable, true);
+			ConfigExtended.Blacklist_Enable = PluginConfig.BindOption(BLACKLIST,
+                "Enable Blacklist Changes",
+                true, 
+                Desc_Enable, 
+                true);
 
             ConfigExtended.Blacklist_Filter_SprintRelated = PluginConfig.BindOption(BLACKLIST,
                 "Blacklist Sprint Related Items",

@@ -1,5 +1,4 @@
-﻿using AlliesAvoidImplosions;
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
 using Mono.Cecil.Cil;
@@ -20,9 +19,14 @@ namespace LemurFusion.AI
 
         public static ConfigEntry<bool> disableFallDamage;
         public static ConfigEntry<bool> immuneToVoidDeath;
+
         public static ConfigEntry<bool> improveAI;
+        public static ConfigEntry<bool> enablePredictiveAiming;
+        public static ConfigEntry<bool> enableProjectileTracking;
+        public static ConfigEntry<bool> visualizeProjectileTracking;
 
         public static HashSet<int> projectileIds = [];
+        public static HashSet<int> pain = [];
 
         public static float basePredictionAngle = 45f;
 
@@ -48,6 +52,7 @@ namespace LemurFusion.AI
                     {
                         case "ReturnToLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;
+                            driver.shouldSprint = true;
                             driver.resetCurrentEnemyOnNextDriverSelection = true;
                             break;
                         case "WaitNearLeader":
@@ -62,30 +67,30 @@ namespace LemurFusion.AI
                 component.skillSlot = SkillSlot.None;
                 component.maxDistance = 20f;
                 component.minDistance = 0f;
-                component.moveTargetType = AISkillDriver.TargetType.Custom;
                 component.aimType = AISkillDriver.AimType.AtCurrentEnemy;
+                component.moveTargetType = AISkillDriver.TargetType.Custom;
                 component.movementType = AISkillDriver.MovementType.FleeMoveTarget;
                 component.ignoreNodeGraph = true;
                 component.shouldSprint = true;
                 component.driverUpdateTimerOverride = 0.2f;
-                component.resetCurrentEnemyOnNextDriverSelection = true;
 
                 var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component2.customName = SKILL_STRAFE_NAME;
                 component2.skillSlot = SkillSlot.None;
                 component2.maxDistance = 30f;
                 component2.minDistance = 20f;
-                component2.moveTargetType = AISkillDriver.TargetType.Custom;
                 component2.aimType = AISkillDriver.AimType.AtCurrentEnemy;
+                component2.moveTargetType = AISkillDriver.TargetType.Custom;
                 component2.movementType = AISkillDriver.MovementType.StrafeMovetarget;
                 component2.ignoreNodeGraph = false;
-                component2.driverUpdateTimerOverride = 0.4f;
+                component2.shouldSprint = true;
+                component2.driverUpdateTimerOverride = 0.5f;
                 component2.moveInputScale = 0.8f;
                 component2.resetCurrentEnemyOnNextDriverSelection = true;
 
                 component.nextHighPriorityOverride = component2;
 
-                DevotionTweaks.masterPrefab.AddComponent<GTFOHController>();
+                DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
 
                 EnablePrediction();
             }
@@ -93,29 +98,18 @@ namespace LemurFusion.AI
 
         public static void PostLoad()
         {
-            //string[] list = ["Acid", "DotZone", "DeathBomb"];
             foreach (var projectile in ProjectileCatalog.projectilePrefabProjectileControllerComponents)
             {
                 var prefab = ProjectileCatalog.GetProjectilePrefab(projectile.catalogIndex);
                 if (projectile.GetComponent<ProjectileDotZone>() || projectile.GetComponent<ProjectileFuse>() ||
-                    projectile.GetComponent<DeathProjectile>() || //projectile.GetComponent<ProjectileStickOnImpact>() || 
-                    //projectile.GetComponent<ProjectileIntervalOverlapAttack>() || projectile.GetComponent<ProjectileOverlapAttack>() || 
-                    projectile.GetComponent<ProjectileImpactExplosion>())
+                    projectile.GetComponent<DeathProjectile>() || projectile.GetComponent<ProjectileImpactExplosion>())
                 {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin._logger.LogInfo($"Adding projectile by component {prefab.name}");
+                    if (projectile.GetComponentInChildren<Collider>())
+                    {
+                        projectileIds.Add(projectile.catalogIndex);
+                        LemurFusionPlugin.LogInfo($"Adding projectile by component {prefab.name}");
+                    }
                 }
-                /*else if (prefab && list.Any(prefab.name.Contains))
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin._logger.LogInfo($"Adding projectile by name {prefab.name}");
-                }
-                else if (projectile.TryGetComponent<ProjectileDamage>(out var damage) &&
-                    ((damage.damageType & DamageType.VoidDeath) == DamageType.VoidDeath))
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin._logger.LogInfo($"Adding void death projectile {prefab.name}");
-                }*/
             }
         }
 
@@ -142,7 +136,7 @@ namespace LemurFusion.AI
                 }
                 else
                 {
-                    LemurFusionPlugin._logger.LogError("EntityStates.LemurianMonster.FireFireball.OnEnter IL Hook failed");
+                    LemurFusionPlugin.LogError("EntityStates.LemurianMonster.FireFireball.OnEnter IL Hook failed");
                 }
             };
 
@@ -178,14 +172,14 @@ namespace LemurFusion.AI
                 }
                 else
                 {
-                    LemurFusionPlugin._logger.LogError("EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate IL Hook failed");
+                    LemurFusionPlugin.LogError("EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate IL Hook failed");
                 }
             };
         }
 
         private static bool AllowPrediction(CharacterBody body)
         {
-            return body && body.master && body.master.name.Contains(DevotionTweaks.masterPrefabName);
+            return body && body.master && body.master.name.Contains(DevotionTweaks.masterPrefabName) && body.teamComponent.teamIndex == TeamIndex.Player;
         }
 
         private static Ray PredictAimrayPS(Ray aimRay, GameObject projectilePrefab, HurtBox targetHurtBox)
@@ -202,7 +196,7 @@ namespace LemurFusion.AI
 
             if (speed <= 0f)
             {
-                LemurFusionPlugin._logger.LogError("Could not get speed of ProjectileSimple.");
+                LemurFusionPlugin.LogError("Could not get speed of ProjectileSimple.");
                 return aimRay;
             }
 
@@ -235,20 +229,7 @@ namespace LemurFusion.AI
                     //A very simplified way of estimating, won't be 100% accurate.
                     Vector3 currentDistance = targetPosition - aimRay.origin;
                     float timeToImpact = currentDistance.magnitude / projectileSpeed;
-
-                    //Vertical movenent isn't predicted well by this, so just use the target's current Y
-                    //Vector3 lateralVelocity = new(targetVelocity.x, 0f, targetVelocity.z);
                     Vector3 futurePosition = targetPosition + targetVelocity * timeToImpact;
-
-                    //Only attempt prediction if player is jumping upwards.
-                    //Predicting downwards movement leads to groundshots.
-                    //if (targetBody.characterMotor && !targetBody.characterMotor.isGrounded && targetVelocity.y > 0f)
-                    //{
-                        //point + vt + 0.5at^2
-                    //    float futureY = targetPosition.y + targetVelocity.y * timeToImpact;
-                    //    futureY += 0.5f * Physics.gravity.y * timeToImpact * timeToImpact;
-                    //    futurePosition.y = futureY;
-                    //}
 
                     Ray newAimray = new()
                     {

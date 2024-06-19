@@ -23,7 +23,6 @@ public class BetterLemurController : DevotedLemurianController
         set
         {
             Utils.SetItem(_untrackedItemList, CU8Content.Items.LemurianHarness, value);
-            //StatHooks.ResizeBody(_untrackedItemList[CU8Content.Items.LemurianHarness.itemIndex], base.LemurianBody);
         }
     }
 
@@ -102,12 +101,6 @@ public class BetterLemurController : DevotedLemurianController
                 }
             }
         }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    private void AddRiskyAllyItem()
-    {
-        Utils.SetItem(this._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
     }
     #endregion
 
@@ -190,12 +183,18 @@ public class BetterLemurController : DevotedLemurianController
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
                 Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
-                //if (LemurFusionPlugin.riskyInstalled)
-                //{
-                //    lemCtrl.AddRiskyAllyItem();
-                //}
+                if (LemurFusionPlugin.riskyInstalled)
+                {
+                    lemCtrl.AddRiskyAllyItem();
+                }
             }
         }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private void AddRiskyAllyItem()
+    {
+        Utils.SetItem(this._untrackedItemList, RiskyMod.Allies.AllyItems.AllyMarkerItem);
     }
 
     private static void CreateTwin_ExtraLife(int fusionCount, int evoCount, ItemIndex devotedItem, Vector3 position, Quaternion rotation, DevotionInventoryController devotionInventoryController)
@@ -243,21 +242,7 @@ public class BetterLemurController : DevotedLemurianController
         if (!lemCtrl || !lemCtrl._lemurianMaster)
             return;
 
-        bool killYourSelf = !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") && !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife");
-        /*
-        if (DevotionTweaks.EnableSharedInventory)
-        {
-            if (lemCtrl._devotionInventoryController.HasItem(RoR2Content.Items.ExtraLife))
-            {
-                lemCtrl._devotionInventoryController.RemoveItem(RoR2Content.Items.ExtraLife.itemIndex);
-            }
-            else if (lemCtrl._devotionInventoryController.HasItem(DLC1Content.Items.ExtraLifeVoid))
-            {
-                lemCtrl._devotionInventoryController.RemoveItem(DLC1Content.Items.ExtraLifeVoid.itemIndex);
-            }
-        }*/
-
-        if (killYourSelf)
+        if (!lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") && !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
         {
             lemCtrl._lemurianMaster.destroyOnBodyDeath = true;
             lemCtrl.DropScrapOnDeath();

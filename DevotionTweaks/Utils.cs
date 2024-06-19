@@ -91,7 +91,7 @@ namespace LemurFusion
 
         public static float GetStatModifier(int configValue, int meldCount, int evolutionCount)
         {
-            return (meldCount * (configValue * 0.01f)) + (GetLevelModifier(evolutionCount) * 0.1f);
+            return (meldCount * (configValue * 0.01f));// + (GetLevelModifier(evolutionCount) * 0.1f);
         }
 
         public static float GetLevelModifier(int evolutionCount)
@@ -99,7 +99,7 @@ namespace LemurFusion
             if (!Run.instance) return 0;
 
             // big bonuses of 100%->300% for early stage and evolutions then continue with 10% increases later on
-            var stageModifier = Mathf.Clamp(Mathf.Max(Run.instance.stageClearCount, evolutionCount), 1, 3);
+            var stageModifier = Mathf.Clamp(Mathf.Max(Run.instance.stageClearCount + 1, evolutionCount), 1, 3);
             return  stageModifier + ((evolutionCount * 0.1f) * (PluginConfig.statMultEvo.Value * 0.01f));
         }
         #endregion

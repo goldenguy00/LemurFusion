@@ -15,21 +15,17 @@ namespace LemurFusion
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.RiskyLives.RiskyMod", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("HIFU.Inferno", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("com.Moffein.RiskyArtifacts", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.1.1";
-
-        public static PluginInfo pluginInfo;
+        public const string PluginVersion = "1.1.2";
 
         public static LemurFusionPlugin instance;
 
-        public static ManualLogSource _logger;
+        private static ManualLogSource _logger;
         
         public static bool rooInstalled => Chainloader.PluginInfos.ContainsKey("com.rune580.riskofoptions");
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
@@ -40,7 +36,6 @@ namespace LemurFusion
         {
             instance = this;
             _logger = Logger;
-            pluginInfo = Info;
 
             PluginConfig.myConfig = Config;
 
@@ -58,11 +53,25 @@ namespace LemurFusion
             GameModeCatalog.availability.CallWhenAvailable(new Action(ConfigExtended.PostLoad));
         }
 
+        public static void LogInfo(string message) => Log(LogLevel.Info, message);
+        public static void LogMessage(string message) => Log(LogLevel.Message, message);
+        public static void LogWarning(string message) => Log(LogLevel.Warning, message);
+        public static void LogError(string message) => Log(LogLevel.Error, message);
+        public static void LogFatal(string message) => Log(LogLevel.Fatal, message);
+
+        public static void Log(LogLevel logLevel, string message)
+        {
+            if (PluginConfig.enableDetailedLogs.Value)
+            {
+                _logger.Log(logLevel, message);
+            }
+        }
+
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void CreateHarmonyPatches()
         {
-            if (lemNamesInstalled)
+            if (LemurFusionPlugin.lemNamesInstalled)
             {
                 var harmony = new Harmony(PluginGUID);
                 harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
@@ -73,7 +82,7 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void CreateProperSaveCompat()
         {
-            if (properSaveInstalled)
+            if (LemurFusionPlugin.properSaveInstalled)
             {
                 new ProperSaveManager();
             }
