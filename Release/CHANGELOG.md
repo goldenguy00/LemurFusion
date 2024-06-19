@@ -1,3 +1,23 @@
+# 1.2.0
+
+- Refined AI changes. Features predictive aiming (thanks moff love u), projectile dodging and sprinting!
+
+- Projectile dodging visualization is included but disabled by default.
+
+- Included config options for AI tweaks, debug logs and reorganized config (final time I promise)
+
+- !!! Delete your configs if you aren't seeing all 6 categories !!!
+
+- Re-added RiskyMod ally tracker
+
+- Works with Variants for the most part, currently Variants will be rerolled often. Will be permanent in future updates.
+
+- Refined the Rebalanced Stat Scaling option to account for the new dodging mechanics.
+
+- Some bug fixes
+
+- Removed ChangeLog from ReadMe
+
 # 1.1.1
 
 - Big AI changes, allies will avoid aoe damage zones and damage immunities work properly now. Disable "Improve AI" if this breaks...

@@ -21,7 +21,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.1.2";
+        public const string PluginVersion = "1.2.0";
 
         public static LemurFusionPlugin instance;
 
@@ -50,7 +50,7 @@ namespace LemurFusion
 
             ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
 
-            GameModeCatalog.availability.CallWhenAvailable(new Action(ConfigExtended.PostLoad));
+            RoR2Application.onLoad += ConfigExtended.PostLoad;
         }
 
         public static void LogInfo(string message) => Log(LogLevel.Info, message);

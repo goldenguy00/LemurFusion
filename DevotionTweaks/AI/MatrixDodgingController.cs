@@ -55,11 +55,9 @@ namespace LemurFusion.AI
             if (!this.laserLineComponent && AITweaks.visualizeProjectileTracking.Value)
             {
                 this.laserLineComponent = this.body.gameObject.AddComponent<LineRenderer>();
-                this.laserLineComponent.enabled = true;
-                this.laserLineComponent.endColor = Color.red;
-                this.laserLineComponent.startColor = Color.red;
                 this.laserLineComponent.startWidth = 0f;
                 this.laserLineComponent.endWidth = 0f;
+                this.laserLineComponent.enabled = false;
             }
         }
 
@@ -69,15 +67,17 @@ namespace LemurFusion.AI
             {
                 this.laserLineComponent.startWidth = 0f;
                 this.laserLineComponent.endWidth = 0f;
+                this.laserLineComponent.enabled = false;
             }
         }
 
         private void AimLaser()
         {
-            if (this.laserLineComponent && this.ai.gameObject && AITweaks.visualizeProjectileTracking.Value)
+            if (this.laserLineComponent && this.ai.customTarget.gameObject && AITweaks.visualizeProjectileTracking.Value)
             {
-                this.laserLineComponent.startWidth = 0.5f;
-                this.laserLineComponent.endWidth = 0.5f;
+                this.laserLineComponent.enabled = true;
+                this.laserLineComponent.startWidth = 0.25f;
+                this.laserLineComponent.endWidth = 0.25f;
                 this.laserLineComponent.SetPositions([body.footPosition, this.ai.customTarget.gameObject.transform.position]);
             }
         }
@@ -98,21 +98,22 @@ namespace LemurFusion.AI
                 var target = FindProjectiles(this.body.footPosition, out var distance);
                 while (target)
                 {
-                    AimLaser();
-
                     AISkillDriver driver;
                     if (distance < escapeDistance) driver = this.ai.skillDrivers[escapeSkillIndex];
                     else driver = this.ai.skillDrivers[strafeSkillIndex];
 
-
                     this.ai.customTarget.gameObject = target;
-                    this.ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
+                    if (driver.customName == AITweaks.SKILL_ESCAPE_NAME || driver.customName != ai.selectedSkilldriverName)
                     {
-                        target = ai.customTarget,
-                        aimTarget = ai.customTarget,
-                        dominantSkillDriver = driver,
-                        separationSqrMagnitude = distance,
-                    });
+                        this.ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
+                        {
+                            target = ai.customTarget,
+                            aimTarget = ai.customTarget,
+                            dominantSkillDriver = driver,
+                            separationSqrMagnitude = distance,
+                        });
+                    }
+                    AimLaser();
 
                     yield return new WaitForSeconds(0.1f);
 
@@ -120,6 +121,7 @@ namespace LemurFusion.AI
 
                     target = FindProjectiles(this.body.footPosition, out distance);
                 }
+                DisableLaser();
 
                 yield return new WaitForSeconds(0.2f);
             }
@@ -135,7 +137,7 @@ namespace LemurFusion.AI
             for (int i = 0; i < count; i++)
             {
                 ProjectileController projectileController = ListUtils.GetSafe(instancesList, i);
-                if (projectileController  && projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
+                if (projectileController && projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
                 {
                     var other = (projectileController.transform.position - position).sqrMagnitude;
                     if (other < distance)

@@ -10,7 +10,6 @@ namespace LemurFusion.Config
     {
         #region Config Entries
         public static ConfigEntry<bool> Blacklist_Enable;
-        public static ConfigEntry<bool> Blacklist_Filter_SprintRelated;
         public static ConfigEntry<bool> Blacklist_Filter_CannotCopy;
         public static ConfigEntry<bool> Blacklist_Filter_Scrap;
 
@@ -161,8 +160,6 @@ namespace LemurFusion.Config
 
                     bool valid = !Blacklisted_Items.Contains(idx) && !Blacklisted_ItemTiers.Contains(itemDef.tier);
 
-                    if (Blacklist_Filter_SprintRelated.Value)
-                        valid &= itemDef.DoesNotContainTag(ItemTag.SprintRelated);
                     if (Blacklist_Filter_CannotCopy.Value)
                         valid &= itemDef.DoesNotContainTag(ItemTag.CannotCopy);
                     if (Blacklist_Filter_Scrap.Value)
@@ -178,7 +175,6 @@ namespace LemurFusion.Config
                 LemurFusionPlugin.LogWarning(e.Message);
                 LemurFusionPlugin.LogWarning(e.StackTrace);
             }
-
         }
 
         internal static void TestFilter()

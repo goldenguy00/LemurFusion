@@ -11,7 +11,7 @@ namespace LemurFusion.Config
         private const string EXPERIMENTAL = "02 - Experimental";
         private const string STATS = "03 - Fusion Stats";
         private const string AI_CONFIG = "04 - AI Changes";
-        private const string DEATH = " 05 - Death Settings";
+        private const string DEATH = "05 - Death Settings";
 		private const string BLACKLIST = "06 - Item Blacklist";
 
         private const string Desc_Enable = "Enables changes for this section.";
@@ -93,9 +93,9 @@ namespace LemurFusion.Config
             // stats
             //
             PluginConfig.rebalanceHealthScaling = PluginConfig.BindOption(STATS,
-                "Rebalance Health Scaling",
+                "Rebalance Stat Scaling",
                 true,
-                "Rebalances health scaling so that new summons on later stages have an easier time surviving");
+                "Rebalances base stats and stat scaling so that new summons on later stages have an easier time surviving and elder lemurians dont get buffed as much");
 
             PluginConfig.statMultHealth = PluginConfig.BindOptionSlider(STATS,
                 "Fusion Health Increase",
@@ -225,11 +225,6 @@ namespace LemurFusion.Config
                 true, 
                 Desc_Enable, 
                 true);
-
-            ConfigExtended.Blacklist_Filter_SprintRelated = PluginConfig.BindOption(BLACKLIST,
-                "Blacklist Sprint Related Items",
-                true,
-                "Automatically blacklist items that are tagged as Sprint Related. Lemurs can't sprint. Sorry.");
 
             ConfigExtended.Blacklist_Filter_CannotCopy = PluginConfig.BindOption(BLACKLIST, 
 				"Blacklist CannotCopy", 

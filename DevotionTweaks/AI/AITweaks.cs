@@ -44,7 +44,7 @@ namespace LemurFusion.AI
         {
             if (improveAI.Value)
             {
-                RoR2Application.onLoad += PostLoad;
+                RoR2Application.onLoad += AITweaks.PostLoad;
 
                 foreach (var driver in DevotionTweaks.masterPrefab.GetComponentsInChildren<AISkillDriver>())
                 {
@@ -87,8 +87,6 @@ namespace LemurFusion.AI
                 component2.driverUpdateTimerOverride = 0.5f;
                 component2.moveInputScale = 0.8f;
                 component2.resetCurrentEnemyOnNextDriverSelection = true;
-
-                component.nextHighPriorityOverride = component2;
 
                 DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
 
