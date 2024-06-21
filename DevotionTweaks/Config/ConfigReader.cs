@@ -153,6 +153,12 @@ namespace LemurFusion.Config
                 "Visualize Projectile Tracking",
                 false,
                 "Requires \"Enable Projectile Tracking\". Creates a line connecting the foot position to the tracked projectile.");
+
+            AITweaks.excludeSurvivorProjectiles = PluginConfig.BindOption(AI_CONFIG,
+                "Exclude Survivor Projectiles",
+                true,
+                "Requires \"Enable Projectile Tracking\". Excludes enemy survivor projectiles from the list of dodgable projectiles. Set to false if you commonly fight vanilla survivor Umbras.",
+                true);
         }
 
         private static void ReadConfigExtended()

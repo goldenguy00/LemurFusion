@@ -151,7 +151,7 @@ namespace LemurFusion
                     sender.levelMaxHealth = 43f;
                     sender.baseMoveSpeed = 7f;
                     args.baseHealthAdd = 180f;
-                    args.levelHealthAdd = 21.5f + (21.5f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel));
+                    args.levelHealthAdd = 21.5f + (10f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel));
                     args.levelRegenAdd = Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);

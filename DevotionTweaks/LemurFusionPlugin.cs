@@ -21,7 +21,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.2.2";
 
         public static LemurFusionPlugin instance;
 
@@ -47,8 +47,6 @@ namespace LemurFusion
 
             CreateHarmonyPatches();
             CreateProperSaveCompat();
-
-            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
 
             RoR2Application.onLoad += ConfigExtended.PostLoad;
         }

@@ -5,6 +5,8 @@ using RoR2.Projectile;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace LemurFusion.AI
 {
@@ -14,6 +16,9 @@ namespace LemurFusion.AI
         private int strafeSkillIndex;
         private float escapeDistance;
         private float safeDistance;
+        private float distance;
+        private float delayTime;
+        private float jumpPower;
 
         private BaseAI ai;
         private CharacterMaster master;
@@ -44,11 +49,26 @@ namespace LemurFusion.AI
 
             if (this.escapeSkillIndex != -1 && this.strafeSkillIndex != -1)
             {
+                if (SceneManager.GetActiveScene().name == "moon2")
+                {
+                    delayTime = 0.2f;
+                    jumpPower = 0.6f;
+                    this.ai.skillDrivers[strafeSkillIndex].maxDistance = 50f;
+                }
+                else
+                {
+                    delayTime = 0.5f;
+                    jumpPower = 1f;
+                    this.ai.skillDrivers[strafeSkillIndex].maxDistance = 30f;
+                }
+
+                this.ai.fullVision = true;
                 this.escapeDistance = this.ai.skillDrivers[escapeSkillIndex].maxDistanceSqr;
                 this.safeDistance = this.ai.skillDrivers[strafeSkillIndex].maxDistanceSqr;
                 base.StartCoroutine(nameof(UpdateSkillDrivers));
             }
         }
+
 
         private void CreateLaser()
         {
@@ -90,64 +110,68 @@ namespace LemurFusion.AI
                 while (!AITweaks.enableProjectileTracking.Value || !this.body)
                 {
                     yield return new WaitForSeconds(2);
-                    this.body = master.GetBody();
+                    this.body = this.master.GetBody();
                 }
                 CreateLaser();
 
-                this.ai.customTarget.Reset();
-                var target = FindProjectiles(this.body.footPosition, out var distance);
-                while (target)
+                while (FindProjectiles())
                 {
                     AISkillDriver driver;
                     if (distance < escapeDistance) driver = this.ai.skillDrivers[escapeSkillIndex];
                     else driver = this.ai.skillDrivers[strafeSkillIndex];
-
-                    this.ai.customTarget.gameObject = target;
-                    if (driver.customName == AITweaks.SKILL_ESCAPE_NAME || driver.customName != ai.selectedSkilldriverName)
+                    this.ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
                     {
-                        this.ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
-                        {
-                            target = ai.customTarget,
-                            aimTarget = ai.customTarget,
-                            dominantSkillDriver = driver,
-                            separationSqrMagnitude = distance,
-                        });
+                        target = ai.customTarget,
+                        aimTarget = ai.currentEnemy,
+                        dominantSkillDriver = driver,
+                        separationSqrMagnitude = this.distance,
+                    });
+
+                    if (this.body.characterMotor.isGrounded && AITweaks.pain.Contains(this.ai.customTarget.gameObject.name))
+                    {
+                        this.body.characterMotor.airControl = 1f;
+                        this.body.characterMotor.Jump(this.jumpPower * 0.5f, this.jumpPower);
                     }
+
                     AimLaser();
 
                     yield return new WaitForSeconds(0.1f);
-
-                    if (!this.body) break;
-
-                    target = FindProjectiles(this.body.footPosition, out distance);
                 }
                 DisableLaser();
 
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(delayTime);
             }
             yield break;
         }
 
-        private GameObject FindProjectiles(Vector3 position, out float distance)
+        private bool FindProjectiles()
         {
             GameObject target = null;
-            distance = this.safeDistance;
-            List<ProjectileController> instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
-            var count = instancesList.Count;
-            for (int i = 0; i < count; i++)
+            this.distance = this.safeDistance;
+
+            if (this.body)
             {
-                ProjectileController projectileController = ListUtils.GetSafe(instancesList, i);
-                if (projectileController && projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
+                var instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
+                var position = this.body.footPosition;
+                var count = instancesList.Count;
+
+                for (int i = 0; i < count; i++)
                 {
-                    var other = (projectileController.transform.position - position).sqrMagnitude;
-                    if (other < distance)
+                    ProjectileController projectileController = ListUtils.GetSafe(instancesList, i);
+                    if (projectileController && projectileController.teamFilter.teamIndex != TeamIndex.Player && AITweaks.projectileIds.Contains(projectileController.catalogIndex))
                     {
-                        distance = other;
-                        target = projectileController.gameObject;
+                        var other = (projectileController.transform.position - position).sqrMagnitude;
+                        if (other < this.distance)
+                        {
+                            this.distance = other;
+                            target = projectileController.gameObject;
+                        }
                     }
                 }
             }
-            return target;
+
+            this.ai.customTarget.gameObject = target;
+            return !this.ai.customTarget.unset;
         }
     }
 }

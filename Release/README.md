@@ -23,7 +23,7 @@ Makes your lemurians fuse together like dragonball!
 
 - Designed to be a full scale rework but still compatible with all other mods
 
-- Cracked af AI, uses predictive aiming and actively dodges projectiles
+- Cracked af AI! Uses predictive aiming, actively dodges, strafes and jumps projectiles while continuing to fight back.
 
 - Rebalancing of stats and scaling for better survivability later on.
 
@@ -48,7 +48,7 @@ Makes your lemurians fuse together like dragonball!
 
 ### *(WORK IN PROGRESS, SOME FUTURE PLANS COMING SOON)*
 
-- Overlap attack dodging, jump dodging (for Mithrix specifically)
+- Overlap attack dodging (for Mithrix specifically)
 
 - Multiple elite types on a single guy.
 
@@ -95,4 +95,13 @@ Makes your lemurians fuse together like dragonball!
     >https://thunderstore.io/package/kking117/DevotionConfig/
 
 - Nuxlar for the scoreboard
+
     >https://github.com/FocusedFault
+
+- HIFU for some references when getting started
+
+    >https://thunderstore.io/package/HIFU/HIFUDevotionTweaks/
+
+- Goorakh for fixing the vanilla prefab issues
+
+    >https://thunderstore.io/package/Goorakh/LemurianFix/

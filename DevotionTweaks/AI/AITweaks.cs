@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using EntityStates.AI.Walker;
 using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
 using Mono.Cecil.Cil;
@@ -24,9 +25,10 @@ namespace LemurFusion.AI
         public static ConfigEntry<bool> enablePredictiveAiming;
         public static ConfigEntry<bool> enableProjectileTracking;
         public static ConfigEntry<bool> visualizeProjectileTracking;
+        public static ConfigEntry<bool> excludeSurvivorProjectiles;
 
         public static HashSet<int> projectileIds = [];
-        public static HashSet<int> pain = [];
+        public static HashSet<string> pain = [];
 
         public static float basePredictionAngle = 45f;
 
@@ -76,43 +78,98 @@ namespace LemurFusion.AI
 
                 var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component2.customName = SKILL_STRAFE_NAME;
-                component2.skillSlot = SkillSlot.None;
+                component2.skillSlot = SkillSlot.Primary;
                 component2.maxDistance = 30f;
                 component2.minDistance = 20f;
                 component2.aimType = AISkillDriver.AimType.AtCurrentEnemy;
                 component2.moveTargetType = AISkillDriver.TargetType.Custom;
                 component2.movementType = AISkillDriver.MovementType.StrafeMovetarget;
-                component2.ignoreNodeGraph = false;
+                component2.ignoreNodeGraph = true;
                 component2.shouldSprint = true;
-                component2.driverUpdateTimerOverride = 0.5f;
+                component2.driverUpdateTimerOverride = 1f;
                 component2.moveInputScale = 0.8f;
-                component2.resetCurrentEnemyOnNextDriverSelection = true;
+                component2.activationRequiresAimTargetLoS = true;
+                component2.activationRequiresAimConfirmation = true;
 
                 DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
 
-                EnablePrediction();
+                ILHooks();
             }
         }
 
-        public static void PostLoad()
+        private static void PostLoad()
         {
+            List<string> survivors = ["Captain", "Bandit", "Commando", "Croco", "Driver", "Engi", "Evis", "Heal",
+               "Firework", "Hunk", "Huntress", "Loader", "Mage", "Paladin", "Railgunner", "SS2", "Toolbot", "Treebot", "VoidSurvivor"];
             foreach (var projectile in ProjectileCatalog.projectilePrefabProjectileControllerComponents)
             {
-                var prefab = ProjectileCatalog.GetProjectilePrefab(projectile.catalogIndex);
-                if (projectile.GetComponent<ProjectileDotZone>() || projectile.GetComponent<ProjectileFuse>() ||
-                    projectile.GetComponent<DeathProjectile>() || projectile.GetComponent<ProjectileImpactExplosion>())
+                if (excludeSurvivorProjectiles.Value && survivors.Any(projectile.gameObject.name.Contains))
+                    continue;
+
+                if (projectile.GetComponent<ProjectileDotZone>())
                 {
-                    if (projectile.GetComponentInChildren<Collider>())
-                    {
-                        projectileIds.Add(projectile.catalogIndex);
-                        LemurFusionPlugin.LogInfo($"Adding projectile by component {prefab.name}");
-                    }
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin.LogInfo($"Adding ProjectileDotZone {projectile.gameObject.name}");
+                }
+                if (projectile.GetComponent<ProjectileFuse>())
+                {
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin.LogInfo($"Adding ProjectileFuse {projectile.gameObject.name}");
+                }
+                if (projectile.GetComponent<ProjectileImpactExplosion>())
+                {
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin.LogInfo($"Adding ProjectileImpactExplosion {projectile.gameObject.name}");
+                }
+                if (projectile.GetComponent<ProjectileOverlapAttack>())
+                {
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin.LogInfo($"Adding ProjectileOverlapAttack {projectile.gameObject.name}");
+                }
+                if (projectile.GetComponent<ProjectileIntervalOverlapAttack>())
+                {
+                    projectileIds.Add(projectile.catalogIndex);
+                    LemurFusionPlugin.LogInfo($"Adding ProjectileIntervalOverlapAttack {projectile.gameObject.name}");
+                }
+
+                if (projectile.gameObject.name.Contains("Sunder"))
+                {
+                    pain.Add(projectile.gameObject.name + "(Clone)");
+                    LemurFusionPlugin.LogInfo($"Setting AI to jump when dodging {projectile.gameObject.name}");
                 }
             }
         }
 
-        private static void EnablePrediction()
+        private static void ILHooks()
         {
+            IL.EntityStates.AI.Walker.Combat.UpdateAI += (il) =>
+            {
+                ILCursor c = new(il);
+                if (c.TryGotoNext(MoveType.Before,
+                        i => i.MatchLdcI4(0),
+                        i => i.MatchStloc(13)
+                    ))
+                {
+                    c.Emit(OpCodes.Ldloc, 12);
+                    c.Emit(OpCodes.Ldloc, 15);
+                    c.Emit(OpCodes.Ldarg_0);
+                    c.Emit<Combat>(OpCodes.Ldfld, nameof(Combat.dominantSkillDriver));
+                    c.EmitDelegate<Func<Vector3, Vector3, AISkillDriver, Vector3>>((position, fleeDirection, skillDriver) =>
+                    {
+                        if (skillDriver && skillDriver.customName == SKILL_STRAFE_NAME)
+                        {
+                            return position - fleeDirection;
+                        }
+                        return position;
+                    });
+                    c.Emit(OpCodes.Stloc, 12);
+                }
+                else
+                {
+                    LemurFusionPlugin.LogError("EntityStates.AI.Walker.Combat.UpdateAI IL Hook failed");
+                }
+            };
+
             IL.EntityStates.LemurianMonster.FireFireball.OnEnter += (il) =>
             {
                 ILCursor c = new(il);

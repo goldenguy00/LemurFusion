@@ -34,6 +34,8 @@ namespace LemurFusion
         public static HashSet<EquipmentIndex> highLvl = [];
 
         public static GameObject masterPrefab;
+        public static GameObject bodyPrefab;
+
         public const string masterPrefabName = "BetterDevotedLemurianMaster";
         public const string masterCloneName = masterPrefabName + "(Clone)";
 
@@ -45,16 +47,13 @@ namespace LemurFusion
         {
             if (instance != null) return;
             instance = new DevotionTweaks();
+
             EnableSharedInventory = PluginConfig.enableSharedInventory.Value;
 
             //        //
             // assets //
             //        //
-
-            UpdateItemDef();
-            masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion().InstantiateClone(masterPrefabName, true);
-            MonoBehaviour.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
-            masterPrefab.AddComponent<BetterLemurController>();
+            LoadAssets();
 
             //       //
             // hooks //
@@ -79,7 +78,7 @@ namespace LemurFusion
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
         }
 
-        private static void UpdateItemDef()
+        private static void LoadAssets()
         {
             //Fix up the tags on the Harness
             LemurFusionPlugin.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
@@ -88,6 +87,23 @@ namespace LemurFusion
             {
                 itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy]).Distinct().ToArray();
             }
+
+            // better master
+            masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion().InstantiateClone(masterPrefabName, true);
+            MonoBehaviour.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
+            masterPrefab.AddComponent<BetterLemurController>();
+
+            // dupe body
+            GameObject lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
+            bodyPrefab = lemurianBodyPrefab.InstantiateClone("DevotedLemurianBody", true);
+            masterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bodyPrefab;
+
+            // fix original
+            CharacterBody lemurianBody = lemurianBodyPrefab.GetComponent<CharacterBody>();
+            lemurianBody.bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
+
+            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
+            ContentAddition.AddBody(DevotionTweaks.bodyPrefab);
         }
 
         #region Artifact Setup
@@ -207,11 +223,11 @@ namespace LemurFusion
                 // successful lemurmeld
                 // hijacking this var for CreateTwin_ExtraLife. fuck your config, you get another friend.
                 var targetSummon = self.ignoreTeamMemberLimit ? null : TrySummon(body.masterObjectId);
+                self.ignoreTeamMemberLimit = true;
                 if (targetSummon != null)
                 {
                     return targetSummon;
                 }
-                self.ignoreTeamMemberLimit = true;
             }
             return orig(self);
         }

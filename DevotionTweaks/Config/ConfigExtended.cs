@@ -191,16 +191,6 @@ namespace LemurFusion.Config
                     bool defaultResult;
                     if (item && (item.tier == ItemTier.Lunar || item.tier >= ItemTier.NoTier)) defaultResult = false;
                     else defaultResult = Inventory.defaultItemCopyFilterDelegate(item.itemIndex);
-
-                    if (result && !defaultResult)
-                    {
-                        LemurFusionPlugin.LogInfo(
-                            $"\t{item?.nameToken} | {item.tier}\r\n" +
-                            $"\tDefault: {defaultResult}\t New: {result}\r\n" +
-                            $"\tHidden? {item.hidden}\t CanRemove? {item.canRemove}\t CanScrap? {ItemTierCatalog.GetItemTierDef(item.tier)?.canScrap}\r\n" +
-                            $"\tIn Item Blacklist? {Blacklisted_Items.Contains(item.itemIndex)}\r\n\tIn Tier blacklist? {Blacklisted_ItemTiers.Contains(item.tier)}\r\n" +
-                            $"\tTags: {string.Concat(item.tags.Select(t => Enum.GetName(typeof(ItemTag), t) + ", "))}");
-                    }
                 }
             }
             catch (Exception e)

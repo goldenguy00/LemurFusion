@@ -1,3 +1,19 @@
+# 1.2.2
+
+- Implemented changes from https://thunderstore.io/package/Goorakh/LemurianFix/ cuz i love stealing
+
+- More refinement to AI and some small optimizations to the dodging routine.
+
+- Adjusted strafe to create more distance, added jump logic for some projectiles.
+
+- Maintains the "in combat" update rate and widens scan radius when fighting mithrix (fast projectiles could sneak hits in)
+
+- Added survivor projectile filter. Rarely useful but not worth getting rid of entirely.
+
+# 1.2.1
+
+- Made projectile filtering too aggressive, they will escape from dotzones and void death like intended.
+
 # 1.2.0
 
 - Refined AI changes. Features predictive aiming (thanks moff love u), projectile dodging and sprinting!
