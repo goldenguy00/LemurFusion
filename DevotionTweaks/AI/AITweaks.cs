@@ -4,6 +4,7 @@ using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using R2API;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -28,7 +29,7 @@ namespace LemurFusion.AI
         public static ConfigEntry<bool> excludeSurvivorProjectiles;
 
         public static HashSet<int> projectileIds = [];
-        public static HashSet<string> pain = [];
+        public static HashSet<int> overlapIds = [];
 
         public static float basePredictionAngle = 45f;
 
@@ -67,8 +68,7 @@ namespace LemurFusion.AI
                 var component = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component.customName = SKILL_ESCAPE_NAME;
                 component.skillSlot = SkillSlot.None;
-                component.maxDistance = 20f;
-                component.minDistance = 0f;
+                component.maxDistance = 10f;
                 component.aimType = AISkillDriver.AimType.AtCurrentEnemy;
                 component.moveTargetType = AISkillDriver.TargetType.Custom;
                 component.movementType = AISkillDriver.MovementType.FleeMoveTarget;
@@ -79,8 +79,7 @@ namespace LemurFusion.AI
                 var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component2.customName = SKILL_STRAFE_NAME;
                 component2.skillSlot = SkillSlot.Primary;
-                component2.maxDistance = 30f;
-                component2.minDistance = 20f;
+                component2.maxDistance = 25f;
                 component2.aimType = AISkillDriver.AimType.AtCurrentEnemy;
                 component2.moveTargetType = AISkillDriver.TargetType.Custom;
                 component2.movementType = AISkillDriver.MovementType.StrafeMovetarget;
@@ -100,42 +99,31 @@ namespace LemurFusion.AI
         private static void PostLoad()
         {
             List<string> survivors = ["Captain", "Bandit", "Commando", "Croco", "Driver", "Engi", "Evis", "Heal",
-               "Firework", "Hunk", "Huntress", "Loader", "Mage", "Paladin", "Railgunner", "SS2", "Toolbot", "Treebot", "VoidSurvivor"];
-            foreach (var projectile in ProjectileCatalog.projectilePrefabProjectileControllerComponents)
+               "Firework", "Hunk", "Huntress", "Loader", "Mage", "Paladin", "Railgunner", "SS2", "Toolbot", "Treebot", "VoidSurvivor", "Mauling",
+            "Needle", "Scissor", "Scout"];
+            foreach (var projectile in ProjectileCatalog.projectilePrefabs)
             {
                 if (excludeSurvivorProjectiles.Value && survivors.Any(projectile.gameObject.name.Contains))
                     continue;
 
-                if (projectile.GetComponent<ProjectileDotZone>())
+                if (projectile.TryGetComponent<ProjectileController>(out var controller))
                 {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin.LogInfo($"Adding ProjectileDotZone {projectile.gameObject.name}");
-                }
-                if (projectile.GetComponent<ProjectileFuse>())
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin.LogInfo($"Adding ProjectileFuse {projectile.gameObject.name}");
-                }
-                if (projectile.GetComponent<ProjectileImpactExplosion>())
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin.LogInfo($"Adding ProjectileImpactExplosion {projectile.gameObject.name}");
-                }
-                if (projectile.GetComponent<ProjectileOverlapAttack>())
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin.LogInfo($"Adding ProjectileOverlapAttack {projectile.gameObject.name}");
-                }
-                if (projectile.GetComponent<ProjectileIntervalOverlapAttack>())
-                {
-                    projectileIds.Add(projectile.catalogIndex);
-                    LemurFusionPlugin.LogInfo($"Adding ProjectileIntervalOverlapAttack {projectile.gameObject.name}");
-                }
-
-                if (projectile.gameObject.name.Contains("Sunder"))
-                {
-                    pain.Add(projectile.gameObject.name + "(Clone)");
-                    LemurFusionPlugin.LogInfo($"Setting AI to jump when dodging {projectile.gameObject.name}");
+                    if (projectile.GetComponent<ProjectileFuse>())
+                    {
+                        projectileIds.Add(controller.catalogIndex);
+                        LemurFusionPlugin.LogInfo($"Adding ProjectileFuse {projectile.gameObject.name}");
+                    }
+                    else if (projectile.GetComponent<ProjectileImpactExplosion>())
+                    {
+                        projectileIds.Add(controller.catalogIndex);
+                        LemurFusionPlugin.LogInfo($"Adding ProjectileImpactExplosion {projectile.gameObject.name}");
+                    }
+                    else if (projectile.GetComponent<HitBoxGroup>())
+                    {
+                        projectileIds.Add(controller.catalogIndex);
+                        overlapIds.Add(controller.catalogIndex);
+                        LemurFusionPlugin.LogInfo($"Adding HitboxGroup {projectile.gameObject.name}");
+                    }
                 }
             }
         }
@@ -158,7 +146,7 @@ namespace LemurFusion.AI
                     {
                         if (skillDriver && skillDriver.customName == SKILL_STRAFE_NAME)
                         {
-                            return position - fleeDirection;
+                            return position - fleeDirection * 0.5f;
                         }
                         return position;
                     });
@@ -174,11 +162,12 @@ namespace LemurFusion.AI
             {
                 ILCursor c = new(il);
                 if (c.TryGotoNext(MoveType.After,
-                     x => x.MatchCall<EntityStates.BaseState>("GetAimRay")
+                     i => i.MatchStloc(0)
                     ))
                 {
                     c.Emit(OpCodes.Ldarg_0);
-                    c.EmitDelegate<Func<Ray, FireFireball, Ray>>((aimRay, self) =>
+                    c.Emit(OpCodes.Ldloc_0);
+                    c.EmitDelegate<Func<FireFireball, Ray, Ray>>((self, aimRay) =>
                     {
                         if (AITweaks.AllowPrediction(self.characterBody))
                         {
@@ -188,6 +177,7 @@ namespace LemurFusion.AI
                         }
                         return aimRay;
                     });
+                    c.Emit(OpCodes.Stloc_0);
                 }
                 else
                 {
@@ -199,31 +189,30 @@ namespace LemurFusion.AI
             {
                 ILCursor c = new(il);
                 if (c.TryGotoNext(MoveType.After,
-                     x => x.MatchCall<EntityStates.BaseState>("GetAimRay")
+                     x => x.MatchStloc(2)
                     ))
                 {
                     c.Emit(OpCodes.Ldarg_0);
-                    c.EmitDelegate<Func<Ray, FireMegaFireball, Ray>>((aimRay, self) =>
+                    c.Emit(OpCodes.Ldloc_2);
+                    c.EmitDelegate<Func<FireMegaFireball, Ray, Ray>>((self, aimRay) =>
                     {
                         if (AITweaks.AllowPrediction(self.characterBody))
                         {
                             HurtBox targetHurtbox = AITweaks.GetMasterAITargetHurtbox(self.characterBody.master);
-                            Ray newAimRay;
 
                             float projectileSpeed = FireMegaFireball.projectileSpeed;
                             if (projectileSpeed > 0f)
                             {
-                                newAimRay = AITweaks.PredictAimray(aimRay, projectileSpeed, targetHurtbox);
+                                aimRay = AITweaks.PredictAimray(aimRay, projectileSpeed, targetHurtbox);
                             }
                             else
                             {
-                                newAimRay = AITweaks.PredictAimrayPS(aimRay, FireMegaFireball.projectilePrefab, targetHurtbox);
+                                aimRay = AITweaks.PredictAimrayPS(aimRay, FireMegaFireball.projectilePrefab, targetHurtbox);
                             }
-
-                            return newAimRay;
                         }
                         return aimRay;
                     });
+                    c.Emit(OpCodes.Stloc_2);
                 }
                 else
                 {

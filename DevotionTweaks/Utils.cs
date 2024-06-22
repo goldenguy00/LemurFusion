@@ -1,5 +1,7 @@
-﻿using LemurFusion.Config;
+﻿using HG;
+using LemurFusion.Config;
 using RoR2;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -91,17 +93,55 @@ namespace LemurFusion
 
         public static float GetStatModifier(int configValue, int meldCount, int evolutionCount)
         {
-            return (meldCount * (configValue * 0.01f)) + (GetLevelModifier(evolutionCount) * 0.1f);
+            var evolutionModifier = Mathf.Clamp(evolutionCount, 0, 4);
+            var configModifier = PluginConfig.statMultEvo.Value * 0.01f;
+            return (meldCount - 1) * (configValue * 0.01f) + (evolutionModifier * configModifier * 0.1f);
         }
 
         public static float GetLevelModifier(int evolutionCount)
         {
             if (!Run.instance) return 0;
 
-            // big bonuses of 100%->300% for early stage and evolutions then continue with 10% increases later on
-            var stageModifier = Mathf.Clamp(Mathf.Max(Run.instance.stageClearCount + 1, evolutionCount), 1, 3);
-            return  stageModifier + ((evolutionCount * 0.1f) * (PluginConfig.statMultEvo.Value * 0.01f));
+            var stageModifier = Mathf.Clamp(Run.instance.stageClearCount + 1, 1, 4);
+            var evolutionModifier = Mathf.Clamp(evolutionCount, 0, 4);
+            var configModifier = PluginConfig.statMultEvo.Value * 0.01f;
+            return (stageModifier * configModifier) + (evolutionModifier * configModifier);
         }
         #endregion
+
+        public static Vector3 EstimateClosestPoint(Transform transform, Vector3 point)
+        {
+            Vector3 pos = transform.position;
+            Vector3 bounds = transform.lossyScale * 0.5f;
+            Quaternion rotation = transform.rotation;
+
+            // take the two opposite corners, rotate then find the closest point on that line
+            var p1 = new Vector3(pos.x + bounds.x, pos.y, pos.z + bounds.z);
+            var p2 = new Vector3(pos.x - bounds.x, pos.y, pos.z - bounds.z);
+            var p3 = new Vector3(pos.x + bounds.x, pos.y, pos.z - bounds.z);
+            var p4 = new Vector3(pos.x - bounds.x, pos.y, pos.z + bounds.z);
+            p1 = rotation * p1;
+            p2 = rotation * p2;
+            p3 = rotation * p3;
+            p4 = rotation * p4;
+            Vector3 vect = NearestPointOnLine(point, p1, p2);
+            Vector3 otherVect = NearestPointOnLine(point, p3, p4);
+
+            if (Vector3.Distance(vect, point) < Vector3.Distance(otherVect, point))
+                return vect;
+            return otherVect;
+        }
+
+        public static Vector3 NearestPointOnLine(Vector3 point, Vector3 start, Vector3 end)
+        {
+            var line = (end - start);
+            var len = line.magnitude;
+            line.Normalize();
+
+            var v = point - start;
+            var d = Vector3.Dot(v, line);
+            d = Mathf.Clamp(d, 0f, len);
+            return start + line * d;
+        }
     }
 }

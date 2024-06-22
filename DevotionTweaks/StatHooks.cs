@@ -147,11 +147,11 @@ namespace LemurFusion
             {
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
-                    sender.baseMaxHealth = 180f;
-                    sender.levelMaxHealth = 43f;
+                    sender.baseMaxHealth = 90f;
+                    sender.levelMaxHealth = 11f;
                     sender.baseMoveSpeed = 7f;
-                    args.baseHealthAdd = 180f;
-                    args.levelHealthAdd = 21.5f + (10f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel));
+                    args.baseHealthAdd = 90f;
+                    args.levelHealthAdd = 11f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
                     args.levelRegenAdd = Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
