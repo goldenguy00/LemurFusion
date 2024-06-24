@@ -93,6 +93,9 @@
       <HintPath>libs\SimpleJSON.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="VarianceAPI">
+      <HintPath>..\libs\VarianceAPI.dll</HintPath>
+    </Reference>
     <Reference Include="Wwise">
       <HintPath>libs\Wwise.dll</HintPath>
       <Private>false</Private>

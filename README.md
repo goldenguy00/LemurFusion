@@ -65,6 +65,8 @@ Makes your lemurians fuse together like dragonball!
 
 - Improve AI with predictive aiming and projectile dodging
 
+- Projectile dodging settings for refining the AI
+
 - Stat Rebalancing and Stat Increase Per Fusion
 
 - Teleport to owner distance

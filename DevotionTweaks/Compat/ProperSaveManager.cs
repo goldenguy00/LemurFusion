@@ -6,26 +6,33 @@ using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace LemurFusion
+namespace LemurFusion.Compat
 {
     public class BetterLemurianData
     {
         [DataMember(Name = "bldsi")]
         public ProperSave.Data.UserIDData summonerId;
 
-        [DataMember(Name = "bldid")]
-        public ProperSave.Data.ItemData[] itemData;
+        [DataMember(Name = "blddid")]
+        public ProperSave.Data.ItemData[] devotedItemData;
 
-        [DataMember(Name = "bldfl")]
-        public int fusionLevel;
+        [DataMember(Name = "blduid")]
+        public ProperSave.Data.ItemData[] untrackedItemData;
 
         public BetterLemurianData() { }
 
         public BetterLemurianData(ProperSave.Data.UserIDData userID, BetterLemurController lemCtrl)
         {
             summonerId = userID;
-            fusionLevel = lemCtrl.FusionCount;
-            itemData = lemCtrl._devotedItemList.Select(kvp =>
+
+            devotedItemData = lemCtrl._devotedItemList.Select(kvp =>
+                new ProperSave.Data.ItemData()
+                {
+                    itemIndex = (int)kvp.Key,
+                    count = kvp.Value
+                }).ToArray();
+
+            untrackedItemData = lemCtrl._untrackedItemList.Select(kvp =>
                 new ProperSave.Data.ItemData()
                 {
                     itemIndex = (int)kvp.Key,
@@ -35,18 +42,27 @@ namespace LemurFusion
 
         public void LoadData(BetterLemurController lemCtrl)
         {
+            var itemCount = ItemCatalog.itemCount;
             lemCtrl._devotedItemList = [];
-            for (int i = 0; i < itemData.Length; i++)
+            lemCtrl._untrackedItemList = [];
+
+            for (int i = 0; i < devotedItemData.Length; i++)
             {
-                var item = itemData[i];
-                Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
+                var item = devotedItemData[i];
+                if (item.itemIndex < itemCount)
+                {
+                    Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
+                }
             }
 
-            lemCtrl._untrackedItemList = [];
-            Utils.SetItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness, fusionLevel);
-            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash);
-            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel);
-            Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob);
+            for (int i = 0; i < untrackedItemData.Length; i++)
+            {
+                var item = untrackedItemData[i];
+                if (item.itemIndex < itemCount)
+                {
+                    Utils.SetItem(lemCtrl._untrackedItemList, (ItemIndex)item.itemIndex, item.count);
+                }
+            }
         }
     }
 
@@ -81,17 +97,14 @@ namespace LemurFusion
 
         private void Loading_OnLoadingEnded(ProperSave.SaveFile saveFile)
         {
-            if (saveFile.ModdedData.TryGetValue(LemurFusionPlugin.PluginGUID, out var rawData) && 
+            if (saveFile.ModdedData.TryGetValue(LemurFusionPlugin.PluginGUID, out var rawData) &&
                 rawData?.Value is List<BetterLemurianData> lemurData && lemurData.Any())
             {
                 CharacterMaster.onStartGlobal += SpawnMinion;
                 void SpawnMinion(CharacterMaster master)
                 {
-                    if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                    if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && FuckingNullCheck(master, out var netId))
                     {
-                        var netId = master.minionOwnership?.ownerMaster?.playerCharacterMasterController?.networkUser?.id;
-                        if (!netId.HasValue) return;
-
                         var savedLemData = lemurData.FirstOrDefault(lem => lem.summonerId.Load().Equals(netId));
                         if (savedLemData != null)
                         {
@@ -102,7 +115,7 @@ namespace LemurFusion
                         if (!lemurData.Any())
                         {
                             CharacterMaster.onStartGlobal -= SpawnMinion;
-                            
+
                             // sync
                             foreach (DevotionInventoryController instance in DevotionInventoryController.InstanceList)
                             {
@@ -114,12 +127,41 @@ namespace LemurFusion
             }
         }
 
+        private static bool FuckingNullCheck(CharacterMaster master, out NetworkInstanceId netId)
+        {
+            // this is how you correctly nullcheck in unity.
+            // fucking kill me in the face man.
+            netId = NetworkInstanceId.Zero;
+
+            if (!master)
+                return false;
+
+            var minion = master.minionOwnership;
+            if (!minion)
+                return false;
+
+            var ownerMaster = minion.ownerMaster;
+            if (!ownerMaster)
+                return false;
+
+            var pCMC = ownerMaster.playerCharacterMasterController;
+            if (!pCMC)
+                return false;
+
+            var networkUser = pCMC.networkUser;
+            if (!networkUser) 
+                return false;
+
+            netId = networkUser.netId;
+            return !netId.IsEmpty(); 
+        }
+
         private static List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
         {
             List<BetterLemurController> lemCtrlList = [];
             foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(masterID)?.members ?? [])
             {
-                if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl))
                 {
                     lemCtrlList.Add(lemCtrl);
                 }

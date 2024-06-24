@@ -1,4 +1,4 @@
-﻿using LemurFusion.AI;
+﻿using LemurFusion.Devotion.Tweaks;
 using System.Runtime.CompilerServices;
 
 namespace LemurFusion.Config
@@ -21,6 +21,7 @@ namespace LemurFusion.Config
             ReadConfig();
             ReadAIConfig();
             ReadConfigExtended();
+            RoR2.RoR2Application.onLoad += ConfigExtended.PostLoad;
         }
 
 
@@ -87,6 +88,13 @@ namespace LemurFusion.Config
                 "Enable Detailed Logs",
                 false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.");
+
+            PluginConfig.enableCompatMode = PluginConfig.BindOption(EXPERIMENTAL,
+                "Enable Compatibility Mode",
+                false,
+                "Some devotion inventory changes require major system reworks. " +
+                "Enable this setting to improve compatibility with other Devotion mods at the cost of reduced functionality.",
+                true);
 
             //
             // stats
@@ -159,6 +167,20 @@ namespace LemurFusion.Config
                 true,
                 "Requires \"Enable Projectile Tracking\". Excludes enemy survivor projectiles from the list of dodgable projectiles. Set to false if you commonly fight vanilla survivor Umbras.",
                 true);
+
+            AITweaks.updateFrequency = PluginConfig.BindOptionSlider(AI_CONFIG,
+                "In Combat Update Frequency",
+                0.1f,
+                "Requires \"Enable Projectile Tracking\". Controls how often to refresh the projectile targeting. " +
+                "Increasing this value may change how the AI pathing behaves but will result in getting hit more often.",
+                0.1f, 0.5f);
+
+            AITweaks.detectionRadius = PluginConfig.BindOptionSlider(AI_CONFIG,
+                "Detection Radius",
+                25,
+                "Requires \"Enable Projectile Tracking\". Controls the size of the detection area to use when deciding whether running away is necessary. " +
+                "Distance from large AOE zones is estimated using the hitbox instead of center point to account for size and rotation.",
+                10, 40);
         }
 
         private static void ReadConfigExtended()

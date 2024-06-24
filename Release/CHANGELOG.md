@@ -1,3 +1,19 @@
+# 1.3.1
+
+- Dodge AI fleshed out for use against the majority of projectiles, integrated seamlessly into the combat loop.
+
+- Refined the Mithrix and Umbral Mithrix fights. End goal is for them to reliably dodge everything. Yes, everything. No, not exaggerating.
+
+- Additional tweaks to the base AI so that they don't fist fight beetle guards and inevitably die...
+
+- Adjustable detection range and update rate. Removed in/out of combat distinction since performance isn't a concern.
+
+- More tweaks to the stat scaling. I'm bad at math apparently.
+
+- Further separation of the lemurian/adult lemurian prefabs from the Devoted variants. This disables compatibility with Variance API but that'll be reimplemented.
+
+- Probably some stuff I'm forgetting but the AI has nearly peaked. They're cracked.
+
 # 1.2.2
 
 - Implemented changes from https://thunderstore.io/package/Goorakh/LemurianFix/ cuz i love stealing

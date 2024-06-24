@@ -6,21 +6,20 @@ using RoR2;
 using System.Linq;
 using LemurFusion.Config;
 using System;
-using LemurFusion.AI;
 
-namespace LemurFusion
+namespace LemurFusion.Devotion.Tweaks
 {
-    internal class StatHooks
+    internal class StatTweaks
     {
-        public static StatHooks instance;
+        public static StatTweaks instance { get; private set; }
 
-        private StatHooks() { }
+        private StatTweaks() { }
 
-        public static void Init() 
+        public static void Init()
         {
             if (instance != null) return;
 
-            instance = new StatHooks();
+            instance = new StatTweaks();
         }
 
         public void InitHooks()
@@ -45,7 +44,7 @@ namespace LemurFusion
         #region UI
         private string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
         {
-            if (characterMaster && characterMaster.name == DevotionTweaks.masterCloneName && characterMaster.hasBody)
+            if (characterMaster && characterMaster.name.StartsWith(DevotionTweaks.devotedMasterName) && characterMaster.hasBody)
             {
                 return characterMaster.GetBody().GetDisplayName();
             }
@@ -105,7 +104,7 @@ namespace LemurFusion
             {
                 var lemCtrl = lemCtrlList[i];
                 var strip = self.stripAllocator.elements[i + masters.Count];
-                
+
                 strip.SetMaster(lemCtrl._lemurianMaster);
                 //lazy
                 if (!PluginConfig.showPersonalInventory.Value) break;
@@ -127,16 +126,14 @@ namespace LemurFusion
         #region Stats
         private void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-            var count = body?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-
-            if (count.HasValue && count.Value > 0)
+            if (body && body.name.StartsWith(DevotionTweaks.devotedPrefix))
             {
                 if (AITweaks.disableFallDamage.Value)
                     body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
                 if (AITweaks.immuneToVoidDeath.Value)
                     body.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath;
 
-                ResizeBody(count.Value, body);
+                ResizeBody(body);
             }
         }
 
@@ -147,16 +144,13 @@ namespace LemurFusion
             {
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
-                    sender.baseMaxHealth = 90f;
-                    sender.levelMaxHealth = 11f;
-                    sender.baseMoveSpeed = 7f;
-                    args.baseHealthAdd = 90f;
-                    args.levelHealthAdd = 11f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.levelRegenAdd = Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.levelHealthAdd += sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.armorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
-                    args.healthMultAdd += Utils.GetStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.damageMultAdd += Utils.GetStatModifier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.attackSpeedMultAdd += Utils.GetStatModifier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value, lem.DevotedEvolutionLevel);
                 }
                 else
                 {
@@ -167,7 +161,7 @@ namespace LemurFusion
             }
         }
 
-        private void ResizeBody(int meldCount, CharacterBody body)
+        private void ResizeBody(CharacterBody body)
         {
             // todo: fix this shit.
             if (NetworkClient.active)
@@ -185,16 +179,6 @@ namespace LemurFusion
                     }
                 }
             }
-            /*
-            if (PluginConfig.miniElders.Value)
-            {
-                var transform = body?.modelLocator?.modelTransform; 
-                if (transform)
-                {
-                    var scaleFactor = Vector3.Scale(baseSize, GetScaleFactor(PluginConfig.statMultSize.Value, meldCount));
-                    transform.localScale = baseSize + scaleFactor;
-                }
-            }*/
         }
         #endregion
         #endregion

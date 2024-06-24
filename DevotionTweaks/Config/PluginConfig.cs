@@ -18,6 +18,7 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> cloneReplacesRevive;
         public static ConfigEntry<bool> miniElders;
         public static ConfigEntry<bool> enableDetailedLogs;
+        public static ConfigEntry<bool> enableCompatMode;
 
         public static ConfigEntry<bool> rebalanceHealthScaling;
         public static ConfigEntry<int> statMultHealth;
