@@ -1,47 +1,67 @@
 ﻿using LemurFusion.Config;
+using LemurFusion.Devotion.Tweaks;
 using MonoMod.Cil;
 using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UE = UnityEngine;
+using System.Text;
 using UnityEngine.Networking;
-using Mono.Cecil.Cil;
 
-namespace LemurFusion.Devotion.Tweaks
+namespace LemurFusion
 {
-    internal class DevotedInventoryTweaks
+    internal class Legacy
     {
-        public static DevotedInventoryTweaks instance { get; private set; }
 
-        private DevotedInventoryTweaks()
+        public void CreateTwin(ItemIndex devotionItem)
         {
-            //       //
-            // hooks //
-            //       //
-
-            // always enabled
-            IL.RoR2.DevotionInventoryController.EvolveDevotedLumerian += DevotionInventoryController_EvolveDevotedLumerian;
-            IL.RoR2.DevotionInventoryController.GenerateEliteBuff += DevotionInventoryController_GenerateEliteBuff;
-
-            // compat mode
-            if (PluginConfig.enableCompatMode.Value)
+            var invCtrl = this.BetterInventoryController;
+            if (invCtrl)
             {
-                On.RoR2.DevotionInventoryController.ActivateDevotedEvolution += DevotionInventoryController_ActivateDevotedEvolution;
-                On.RoR2.DevotionInventoryController.UpdateMinionInventory += DevotionInventoryController_UpdateMinionInventory;
-                IL.RoR2.DevotionInventoryController.UpdateMinionInventory += DevotionInventoryController_UpdateMinionInventory;
+                CharacterMaster ownerMaster = invCtrl._summonerMaster;
+                if (ownerMaster)
+                {
+                    CharacterBody ownerBody = ownerMaster.GetBody();
+                    if (ownerBody)
+                    {
+                        var transform = this.transform;
+                        MasterSummon masterSummon = new()
+                        {
+                            masterPrefab = DevotionTweaks.masterPrefab,
+                            position = transform.position,
+                            rotation = transform.rotation,
+                            summonerBodyObject = ownerBody.gameObject,
+                            ignoreTeamMemberLimit = true,
+                            useAmbientLevel = true
+                        };
+                        CharacterMaster twinMaster = masterSummon.Perform();
+
+                        if (twinMaster && twinMaster.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                        {
+
+                            lemCtrl.InitializeDevotedLemurian(devotionItem, invCtrl);
+
+                            lemCtrl.DevotedEvolutionLevel = base.DevotedEvolutionLevel;
+                            if (lemCtrl.DevotedEvolutionLevel > 1)
+                                lemCtrl._lemurianMaster.TransformBody(DevotionTweaks.devotedBigLemBodyName);
+                        }
+                    }
+                }
             }
         }
-
-        public static void Init()
+        /*if (PluginConfig.cloneReplacesRevive.Value)
         {
-            if (instance != null)
-                return;
-
-            instance = new DevotedInventoryTweaks();
-        }
-
-        #region Hooks
+            if (itemIndex == RoR2Content.Items.ExtraLife.itemIndex)
+            {
+                lemCtrl.CreateTwin(RoR2Content.Items.Bear.itemIndex);
+                itemIndex = RoR2Content.Items.ExtraLifeConsumed.itemIndex;
+            }
+            else if (itemIndex == DLC1Content.Items.ExtraLifeVoid.itemIndex)
+            {
+                lemCtrl.CreateTwin(DLC1Content.Items.BearVoid.itemIndex);
+                itemIndex = DLC1Content.Items.ExtraLifeVoidConsumed.itemIndex;
+            }
+        }*/
         private static void DevotionInventoryController_ActivateDevotedEvolution(On.RoR2.DevotionInventoryController.orig_ActivateDevotedEvolution orig)
         {
             orig();
@@ -91,13 +111,13 @@ namespace LemurFusion.Devotion.Tweaks
                     i => i.MatchCallvirt<Inventory>(nameof(Inventory.AddItemsFrom))
                 ))
             {
-                if (ConfigExtended.Blacklist_Enable.Value && DevotionTweaks.EnableSharedInventory)
+                if (ConfigExtended.Blacklist_Enable.Value && DevotionTweaks.instance.EnableSharedInventory)
                 {
                     c.Remove();
                     c.Emit<ConfigExtended>(OpCodes.Ldsfld, nameof(ConfigExtended.Blacklist_Filter));
                     c.Emit(OpCodes.Callvirt, typeof(Inventory).GetMethod(nameof(Inventory.AddItemsFrom), [typeof(Inventory), typeof(Func<ItemIndex, bool>)]));
                 }
-                if (!DevotionTweaks.EnableSharedInventory)
+                if (!DevotionTweaks.instance.EnableSharedInventory)
                 {
                     c.Remove();
                     c.Emit(OpCodes.Pop);
@@ -123,7 +143,7 @@ namespace LemurFusion.Devotion.Tweaks
             {
                 foreach (var item in lemCtrl._devotedItemList.Keys.ToList())
                 {
-                    if (DevotionTweaks.EnableSharedInventory)
+                    if (DevotionTweaks.instance.EnableSharedInventory)
                         self.GiveItem(item);
 
                     lemCtrl._devotedItemList[item]++;
@@ -134,66 +154,5 @@ namespace LemurFusion.Devotion.Tweaks
 
             lemCtrl.ReturnItems();
         }
-
-        private static void DevotionInventoryController_EvolveDevotedLumerian(ILContext il)
-        {
-            var c = new ILCursor(il);
-
-            if (c.TryGotoNext(MoveType.Before,
-                x => x.MatchLdstr(DevotionTweaks.bigLemBodyName)
-                ))
-            {
-                c.Remove();
-                c.Emit(OpCodes.Ldstr, DevotionTweaks.devotedBigLemBodyName);
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #1");
-            }
-
-            if (c.TryGotoNext(MoveType.AfterLabel,
-                i => i.MatchLdstr("shouldn't evolve!"),
-                i => i.MatchCall<UE.Debug>("LogError")))
-            {
-                c.Emit(OpCodes.Ldarg_1);
-                c.EmitDelegate<Action<DevotedLemurianController>>((lem) =>
-                {
-                    var list = PluginConfig.highTierElitesOnly.Value ? DevotionTweaks.gigaChadLvl.ToList() : DevotionTweaks.highLvl.ToList();
-
-                    var idx = UE.Random.Range(0, list.Count);
-                    lem.LemurianInventory.SetEquipmentIndex(list[idx]);
-                });
-                c.RemoveRange(2);
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #2");
-            }
-        }
-
-        private static void DevotionInventoryController_GenerateEliteBuff(ILContext ll)
-        {
-            var c = new ILCursor(ll);
-
-            if (c.TryGotoNext(MoveType.Before,
-                i => i.MatchBrtrue(out _),
-                i => i.MatchLdsfld<DevotionInventoryController>(nameof(DevotionInventoryController.highLevelEliteBuffs)),
-                i => i.MatchBr(out _),
-                i => i.MatchLdsfld<DevotionInventoryController>(nameof(DevotionInventoryController.lowLevelEliteBuffs))
-                ))
-            {
-                // fuck it just nuke it all
-                c.RemoveRange(4);
-                c.EmitDelegate<Func<bool, List<EquipmentIndex>>>((isLowLvl) =>
-                {
-                    return isLowLvl ? DevotionTweaks.lowLvl.ToList() : DevotionTweaks.highLvl.ToList();
-                });
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_GenerateEliteBuff");
-            }
-        }
-        #endregion
     }
 }

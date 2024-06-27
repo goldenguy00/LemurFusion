@@ -9,8 +9,11 @@ using Mono.Cecil.Cil;
 using UnityEngine;
 using UnityEngine.Networking;
 using LemurFusion.Config;
+using UnityEngine.AddressableAssets;
+using UE = UnityEngine;
+using LemurFusion.Devotion.Components;
 
-namespace LemurFusion.Devotion.Tweaks
+namespace LemurFusion.Devotion
 {
     public class DevotionTweaks
     {
@@ -24,10 +27,7 @@ namespace LemurFusion.Devotion.Tweaks
 
         public static DevotionTweaks instance { get; private set; }
 
-        public static HashSet<EquipmentIndex> gigaChadLvl = [];
-        public static HashSet<EquipmentIndex> lowLvl = [];
-        public static HashSet<EquipmentIndex> highLvl = [];
-
+        public static GameObject betterLemInvCtrlPrefab;
         public static GameObject masterPrefab;
         public static GameObject bodyPrefab;
         public static GameObject bigBodyPrefab;
@@ -42,15 +42,20 @@ namespace LemurFusion.Devotion.Tweaks
         public const string devotedLemBodyName = devotedPrefix + lemBodyName;
         public const string devotedBigLemBodyName = devotedPrefix + bigLemBodyName;
 
-        public static bool EnableSharedInventory { get; private set; }
+        public bool EnableSharedInventory { get; private set; }
+
+        public static void Init()
+        {
+            if (instance != null)
+                return;
+            instance = new DevotionTweaks();
+        }
 
         private DevotionTweaks()
         {
             EnableSharedInventory = PluginConfig.enableSharedInventory.Value;
 
-            // artifact setup
-            RunArtifactManager.onArtifactEnabledGlobal += RunArtifactManager_onArtifactEnabledGlobal;
-            RunArtifactManager.onArtifactDisabledGlobal += RunArtifactManager_onArtifactDisabledGlobal;
+            LoadAssets();
 
             // external lem hooks
             IL.RoR2.CharacterAI.LemurianEggController.SummonLemurian += LemurianEggController_SummonLemurian;
@@ -60,97 +65,55 @@ namespace LemurFusion.Devotion.Tweaks
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
         }
 
-        public static void Init()
-        {
-            if (instance != null)
-                return;
-            instance = new DevotionTweaks();
-        }
-
         #region Artifact Setup
-        private void RunArtifactManager_onArtifactEnabledGlobal(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
+        private void LoadAssets()
         {
-            if (artifactDef != CU8Content.Artifacts.Devotion) return;
-
-            // global hooks
-            On.RoR2.MasterSummon.Perform += MasterSummon_Perform;
-            StatTweaks.instance.InitHooks();
-
-            CreateEliteLists();
-        }
-
-        private void RunArtifactManager_onArtifactDisabledGlobal(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
-        {
-            if (artifactDef != CU8Content.Artifacts.Devotion) return;
-
-            On.RoR2.MasterSummon.Perform -= MasterSummon_Perform;
-            StatTweaks.instance.RemoveHooks();
-
-            lowLvl.Clear();
-            highLvl.Clear();
-            gigaChadLvl.Clear();
-        }
-
-        private void CreateEliteLists()
-        {
-            lowLvl.Clear();
-            highLvl.Clear();
-            gigaChadLvl.Clear();
-
-            // thank you moffein for showing me the way, fuck this inconsistent bs
-            // holy shit this is horrible i hate it i hate it i hate it
-            foreach (var etd in EliteAPI.GetCombatDirectorEliteTiers().ToList())
+            //Fix up the tags on the Harness
+            LemurFusionPlugin.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
+            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
+            if (itemDef)
             {
-                if (etd != null && etd.eliteTypes.Length > 0)
-                {
-                    if (etd.eliteTypes.Any(ed => ed != null && ed.name.Contains("Honor") == true)) continue;
-
-                    var isT2 = false;
-                    var isT1 = false;
-                    foreach (EliteDef ed in etd.eliteTypes)
-                    {
-                        if (!ed || !ed.eliteEquipmentDef) continue;
-
-                        if (ed.eliteEquipmentDef == RoR2Content.Equipment.AffixPoison || ed.eliteEquipmentDef == RoR2Content.Equipment.AffixLunar)
-                        {
-                            isT2 = true;
-                            break;
-                        }
-                        else if (ed.eliteEquipmentDef == RoR2Content.Equipment.AffixBlue)
-                        {
-                            isT1 = true;
-                            break;
-                        }
-                    }
-
-                    if (isT1 || isT2)
-                    {
-                        foreach (var ed in etd.eliteTypes)
-                        {
-                            if (!ed || !ed.eliteEquipmentDef ||
-                                ed.eliteEquipmentDef.equipmentIndex == EquipmentIndex.None ||
-                                !ed.eliteEquipmentDef.passiveBuffDef ||
-                                !ed.eliteEquipmentDef.passiveBuffDef.isElite) continue;
-
-                            if (isT1)
-                            {
-                                lowLvl.Add(ed.eliteEquipmentDef.equipmentIndex);
-                                highLvl.Add(ed.eliteEquipmentDef.equipmentIndex);
-                            }
-                            if (isT2)
-                            {
-                                highLvl.Add(ed.eliteEquipmentDef.equipmentIndex);
-                                gigaChadLvl.Add(ed.eliteEquipmentDef.equipmentIndex);
-                            }
-                        }
-                    }
-                }
+                itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy]).Distinct().ToArray();
             }
+
+            // dupe body
+            GameObject lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
+            bodyPrefab = lemurianBodyPrefab.InstantiateClone(devotedLemBodyName, true);
+            var body = bodyPrefab.GetComponent<CharacterBody>();
+            body.bodyFlags |= CharacterBody.BodyFlags.Devotion;
+            body.baseMaxHealth = 360f;
+            body.levelMaxHealth = 11f;
+            body.baseMoveSpeed = 7f;
+
+            // dupe body pt2
+            GameObject lemurianBruiserBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/LemurianBruiser/LemurianBruiserBody.prefab").WaitForCompletion();
+            bigBodyPrefab = lemurianBruiserBodyPrefab.InstantiateClone(devotedBigLemBodyName, true);
+            var bigBody = bigBodyPrefab.GetComponent<CharacterBody>();
+            bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion;
+            bigBody.baseMaxHealth = 720f;
+            bigBody.levelMaxHealth = 22f;
+            bigBody.baseMoveSpeed = 10f;
+
+            // fix original
+            lemurianBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
+            lemurianBruiserBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
+
+            // better master
+            masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab")
+                .WaitForCompletion().InstantiateClone(devotedMasterName, true);
+            UE.Object.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
+            masterPrefab.AddComponent<BetterLemurController>();
+            masterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bodyPrefab;
+
+            // better inventory ctrl
+            betterLemInvCtrlPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/NetworkedObjects/DevotionMinionInventory");
+            UE.Object.DestroyImmediate(betterLemInvCtrlPrefab.GetComponent<DevotionInventoryController>());
+            betterLemInvCtrlPrefab.AddComponent<BetterInventoryController>();
         }
         #endregion
 
         #region Summon
-        private void PickupPickerController_SetOptionsFromInteractor(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
+        private static void PickupPickerController_SetOptionsFromInteractor(On.RoR2.PickupPickerController.orig_SetOptionsFromInteractor orig, PickupPickerController self, Interactor activator)
         {
             if (!self.GetComponent<LemurianEggController>() || !activator || !activator.TryGetComponent<CharacterBody>(out var body) || !body.inventory)
             {
@@ -177,7 +140,7 @@ namespace LemurFusion.Devotion.Tweaks
             self.SetOptionsServer(list.ToArray());
         }
 
-        private CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
+        public static CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
             if (self?.masterPrefab == masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body)
             {
@@ -193,7 +156,7 @@ namespace LemurFusion.Devotion.Tweaks
             return orig(self);
         }
 
-        private CharacterMaster TrySummon(NetworkInstanceId summoner)
+        private static CharacterMaster TrySummon(NetworkInstanceId summoner)
         {
             List<BetterLemurController> lemCtrlList = [];
             foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(summoner)?.members ?? [])
@@ -211,7 +174,6 @@ namespace LemurFusion.Devotion.Tweaks
                 var meldTarget = lemCtrlList.OrderBy(l => l.FusionCount).FirstOrDefault();
                 if (meldTarget && meldTarget._lemurianMaster)
                 {
-                    meldTarget.FusionCount++;
                     return meldTarget._lemurianMaster;
                 }
             }

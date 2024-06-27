@@ -2,8 +2,10 @@
 using EntityStates.AI.Walker;
 using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
+using LemurFusion.Devotion.Components;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using Newtonsoft.Json.Utilities;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -12,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace LemurFusion.Devotion.Tweaks
+namespace LemurFusion.Devotion
 {
     public class AITweaks
     {
@@ -39,7 +41,7 @@ namespace LemurFusion.Devotion.Tweaks
 
         public static void Init()
         {
-            if (instance != null) 
+            if (instance != null)
                 return;
 
             instance = new AITweaks();
@@ -55,22 +57,40 @@ namespace LemurFusion.Devotion.Tweaks
                 IL.EntityStates.LemurianMonster.FireFireball.OnEnter += FireFireball_OnEnter;
                 IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += FireMegaFireball_FixedUpdate;
 
-                foreach (var driver in DevotionTweaks.masterPrefab.GetComponentsInChildren<AISkillDriver>())
+                var baseAI = DevotionTweaks.masterPrefab.GetComponent<BaseAI>();
+                baseAI.fullVision = true;
+                baseAI.aimVectorDampTime = 0.03f;
+                baseAI.aimVectorMaxSpeed = 300f;
+                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
+
+                for (int i = 0; i < skillDrivers.Length; i++)
                 {
+                    var driver = skillDrivers[i];
+
                     switch (driver.customName)
                     {
+                        case "DevotedSecondarySkill":
+                            driver.minUserHealthFraction = 0.5f;
+                            driver.noRepeat = true;
+                            driver.nextHighPriorityOverride = skillDrivers[i + 1];
+                            break;
+                        case "StrafeAndShoot":
+                            driver.maxDistance = 100f;
+                            break;
                         case "ReturnToLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;
                             driver.shouldSprint = true;
                             driver.resetCurrentEnemyOnNextDriverSelection = true;
                             break;
-                        case "WaitNearLeader":
+                        case "WaitNearLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;
                             driver.resetCurrentEnemyOnNextDriverSelection = true;
                             break;
-                        case "DevotedSecondarySkill":
-                            driver.minUserHealthFraction = 0.5f;
-                            driver.noRepeat = true;
+                        case "StrafeNearbyEnemies":
+                        case "ChaseFarEnemies":
+                        case "ReturnToOwnerLeash":
+                        case "ChaseOffNodegraph":
+                        case "StopAndShoot":
                             break;
                     }
                 }
@@ -107,8 +127,9 @@ namespace LemurFusion.Devotion.Tweaks
             }
         }
 
-        private void PostLoad()
+        private static void PostLoad()
         {
+            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
             // no i wont make this configurable fuck you its good enough
             List<string> survivors = ["Captain", "Bandit", "Commando", "Croco", "Driver", "Engi", "Evis", "Heal",
                "Firework", "Hunk", "Huntress", "Loader", "Mage", "Paladin", "Railgunner", "SS2", "Toolbot", "Treebot",

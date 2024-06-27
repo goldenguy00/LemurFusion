@@ -110,17 +110,12 @@ namespace LemurFusion.Compat
                         {
                             savedLemData.LoadData(lemCtrl);
                             lemurData.Remove(savedLemData);
+                            lemCtrl._devotionInventoryController.UpdateAllMinions();
                         }
 
                         if (!lemurData.Any())
                         {
                             CharacterMaster.onStartGlobal -= SpawnMinion;
-
-                            // sync
-                            foreach (DevotionInventoryController instance in DevotionInventoryController.InstanceList)
-                            {
-                                instance.UpdateAllMinions(false);
-                            }
                         }
                     }
                 }

@@ -7,7 +7,7 @@ using System.Linq;
 using LemurFusion.Config;
 using System;
 
-namespace LemurFusion.Devotion.Tweaks
+namespace LemurFusion.Devotion
 {
     internal class StatTweaks
     {
@@ -22,7 +22,7 @@ namespace LemurFusion.Devotion.Tweaks
             instance = new StatTweaks();
         }
 
-        public void InitHooks()
+        public static void InitHooks()
         {
             On.RoR2.Util.GetBestMasterName += Util_GetBestMasterName;
             On.RoR2.CharacterBody.GetDisplayName += CharacterBody_GetDisplayName;
@@ -31,7 +31,7 @@ namespace LemurFusion.Devotion.Tweaks
             CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
         }
 
-        public void RemoveHooks()
+        public static void RemoveHooks()
         {
             On.RoR2.Util.GetBestMasterName -= Util_GetBestMasterName;
             On.RoR2.CharacterBody.GetDisplayName -= CharacterBody_GetDisplayName;
@@ -42,7 +42,7 @@ namespace LemurFusion.Devotion.Tweaks
 
         #region Hooks
         #region UI
-        private string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
+        private static string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
         {
             if (characterMaster && characterMaster.name.StartsWith(DevotionTweaks.devotedMasterName) && characterMaster.hasBody)
             {
@@ -51,7 +51,7 @@ namespace LemurFusion.Devotion.Tweaks
             return orig(characterMaster);
         }
 
-        private string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
+        private static string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
         {
             var baseName = orig(self);
             if (!string.IsNullOrEmpty(baseName))
@@ -65,7 +65,7 @@ namespace LemurFusion.Devotion.Tweaks
             return baseName;
         }
 
-        private void ScoreboardController_Rebuild(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
+        private static void ScoreboardController_Rebuild(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
         {
             orig(self);
             if (!PluginConfig.enableMinionScoreboard.Value)
@@ -124,7 +124,7 @@ namespace LemurFusion.Devotion.Tweaks
         #endregion
 
         #region Stats
-        private void CharacterBody_onBodyStartGlobal(CharacterBody body)
+        private static void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
             if (body && body.name.StartsWith(DevotionTweaks.devotedPrefix))
             {
@@ -137,7 +137,7 @@ namespace LemurFusion.Devotion.Tweaks
             }
         }
 
-        private void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
+        private static void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
         {
             var meldCount = sender?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
             if (meldCount.HasValue && meldCount.Value > 0 && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
@@ -161,7 +161,7 @@ namespace LemurFusion.Devotion.Tweaks
             }
         }
 
-        private void ResizeBody(CharacterBody body)
+        private static void ResizeBody(CharacterBody body)
         {
             // todo: fix this shit.
             if (NetworkClient.active)

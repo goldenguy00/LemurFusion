@@ -1,5 +1,5 @@
 ﻿using BepInEx.Configuration;
-using LemurFusion.Devotion.Tweaks;
+using LemurFusion.Devotion;
 using RoR2;
 using System;
 using System.Collections.Generic;

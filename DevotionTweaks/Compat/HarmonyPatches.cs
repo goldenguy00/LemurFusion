@@ -1,12 +1,21 @@
 ﻿using HarmonyLib;
-using LemurFusion.Devotion.Tweaks;
-using RoR2;
+using LemurFusion.Devotion;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace LemurFusion.Compat
 {
+    [HarmonyPatch(typeof(RoR2.CombatSquad), "FixedUpdate")]
+    public class CombatSquadFixedUpdate
+    {
+        [HarmonyFinalizer]
+        public static Exception Finalizer(Exception __exception)
+        {
+            return null;
+        }
+    }
+
     [HarmonyPatch(typeof(LemurianNames.LemurianNames), "UpdateNameFriend")]
     public class LemurianUpdateNameFriend
     {
@@ -68,6 +77,7 @@ namespace LemurFusion.Compat
                 newVariant.bodyName = DevotionTweaks.devotedPrefix + variant.bodyName;
                 newVariant.spawnRate = 100f / originalVariants.Count();
                 newVariant.aiModifier = VAPI.BasicAIModifier.Default;
+                
 
                 registerVariant.Invoke(null, [newVariant, (VAPI.VariantIndex)num]);
                 num++;

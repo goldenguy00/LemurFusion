@@ -4,13 +4,13 @@ using BepInEx.Logging;
 using HarmonyLib;
 using LemurFusion.Compat;
 using LemurFusion.Config;
-using LemurFusion.Devotion.Tweaks;
 using R2API;
 using RoR2;
 using UnityEngine.AddressableAssets;
 using UnityEngine;
 using UE = UnityEngine;
 using System.Linq;
+using LemurFusion.Devotion;
 
 namespace LemurFusion
 {
@@ -61,65 +61,25 @@ namespace LemurFusion
 
             ConfigReader.Setup();
 
-            LoadAssets();
-
             DevotionTweaks.Init();
             DevotedInventoryTweaks.Init();
             LemurControllerTweaks.Init();
             StatTweaks.Init();
             AITweaks.Init();
 
-            CreateHarmonyPatches();
-            CreateProperSaveCompat();
-        }
-
-        private static void LoadAssets()
-        {
-            //Fix up the tags on the Harness
-            LemurFusionPlugin.LogInfo("Adding Tags ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy to Lemurian Harness.");
-            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
-            if (itemDef)
-            {
-                itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy]).Distinct().ToArray();
-            }
-
-            // dupe body
-            GameObject lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
-            DevotionTweaks.bodyPrefab = lemurianBodyPrefab.InstantiateClone(DevotionTweaks.devotedLemBodyName, true);
-            var body = DevotionTweaks.bodyPrefab.GetComponent<CharacterBody>();
-            body.bodyFlags |= CharacterBody.BodyFlags.Devotion;
-            body.baseMaxHealth = 360f;
-            body.levelMaxHealth = 11f;
-            body.baseMoveSpeed = 7f;
-
-            // dupe body pt2
-            GameObject lemurianBruiserBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/LemurianBruiser/LemurianBruiserBody.prefab").WaitForCompletion();
-            DevotionTweaks.bigBodyPrefab = lemurianBruiserBodyPrefab.InstantiateClone(DevotionTweaks.devotedBigLemBodyName, true);
-            var bigBody = DevotionTweaks.bigBodyPrefab.GetComponent<CharacterBody>();
-            bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion;
-            bigBody.baseMaxHealth = 720f;
-            bigBody.levelMaxHealth = 22f;
-            bigBody.baseMoveSpeed = 10f;
-
-            // fix original
-            lemurianBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
-            lemurianBruiserBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
-
-            // better master
-            DevotionTweaks.masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab")
-                .WaitForCompletion().InstantiateClone(DevotionTweaks.devotedMasterName, true);
-            UE.Object.DestroyImmediate(DevotionTweaks.masterPrefab.GetComponent<DevotedLemurianController>());
-            DevotionTweaks.masterPrefab.AddComponent<BetterLemurController>();
-            DevotionTweaks.masterPrefab.GetComponent<CharacterMaster>().bodyPrefab = DevotionTweaks.bodyPrefab;
-
             ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
             ContentAddition.AddBody(DevotionTweaks.bodyPrefab);
             ContentAddition.AddBody(DevotionTweaks.bigBodyPrefab);
+
+            CreateHarmonyPatches();
+            CreateProperSaveCompat();
         }
 
         private void CreateHarmonyPatches()
         {
             var harmony = new Harmony(PluginGUID);
+            harmony.CreateClassProcessor(typeof(CombatSquadFixedUpdate)).Patch();
+
             if (LemurFusionPlugin.lemNamesInstalled)
             {
                 harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();

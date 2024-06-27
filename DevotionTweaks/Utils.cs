@@ -1,5 +1,5 @@
 ﻿using LemurFusion.Config;
-using LemurFusion.Devotion.Tweaks;
+using LemurFusion.Devotion;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace LemurFusion
 {
-    internal static class Utils
+    public static class Utils
     {
         #region List Utils
         public static void AddItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
@@ -40,15 +40,10 @@ namespace LemurFusion
             if (itemIndex == ItemIndex.None) return;
 
             target ??= [];
-            if (target.ContainsKey(itemIndex))
-            {
-                if (count <= 0)
-                    target.Remove(itemIndex);
-                else
-                    target[itemIndex] = count;
-            }
+            if (count <= 0)
+                target.Remove(itemIndex);
             else
-                target.Add(itemIndex, count);
+                target[itemIndex] = count;
         }
 
         public static void RemoveItem(SortedList<ItemIndex, int> target, ItemDef itemDef, int count = 1)
@@ -61,7 +56,6 @@ namespace LemurFusion
         {
             if (itemIndex == ItemIndex.None || target == null) return;
 
-            target ??= [];
             if (target.TryGetValue(itemIndex, out var heldCount))
             {
                 var newVal = System.Math.Max(0, heldCount - count);
@@ -195,7 +189,19 @@ namespace LemurFusion
                     //A very simplified way of estimating, won't be 100% accurate.
                     Vector3 currentDistance = targetPosition - aimRay.origin;
                     float timeToImpact = currentDistance.magnitude / projectileSpeed;
-                    Vector3 futurePosition = targetPosition + targetVelocity * timeToImpact;
+                    //Vertical movenent isn't predicted well by this, so just use the target's current Y
+                    Vector3 lateralVelocity = new Vector3(targetVelocity.x, 0f, targetVelocity.z);
+                    Vector3 futurePosition = targetPosition + lateralVelocity * timeToImpact;
+
+                    //Only attempt prediction if player is jumping upwards.
+                    //Predicting downwards movement leads to groundshots.
+                    if (targetBody.characterMotor && !targetBody.characterMotor.isFlying && !targetBody.characterMotor.isGrounded && targetVelocity.y > 0f)
+                    {
+                        //point + vt + 0.5at^2
+                        float futureY = targetPosition.y + targetVelocity.y * timeToImpact;
+                        futureY += 0.5f * Physics.gravity.y * timeToImpact * timeToImpact;
+                        futurePosition.y = futureY;
+                    }
 
                     Ray newAimray = new()
                     {

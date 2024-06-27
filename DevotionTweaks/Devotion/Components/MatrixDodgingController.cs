@@ -1,5 +1,4 @@
 ﻿using HG;
-using LemurFusion.Devotion.Tweaks;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -7,7 +6,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace LemurFusion.Devotion
+namespace LemurFusion.Devotion.Components
 {
     public class MatrixDodgingController : MonoBehaviour
     {

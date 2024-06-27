@@ -1,4 +1,4 @@
-﻿using LemurFusion.Devotion.Tweaks;
+﻿using LemurFusion.Devotion;
 using System.Runtime.CompilerServices;
 
 namespace LemurFusion.Config

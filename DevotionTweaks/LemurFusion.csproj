@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Compile Remove="CrueltyElite.cs" />
+    <Compile Remove="Legacy.cs" />
   </ItemGroup>
 
   <ItemGroup>
