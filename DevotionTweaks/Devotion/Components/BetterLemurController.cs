@@ -27,7 +27,6 @@ public class BetterLemurController : DevotedLemurianController
 
     public void SyncPersonalInventory()
     {
-        Utils.AddItem(this._untrackedItemList, CU8Content.Items.LemurianHarness.itemIndex);
         Utils.SetItem(this._untrackedItemList, RoR2Content.Items.MinionLeash.itemIndex);
         Utils.SetItem(this._untrackedItemList, RoR2Content.Items.UseAmbientLevel.itemIndex);
         Utils.SetItem(this._untrackedItemList, RoR2Content.Items.TeleportWhenOob.itemIndex);
@@ -58,7 +57,7 @@ public class BetterLemurController : DevotedLemurianController
 
     public void KillYourSelf()
     {
-        if (DevotionTweaks.instance.EnableSharedInventory)
+        if (DevotionTweaks.EnableSharedInventory)
         {
             this.BetterInventoryController.RemoveSharedItemsFromFriends(this._devotedItemList);
         }

@@ -1,6 +1,5 @@
 ﻿using LemurFusion.Config;
 using RoR2;
-using UnityEngine.AddressableAssets;
 using UnityEngine;
 
 namespace LemurFusion.Devotion
@@ -34,11 +33,13 @@ namespace LemurFusion.Devotion
             {
                 lemCtrl._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
                 
-                if (lemCtrl._untrackedItemList == null || lemCtrl._untrackedItemList.Count == 0)
+                if (lemCtrl.FusionCount == 0)
                     lemCtrl.LemurianInventory.AddItemsFrom(lemCtrl.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
 
                 Utils.AddItem(lemCtrl._devotedItemList, itemIndex);
                 lemCtrl.BetterInventoryController.ShareItemWithFriends(itemIndex);
+
+                Utils.AddItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness.itemIndex);
                 lemCtrl.SyncPersonalInventory();
             }
         }

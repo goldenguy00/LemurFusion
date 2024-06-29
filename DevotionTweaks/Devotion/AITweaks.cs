@@ -5,7 +5,6 @@ using EntityStates.LemurianMonster;
 using LemurFusion.Devotion.Components;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using Newtonsoft.Json.Utilities;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -13,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace LemurFusion.Devotion
 {
@@ -27,12 +27,8 @@ namespace LemurFusion.Devotion
         public static ConfigEntry<bool> enablePredictiveAiming;
         public static ConfigEntry<bool> enableProjectileTracking;
         public static ConfigEntry<bool> visualizeProjectileTracking;
-        public static ConfigEntry<bool> excludeSurvivorProjectiles;
         public static ConfigEntry<float> updateFrequency;
         public static ConfigEntry<int> detectionRadius;
-
-        public static HashSet<int> projectileIds = [];
-        public static HashSet<int> overlapIds = [];
 
         public static float basePredictionAngle = 45f;
 
@@ -53,16 +49,17 @@ namespace LemurFusion.Devotion
             {
                 RoR2Application.onLoad += PostLoad;
 
+                On.RoR2.CharacterAI.BaseAI.UpdateTargets += BaseAI_UpdateTargets;
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
                 IL.EntityStates.LemurianMonster.FireFireball.OnEnter += FireFireball_OnEnter;
                 IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += FireMegaFireball_FixedUpdate;
 
                 var baseAI = DevotionTweaks.masterPrefab.GetComponent<BaseAI>();
                 baseAI.fullVision = true;
-                baseAI.aimVectorDampTime = 0.03f;
-                baseAI.aimVectorMaxSpeed = 300f;
-                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
+                baseAI.aimVectorDampTime = 0.02f;
+                baseAI.aimVectorMaxSpeed = 200f;
 
+                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
                 for (int i = 0; i < skillDrivers.Length; i++)
                 {
                     var driver = skillDrivers[i];
@@ -127,43 +124,57 @@ namespace LemurFusion.Devotion
             }
         }
 
-        private static void PostLoad()
+        private static void BaseAI_UpdateTargets(On.RoR2.CharacterAI.BaseAI.orig_UpdateTargets orig, BaseAI self)
         {
-            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
-            // no i wont make this configurable fuck you its good enough
-            List<string> survivors = ["Captain", "Bandit", "Commando", "Croco", "Driver", "Engi", "Evis", "Heal",
-               "Firework", "Hunk", "Huntress", "Loader", "Mage", "Paladin", "Railgunner", "SS2", "Toolbot", "Treebot",
-                "VoidSurvivor", "Mauling", "Needle", "Scissor", "Scout"];
-
-            foreach (var projectile in ProjectileCatalog.projectilePrefabs)
+            orig(self);
+            if (NetworkServer.active)
             {
-                if (excludeSurvivorProjectiles.Value && survivors.Any(projectile.gameObject.name.Contains))
-                    continue;
-
-                if (projectile.TryGetComponent<ProjectileController>(out var controller))
+                if (self.master && self.master.minionOwnership && self.body.bodyFlags.HasFlag(CharacterBody.BodyFlags.Devotion))
                 {
-                    if (projectile.GetComponentInChildren<HitBoxGroup>(true))
+                    if (FuckingNullCheck(self.master.minionOwnership.ownerMaster, out var target))
                     {
-                        overlapIds.Add(controller.catalogIndex);
-                        LemurFusionPlugin.LogInfo($"Adding HitboxGroup {projectile.gameObject.name}");
-                    }
-                    else if (projectile.GetComponent<ProjectileFuse>())
-                    {
-                        projectileIds.Add(controller.catalogIndex);
-                        LemurFusionPlugin.LogInfo($"Adding ProjectileFuse {projectile.gameObject.name}");
-                    }
-                    else if (projectile.GetComponent<ProjectileImpactExplosion>())
-                    {
-                        projectileIds.Add(controller.catalogIndex);
-                        LemurFusionPlugin.LogInfo($"Adding ProjectileImpactExplosion {projectile.gameObject.name}");
-                    }
-                    else
-                    {
-                        projectileIds.Add(controller.catalogIndex);
-                        LemurFusionPlugin.LogInfo($"Adding everything else {projectile.gameObject.name}");
+                        var targetBody = target.GetComponent<CharacterBody>();
+                        if (targetBody && targetBody.teamComponent.teamIndex != self.master.teamIndex)
+                        {
+                            self.currentEnemy.gameObject = target;
+                        }
                     }
                 }
             }
+        }
+
+        private static bool FuckingNullCheck(CharacterMaster master, out GameObject target)
+        {
+            // this is how you correctly nullcheck in unity.
+            // fucking kill me in the face man.
+            target = null;
+
+            if (!master)
+                return false;
+
+            var minion = master.minionOwnership;
+            if (!minion)
+                return false;
+
+            var ownerMaster = minion.ownerMaster;
+            if (!ownerMaster)
+                return false;
+
+            var pCMC = ownerMaster.playerCharacterMasterController;
+            if (!pCMC)
+                return false;
+
+            var pCtrl = pCMC.pingerController;
+            if (!pCtrl)
+                return false;
+
+            target = pCtrl.currentPing.targetGameObject;
+            return pCtrl.currentPing.active && target;
+        }
+
+        private static void PostLoad()
+        {
+            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
         }
 
         private static void FireMegaFireball_FixedUpdate(ILContext il)

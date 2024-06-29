@@ -91,7 +91,7 @@ namespace LemurFusion
         {
             var evolutionModifier = Mathf.Clamp(evolutionCount, 0, 4);
             var configModifier = PluginConfig.statMultEvo.Value * 0.01f;
-            return (meldCount - 1) * (configValue * 0.01f) + (evolutionModifier * configModifier * 0.1f);
+            return meldCount * (configValue * 0.01f) + (evolutionModifier * configModifier * 0.1f);
         }
 
         public static float GetLevelModifier(int evolutionCount)

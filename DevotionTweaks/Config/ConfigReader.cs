@@ -89,12 +89,11 @@ namespace LemurFusion.Config
                 false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.");
 
-            PluginConfig.enableCompatMode = PluginConfig.BindOption(EXPERIMENTAL,
-                "Enable Compatibility Mode",
-                false,
-                "Some devotion inventory changes require major system reworks. " +
-                "Enable this setting to improve compatibility with other Devotion mods at the cost of reduced functionality.",
-                true);
+            PluginConfig.eggSpawnChance = PluginConfig.BindOptionSlider(EXPERIMENTAL,
+                "Egg Spawn Chance",
+                100,
+                "When Devotion Aftifact is enabled, sets the chance of replacing a drone spawn with an egg.",
+                0, 100);
 
             //
             // stats
@@ -161,12 +160,6 @@ namespace LemurFusion.Config
                 "Visualize Projectile Tracking",
                 false,
                 "Requires \"Enable Projectile Tracking\". Creates a line connecting the foot position to the tracked projectile.");
-
-            AITweaks.excludeSurvivorProjectiles = PluginConfig.BindOption(AI_CONFIG,
-                "Exclude Survivor Projectiles",
-                true,
-                "Requires \"Enable Projectile Tracking\". Excludes enemy survivor projectiles from the list of dodgable projectiles. Set to false if you commonly fight vanilla survivor Umbras.",
-                true);
 
             AITweaks.updateFrequency = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "In Combat Update Frequency",

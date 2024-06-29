@@ -7,7 +7,6 @@ using UnityEngine.Networking;
 using Mono.Cecil.Cil;
 using LemurFusion.Devotion.Components;
 using System.Linq;
-using UnityEngine;
 
 namespace LemurFusion.Devotion
 {
@@ -23,7 +22,7 @@ namespace LemurFusion.Devotion
             instance = new DevotedInventoryTweaks();
         }
 
-        public bool initialized { get; private set; }
+        public static bool initialized { get; set; }
 
         private DevotedInventoryTweaks()
         {
@@ -68,7 +67,7 @@ namespace LemurFusion.Devotion
                 c.Emit(OpCodes.Ldloc_3);
                 c.EmitDelegate<Func<SceneDirector, DirectorCard, DirectorCard>>((self, original) =>
                 {
-                    if (self.rng.RangeInt(0, 100) < 50)
+                    if (self.rng.RangeInt(0, 100) < PluginConfig.eggSpawnChance.Value)
                         return self.lumerianEgg;
                     return original;
                 });
@@ -123,9 +122,9 @@ namespace LemurFusion.Devotion
             if (artifactDef != CU8Content.Artifacts.Devotion)
                 return;
 
-            if (!DevotedInventoryTweaks.instance.initialized)
+            if (!DevotedInventoryTweaks.initialized)
             {
-                DevotedInventoryTweaks.instance.initialized = true;
+                DevotedInventoryTweaks.initialized = true;
                 Run.onRunDestroyGlobal += DevotionInventoryController.OnRunDestroy;
                 BossGroup.onBossGroupDefeatedServer += DevotionInventoryController.OnBossGroupDefeatedServer;
                 On.RoR2.MasterSummon.Perform += DevotionTweaks.MasterSummon_Perform;
@@ -141,9 +140,9 @@ namespace LemurFusion.Devotion
             if (artifactDef != CU8Content.Artifacts.Devotion)
                 return;
 
-            if (DevotedInventoryTweaks.instance.initialized)
+            if (DevotedInventoryTweaks.initialized)
             {
-                DevotedInventoryTweaks.instance.initialized = false;
+                DevotedInventoryTweaks.initialized = false;
                 Run.onRunDestroyGlobal -= DevotionInventoryController.OnRunDestroy;
                 BossGroup.onBossGroupDefeatedServer -= DevotionInventoryController.OnBossGroupDefeatedServer;
                 On.RoR2.MasterSummon.Perform -= DevotionTweaks.MasterSummon_Perform;

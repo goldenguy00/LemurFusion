@@ -3,6 +3,7 @@ using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
 using System.Collections;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,11 +22,13 @@ namespace LemurFusion.Devotion.Components
         private CharacterMaster master;
         private CharacterBody body;
         private LineRenderer laserLineComponent;
+        private Stopwatch sw;
 
         private void Start()
         {
             ai = gameObject.GetComponent<BaseAI>();
             master = gameObject.GetComponent<CharacterMaster>();
+            sw = new Stopwatch();
 
             isMoon = false;
             jumpPower = 1f;
@@ -107,70 +110,95 @@ namespace LemurFusion.Devotion.Components
 
         private bool FindProjectiles(out float distance, out bool shouldJump)
         {
+            sw.Restart();
             escapeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 0.75f : 0.5f), 2f);
             safeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 1.5f : 1f), 2f);
             distance = safeDistance;
             shouldJump = false;
             GameObject target = null;
             Vector3? closestPoint = null;
+            int count = 0;
+            int q = 0;
+            int w = 0;
+            int e = 0;
 
             if (body)
             {
                 var instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
                 var position = body.footPosition;
-                var count = instancesList.Count;
+                count = instancesList.Count;
                 for (int i = 0; i < count; i++)
                 {
                     ProjectileController projectile = ListUtils.GetSafe(instancesList, i);
-                    if (projectile && projectile.teamFilter.teamIndex != TeamIndex.Player)
+                    if (projectile && projectile.teamFilter.teamIndex != body.master.teamIndex)
                     {
-                        float other;
-                        var valid = AITweaks.projectileIds.Contains(projectile.catalogIndex);
-                        var special = AITweaks.overlapIds.Contains(projectile.catalogIndex);
-                        if (valid || special)
+                        Vector3 estimatedPoint;
+                        var transform = projectile.transform;
+                        var scale = transform.lossyScale.sqrMagnitude;
+                        float other = (transform.position - position).sqrMagnitude;
+
+                        if (projectile.gameObject.name.Contains("Sunder") && other < safeDistance * 4f)
+                            shouldJump = true;
+
+                        if (scale < Mathf.Pow(body.radius, 2f))
                         {
-                            other = (projectile.transform.position - position).sqrMagnitude;
+                            q++;
                             if (other < distance)
                             {
                                 distance = other;
                                 closestPoint = null;
                                 target = projectile.gameObject;
                             }
-                            if (special)
+                        }
+                        else// if (other - scale < this.safeDistance * 4f)
+                        {
+                            var hitBoxGroup = projectile.GetComponent<HitBoxGroup>();
+                            if (hitBoxGroup && hitBoxGroup.hitBoxes != null)
                             {
-                                var hitBoxGroup = projectile.GetComponent<HitBoxGroup>();
-                                if (hitBoxGroup && hitBoxGroup.hitBoxes != null)
+                                w++;
+                                for (int j = 0; j < hitBoxGroup.hitBoxes.Length; j++)
                                 {
-                                    for (int j = 0; j < hitBoxGroup.hitBoxes.Length; j++)
+                                    var hitBox = hitBoxGroup.hitBoxes[j];
+                                    if (hitBox && hitBox.transform)
                                     {
-                                        var hitBox = hitBoxGroup.hitBoxes[j];
-                                        if (hitBox && hitBox.transform)
+                                        transform = hitBox.transform;
+                                        estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
+                                        other = (estimatedPoint - position).sqrMagnitude;
+                                        if (other < distance)
                                         {
-                                            var transform = hitBox.transform;
-                                            var estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
-                                            other = (estimatedPoint - position).sqrMagnitude;
-                                            if (other < distance)
-                                            {
-                                                distance = other;
-                                                closestPoint = estimatedPoint;
-                                                target = hitBox.gameObject;
-                                            }
+                                            distance = other;
+                                            closestPoint = estimatedPoint;
+                                            target = hitBox.gameObject;
                                         }
                                     }
                                 }
                             }
-                            if (projectile.gameObject.name.Contains("Sunder") && other < safeDistance * 4f)
-                                shouldJump = true;
+                            else
+                            {
+                                e++;
+                                estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
+                                other = (estimatedPoint - position).sqrMagnitude;
+                                if (other < distance)
+                                {
+                                    distance = other;
+                                    closestPoint = estimatedPoint;
+                                    target = projectile.gameObject;
+                                }
+                            }
                         }
                     }
                 }
             }
 
             ai.customTarget.Reset();
+
+            sw.Stop();
             if (target)
             {
                 ai.customTarget.gameObject = target;
                 ai.customTarget.lastKnownBullseyePosition = closestPoint;
+                LemurFusionPlugin.LogWarning($"Timer {sw.ElapsedMilliseconds}ms -> {sw.ElapsedTicks}");
+                LemurFusionPlugin.LogWarning($"ListSize {count}:\tSimple: {q}\tHitbox: {w}\tAdv: {e}");
             }
             return !ai.customTarget.unset;
         }

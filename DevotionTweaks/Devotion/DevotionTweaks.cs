@@ -42,12 +42,13 @@ namespace LemurFusion.Devotion
         public const string devotedLemBodyName = devotedPrefix + lemBodyName;
         public const string devotedBigLemBodyName = devotedPrefix + bigLemBodyName;
 
-        public bool EnableSharedInventory { get; private set; }
+        public static bool EnableSharedInventory { get; private set; }
 
         public static void Init()
         {
             if (instance != null)
                 return;
+
             instance = new DevotionTweaks();
         }
 
@@ -73,7 +74,7 @@ namespace LemurFusion.Devotion
             ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             if (itemDef)
             {
-                itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal, ItemTag.CannotCopy]).Distinct().ToArray();
+                itemDef.tags = itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct().ToArray();
             }
 
             // dupe body
@@ -142,13 +143,13 @@ namespace LemurFusion.Devotion
 
         public static CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
-            if (self?.masterPrefab == masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body)
+            if (self.masterPrefab == masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body)
             {
                 // successful lemurmeld
                 // hijacking this var for CreateTwin_ExtraLife. fuck your config, you get another friend.
                 var targetSummon = self.ignoreTeamMemberLimit ? null : TrySummon(body.masterObjectId);
                 self.ignoreTeamMemberLimit = true;
-                if (targetSummon != null)
+                if (targetSummon)
                 {
                     return targetSummon;
                 }

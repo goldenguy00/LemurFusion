@@ -1,15 +1,8 @@
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
-using HarmonyLib;
 using LemurFusion.Compat;
 using LemurFusion.Config;
-using R2API;
-using RoR2;
-using UnityEngine.AddressableAssets;
-using UnityEngine;
-using UE = UnityEngine;
-using System.Linq;
 using LemurFusion.Devotion;
 
 namespace LemurFusion
@@ -37,6 +30,7 @@ namespace LemurFusion
 
         #region Logging
         private static ManualLogSource _logger;
+        public static void LogDebug(string message) => Log(LogLevel.Debug, message);
         public static void LogInfo(string message) => Log(LogLevel.Info, message);
         public static void LogMessage(string message) => Log(LogLevel.Message, message);
         public static void LogWarning(string message) => Log(LogLevel.Warning, message);
@@ -64,12 +58,11 @@ namespace LemurFusion
             DevotionTweaks.Init();
             DevotedInventoryTweaks.Init();
             LemurControllerTweaks.Init();
-            StatTweaks.Init();
             AITweaks.Init();
 
-            ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
-            ContentAddition.AddBody(DevotionTweaks.bodyPrefab);
-            ContentAddition.AddBody(DevotionTweaks.bigBodyPrefab);
+            R2API.ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
+            R2API.ContentAddition.AddBody(DevotionTweaks.bodyPrefab);
+            R2API.ContentAddition.AddBody(DevotionTweaks.bigBodyPrefab);
 
             CreateHarmonyPatches();
             CreateProperSaveCompat();
@@ -77,7 +70,7 @@ namespace LemurFusion
 
         private void CreateHarmonyPatches()
         {
-            var harmony = new Harmony(PluginGUID);
+            var harmony = new HarmonyLib.Harmony(PluginGUID);
             harmony.CreateClassProcessor(typeof(CombatSquadFixedUpdate)).Patch();
 
             if (LemurFusionPlugin.lemNamesInstalled)

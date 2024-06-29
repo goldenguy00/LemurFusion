@@ -1,7 +1,9 @@
-﻿using RoR2;
+﻿using LemurFusion.Config;
+using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -42,27 +44,21 @@ namespace LemurFusion.Compat
 
         public void LoadData(BetterLemurController lemCtrl)
         {
-            var itemCount = ItemCatalog.itemCount;
             lemCtrl._devotedItemList = [];
             lemCtrl._untrackedItemList = [];
 
             for (int i = 0; i < devotedItemData.Length; i++)
             {
                 var item = devotedItemData[i];
-                if (item.itemIndex < itemCount)
-                {
-                    Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
-                }
+                Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
             }
 
             for (int i = 0; i < untrackedItemData.Length; i++)
             {
                 var item = untrackedItemData[i];
-                if (item.itemIndex < itemCount)
-                {
-                    Utils.SetItem(lemCtrl._untrackedItemList, (ItemIndex)item.itemIndex, item.count);
-                }
+                Utils.SetItem(lemCtrl._untrackedItemList, (ItemIndex)item.itemIndex, item.count);
             }
+            lemCtrl.SyncPersonalInventory();
         }
     }
 
@@ -110,7 +106,6 @@ namespace LemurFusion.Compat
                         {
                             savedLemData.LoadData(lemCtrl);
                             lemurData.Remove(savedLemData);
-                            lemCtrl._devotionInventoryController.UpdateAllMinions();
                         }
 
                         if (!lemurData.Any())
@@ -122,11 +117,11 @@ namespace LemurFusion.Compat
             }
         }
 
-        private static bool FuckingNullCheck(CharacterMaster master, out NetworkInstanceId netId)
+        private static bool FuckingNullCheck(CharacterMaster master, out NetworkUserId netId)
         {
             // this is how you correctly nullcheck in unity.
             // fucking kill me in the face man.
-            netId = NetworkInstanceId.Zero;
+            netId = default;
 
             if (!master)
                 return false;
@@ -147,8 +142,8 @@ namespace LemurFusion.Compat
             if (!networkUser) 
                 return false;
 
-            netId = networkUser.netId;
-            return !netId.IsEmpty(); 
+            netId = networkUser.id;
+            return true; 
         }
 
         private static List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)

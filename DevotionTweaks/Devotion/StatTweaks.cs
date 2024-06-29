@@ -9,19 +9,8 @@ using System;
 
 namespace LemurFusion.Devotion
 {
-    internal class StatTweaks
+    public static class StatTweaks
     {
-        public static StatTweaks instance { get; private set; }
-
-        private StatTweaks() { }
-
-        public static void Init()
-        {
-            if (instance != null) return;
-
-            instance = new StatTweaks();
-        }
-
         public static void InitHooks()
         {
             On.RoR2.Util.GetBestMasterName += Util_GetBestMasterName;
@@ -126,12 +115,15 @@ namespace LemurFusion.Devotion
         #region Stats
         private static void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-            if (body && body.name.StartsWith(DevotionTweaks.devotedPrefix))
+            if (body && body.bodyFlags.HasFlag(CharacterBody.BodyFlags.Devotion))
             {
                 if (AITweaks.disableFallDamage.Value)
                     body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
                 if (AITweaks.immuneToVoidDeath.Value)
+                {
                     body.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath;
+                    body.bodyFlags |= CharacterBody.BodyFlags.ResistantToAOE;
+                }
 
                 ResizeBody(body);
             }
@@ -146,7 +138,7 @@ namespace LemurFusion.Devotion
                 {
                     args.levelHealthAdd += sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
                     args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.armorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.armorAdd += 20f + 5f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
                     args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);

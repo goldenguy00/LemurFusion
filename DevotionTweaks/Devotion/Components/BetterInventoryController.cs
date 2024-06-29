@@ -99,12 +99,12 @@ namespace LemurFusion.Devotion.Components
             return friends;
         }
 
-        public void ShareItemWithFriends(ItemIndex item)
+        public void ShareItemWithFriends(ItemIndex item, int count = 1)
         {
             var friends = GetFriends();
             foreach (var friend in friends)
             {
-                friend.LemurianInventory.GiveItem(item);
+                friend.LemurianInventory.GiveItem(item, count);
             }
         }
 
