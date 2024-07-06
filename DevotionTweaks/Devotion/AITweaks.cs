@@ -7,10 +7,7 @@ using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using RoR2;
 using RoR2.CharacterAI;
-using RoR2.Projectile;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -30,8 +27,6 @@ namespace LemurFusion.Devotion
         public static ConfigEntry<float> updateFrequency;
         public static ConfigEntry<int> detectionRadius;
 
-        public static float basePredictionAngle = 45f;
-
         public const string SKILL_STRAFE_NAME = "StrafeAroundExplosion";
         public const string SKILL_ESCAPE_NAME = "BackUpFromExplosion";
 
@@ -47,54 +42,20 @@ namespace LemurFusion.Devotion
         {
             if (improveAI.Value)
             {
-                RoR2Application.onLoad += PostLoad;
-
                 On.RoR2.CharacterAI.BaseAI.UpdateTargets += BaseAI_UpdateTargets;
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
                 IL.EntityStates.LemurianMonster.FireFireball.OnEnter += FireFireball_OnEnter;
                 IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += FireMegaFireball_FixedUpdate;
 
+                DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
                 var baseAI = DevotionTweaks.masterPrefab.GetComponent<BaseAI>();
                 baseAI.fullVision = true;
-                baseAI.aimVectorDampTime = 0.02f;
+                baseAI.aimVectorDampTime = 0.1f;
                 baseAI.aimVectorMaxSpeed = 200f;
-
-                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
-                for (int i = 0; i < skillDrivers.Length; i++)
-                {
-                    var driver = skillDrivers[i];
-
-                    switch (driver.customName)
-                    {
-                        case "DevotedSecondarySkill":
-                            driver.minUserHealthFraction = 0.5f;
-                            driver.noRepeat = true;
-                            driver.nextHighPriorityOverride = skillDrivers[i + 1];
-                            break;
-                        case "StrafeAndShoot":
-                            driver.maxDistance = 100f;
-                            break;
-                        case "ReturnToLeaderDefault":
-                            driver.driverUpdateTimerOverride = 0.2f;
-                            driver.shouldSprint = true;
-                            driver.resetCurrentEnemyOnNextDriverSelection = true;
-                            break;
-                        case "WaitNearLeaderDefault":
-                            driver.driverUpdateTimerOverride = 0.2f;
-                            driver.resetCurrentEnemyOnNextDriverSelection = true;
-                            break;
-                        case "StrafeNearbyEnemies":
-                        case "ChaseFarEnemies":
-                        case "ReturnToOwnerLeash":
-                        case "ChaseOffNodegraph":
-                        case "StopAndShoot":
-                            break;
-                    }
-                }
 
                 var component = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component.customName = SKILL_ESCAPE_NAME;
-                component.skillSlot = SkillSlot.None;
+                component.skillSlot = SkillSlot.Primary;
                 component.maxDistance = detectionRadius.Value * 0.5f;
                 component.minDistance = 0f;
                 component.aimType = AISkillDriver.AimType.AtCurrentEnemy;
@@ -102,8 +63,7 @@ namespace LemurFusion.Devotion
                 component.movementType = AISkillDriver.MovementType.FleeMoveTarget;
                 component.ignoreNodeGraph = true;
                 component.shouldSprint = true;
-                component.driverUpdateTimerOverride = updateFrequency.Value * 1.5f;
-                component.resetCurrentEnemyOnNextDriverSelection = true;
+                component.driverUpdateTimerOverride = Mathf.Clamp(updateFrequency.Value * 1.5f, 0.3f, 1f);
 
                 var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
                 component2.customName = SKILL_STRAFE_NAME;
@@ -115,12 +75,49 @@ namespace LemurFusion.Devotion
                 component2.movementType = AISkillDriver.MovementType.StrafeMovetarget;
                 component2.ignoreNodeGraph = true;
                 component2.shouldSprint = true;
-                component2.driverUpdateTimerOverride = updateFrequency.Value * 1.5f;
+                component2.driverUpdateTimerOverride = Mathf.Clamp(updateFrequency.Value * 1.5f, 0.3f, 1f);
                 component2.activationRequiresAimTargetLoS = true;
                 component2.activationRequiresAimConfirmation = true;
-                component2.resetCurrentEnemyOnNextDriverSelection = true;
 
-                DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
+                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
+                for (int i = 0; i < skillDrivers.Length; i++)
+                {
+                    var driver = skillDrivers[i];
+
+                    switch (driver.customName)
+                    {
+                        case "DevotedSecondarySkill":
+                            driver.minUserHealthFraction = 0.75f;
+                            driver.shouldSprint = true;
+                            driver.activationRequiresAimConfirmation = true;
+                            driver.maxDistance = 10f;
+                            break;
+                        case "StrafeAndShoot":
+                            driver.maxDistance = 100f;
+                            driver.activationRequiresAimTargetLoS = true;
+                            driver.shouldSprint = true;
+                            break;
+                        case "ReturnToLeaderDefault":
+                            driver.driverUpdateTimerOverride = 0.2f;
+                            driver.shouldSprint = true;
+                            driver.resetCurrentEnemyOnNextDriverSelection = true;
+                            break;
+                        case "WaitNearLeaderDefault":
+                            driver.driverUpdateTimerOverride = 0.2f;
+                            driver.resetCurrentEnemyOnNextDriverSelection = true;
+                            break;
+                        case "StrafeNearbyEnemies":
+                            driver.shouldSprint = true;
+                            break;
+                        case "ChaseFarEnemies":
+                        case "ReturnToOwnerLeash":
+                        case "ChaseOffNodegraph":
+                        case "StopAndShoot":
+                        case SKILL_ESCAPE_NAME:
+                        case SKILL_STRAFE_NAME:
+                            break;
+                    }
+                }
             }
         }
 
@@ -129,52 +126,15 @@ namespace LemurFusion.Devotion
             orig(self);
             if (NetworkServer.active)
             {
-                if (self.master && self.master.minionOwnership && self.body.bodyFlags.HasFlag(CharacterBody.BodyFlags.Devotion))
+                if (Utils.IsDevoted(self.master) && FuckMyAss.FuckingNullCheckPing(self.master.minionOwnership.ownerMaster, out var target))
                 {
-                    if (FuckingNullCheck(self.master.minionOwnership.ownerMaster, out var target))
+                    var targetBody = target.GetComponent<CharacterBody>();
+                    if (targetBody && targetBody.master && TeamMask.GetEnemyTeams(self.master.teamIndex).HasTeam(targetBody.master.teamIndex))
                     {
-                        var targetBody = target.GetComponent<CharacterBody>();
-                        if (targetBody && targetBody.teamComponent.teamIndex != self.master.teamIndex)
-                        {
-                            self.currentEnemy.gameObject = target;
-                        }
+                        self.currentEnemy.gameObject = target;
                     }
                 }
             }
-        }
-
-        private static bool FuckingNullCheck(CharacterMaster master, out GameObject target)
-        {
-            // this is how you correctly nullcheck in unity.
-            // fucking kill me in the face man.
-            target = null;
-
-            if (!master)
-                return false;
-
-            var minion = master.minionOwnership;
-            if (!minion)
-                return false;
-
-            var ownerMaster = minion.ownerMaster;
-            if (!ownerMaster)
-                return false;
-
-            var pCMC = ownerMaster.playerCharacterMasterController;
-            if (!pCMC)
-                return false;
-
-            var pCtrl = pCMC.pingerController;
-            if (!pCtrl)
-                return false;
-
-            target = pCtrl.currentPing.targetGameObject;
-            return pCtrl.currentPing.active && target;
-        }
-
-        private static void PostLoad()
-        {
-            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
         }
 
         private static void FireMegaFireball_FixedUpdate(ILContext il)
@@ -188,19 +148,10 @@ namespace LemurFusion.Devotion
                 c.Emit(OpCodes.Ldloc_2);
                 c.EmitDelegate<Func<FireMegaFireball, Ray, Ray>>((self, aimRay) =>
                 {
-                    if (Utils.AllowPrediction(self.characterBody))
+                    var body = self.characterBody;
+                    if (Utils.IsDevoted(body))
                     {
-                        HurtBox targetHurtbox = Utils.GetMasterAITargetHurtbox(self.characterBody.master);
-
-                        float projectileSpeed = FireMegaFireball.projectileSpeed;
-                        if (projectileSpeed > 0f)
-                        {
-                            aimRay = Utils.PredictAimray(aimRay, projectileSpeed, targetHurtbox);
-                        }
-                        else
-                        {
-                            aimRay = Utils.PredictAimrayPS(aimRay, FireMegaFireball.projectilePrefab, targetHurtbox);
-                        }
+                        return Utils.PredictAimray(body, aimRay, FireMegaFireball.projectilePrefab, FireMegaFireball.projectileSpeed);
                     }
                     return aimRay;
                 });
@@ -223,11 +174,10 @@ namespace LemurFusion.Devotion
                 c.Emit(OpCodes.Ldloc_0);
                 c.EmitDelegate<Func<FireFireball, Ray, Ray>>((self, aimRay) =>
                 {
-                    if (Utils.AllowPrediction(self.characterBody))
+                    var body = self.characterBody;
+                    if (Utils.IsDevoted(body))
                     {
-                        HurtBox targetHurtbox = Utils.GetMasterAITargetHurtbox(self.characterBody.master);
-                        Ray newAimRay = Utils.PredictAimrayPS(aimRay, FireFireball.projectilePrefab, targetHurtbox);
-                        return newAimRay;
+                        return Utils.PredictAimray(body, aimRay, FireFireball.projectilePrefab);
                     }
                     return aimRay;
                 });

@@ -23,7 +23,7 @@ public class BetterLemurController : DevotedLemurianController
         }
     }
 
-    public BetterInventoryController BetterInventoryController { get { return base._devotionInventoryController as BetterInventoryController; } }
+    public BetterInventoryController BetterInventoryController => base._devotionInventoryController as BetterInventoryController;
 
     public void SyncPersonalInventory()
     {
@@ -58,9 +58,9 @@ public class BetterLemurController : DevotedLemurianController
     public void KillYourSelf()
     {
         if (DevotionTweaks.EnableSharedInventory)
-        {
             this.BetterInventoryController.RemoveSharedItemsFromFriends(this._devotedItemList);
-        }
+        if (this.LemurianInventory)
+            this.LemurianInventory.CleanInventory();
 
         var dropType = ConfigExtended.DeathDrop_ItemType.Value;
         if (dropType != DevotionTweaks.DeathItem.None)
@@ -78,6 +78,8 @@ public class BetterLemurController : DevotedLemurianController
                 }
             }
         }
+        this._devotedItemList.Clear();
+        this._untrackedItemList.Clear();
 
         if (ConfigExtended.DeathDrop_DropEgg.Value && Physics.Raycast(this.LemurianBody.corePosition,
             Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
@@ -90,6 +92,8 @@ public class BetterLemurController : DevotedLemurianController
             DirectorCore.instance.TrySpawnObject(new DirectorSpawnRequest(Addressables.LoadAssetAsync<SpawnCard>
                 ("RoR2/CU8/LemurianEgg/iscLemurianEgg.asset").WaitForCompletion(), placementRule, new Xoroshiro128Plus(0UL)));
         }
+
+        Destroy(this._lemurianMaster.gameObject, 1f);
     }
 
     public PickupIndex FindPickupIndex(ItemIndex itemIndex, DevotionTweaks.DeathItem dropType)

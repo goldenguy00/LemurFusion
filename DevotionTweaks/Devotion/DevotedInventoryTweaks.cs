@@ -7,6 +7,8 @@ using UnityEngine.Networking;
 using Mono.Cecil.Cil;
 using LemurFusion.Devotion.Components;
 using System.Linq;
+using UnityEngine;
+using RoR2.CharacterAI;
 
 namespace LemurFusion.Devotion
 {
@@ -22,62 +24,34 @@ namespace LemurFusion.Devotion
             instance = new DevotedInventoryTweaks();
         }
 
-        public static bool initialized { get; set; }
-
         private DevotedInventoryTweaks()
         {
             //       //
             // hooks //
             //       //
-            IL.RoR2.SceneDirector.PopulateScene += PopulateScene;
             IL.RoR2.DevotionInventoryController.EvolveDevotedLumerian += EvolveDevotedLumerian;
 
-            On.RoR2.DevotionInventoryController.ActivateDevotedEvolution += DevotionInventoryController_ActivateDevotedEvolution;
-            On.RoR2.DevotionInventoryController.OnDevotionArtifactDisabled += OnDevotionArtifactDisabled;
-            On.RoR2.DevotionInventoryController.OnDevotionArtifactEnabled += OnDevotionArtifactEnabled;
+            // get em out
+            On.RoR2.DevotionInventoryController.Init += DevotionInventoryController_Init;
+
             On.RoR2.DevotionInventoryController.UpdateMinionInventory += UpdateMinionInventory;
             On.RoR2.DevotionInventoryController.UpdateAllMinions += UpdateAllMinions;
         }
 
-        private static void DevotionInventoryController_ActivateDevotedEvolution(On.RoR2.DevotionInventoryController.orig_ActivateDevotedEvolution orig)
+        private static void DevotionInventoryController_Init(On.RoR2.DevotionInventoryController.orig_Init orig)
         {
-            if (!NetworkServer.active)
+            if (PluginConfig.permaDevotion.Value)
             {
-                UE.Debug.LogWarning("[Server] function 'System.Void RoR2.DevotionInventoryController::ActivateDevotedEvolution()' called on client");
-                return;
+                Run.onRunStartGlobal += (run) => BetterInventoryController.InitializeDevotion();
             }
-            foreach (var devotionInventoryController in DevotionInventoryController.InstanceList)
+            else
             {
-                    if (devotionInventoryController.sfxLocator)
-                        Util.PlaySound(devotionInventoryController.sfxLocator.openSound, devotionInventoryController.gameObject);
-                    devotionInventoryController.UpdateAllMinions(true);
+                RunArtifactManager.onArtifactEnabledGlobal += BetterInventoryController.OnDevotionArtifactEnabled;
+                RunArtifactManager.onArtifactDisabledGlobal += BetterInventoryController.OnDevotionArtifactDisabled;
             }
         }
 
         #region IL Hooks
-        private static void PopulateScene(ILContext il)
-        {
-            var c = new ILCursor(il);
-
-            if (c.TryGotoNext(MoveType.Before,
-                    i => i.MatchLdfld(typeof(SceneDirector), nameof(SceneDirector.lumerianEgg))
-                ))
-            {
-                c.Remove();
-                c.Emit(OpCodes.Ldloc_3);
-                c.EmitDelegate<Func<SceneDirector, DirectorCard, DirectorCard>>((self, original) =>
-                {
-                    if (self.rng.RangeInt(0, 100) < PluginConfig.eggSpawnChance.Value)
-                        return self.lumerianEgg;
-                    return original;
-                });
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("IL Hook failed for SceneDirector_PopulateScene");
-            }
-        }
-
         private static void EvolveDevotedLumerian(ILContext il)
         {
             var c = new ILCursor(il);
@@ -116,41 +90,7 @@ namespace LemurFusion.Devotion
         #endregion
 
         #region DevInvCtrl Hooks
-        private static void OnDevotionArtifactEnabled(On.RoR2.DevotionInventoryController.orig_OnDevotionArtifactEnabled orig,
-            RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
-        {
-            if (artifactDef != CU8Content.Artifacts.Devotion)
-                return;
 
-            if (!DevotedInventoryTweaks.initialized)
-            {
-                DevotedInventoryTweaks.initialized = true;
-                Run.onRunDestroyGlobal += DevotionInventoryController.OnRunDestroy;
-                BossGroup.onBossGroupDefeatedServer += DevotionInventoryController.OnBossGroupDefeatedServer;
-                On.RoR2.MasterSummon.Perform += DevotionTweaks.MasterSummon_Perform;
-
-                StatTweaks.InitHooks();
-                BetterInventoryController.CreateEliteLists();
-            }
-        }
-
-        private static void OnDevotionArtifactDisabled(On.RoR2.DevotionInventoryController.orig_OnDevotionArtifactDisabled orig, 
-            RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
-        {
-            if (artifactDef != CU8Content.Artifacts.Devotion)
-                return;
-
-            if (DevotedInventoryTweaks.initialized)
-            {
-                DevotedInventoryTweaks.initialized = false;
-                Run.onRunDestroyGlobal -= DevotionInventoryController.OnRunDestroy;
-                BossGroup.onBossGroupDefeatedServer -= DevotionInventoryController.OnBossGroupDefeatedServer;
-                On.RoR2.MasterSummon.Perform -= DevotionTweaks.MasterSummon_Perform;
-
-                StatTweaks.RemoveHooks();
-                BetterInventoryController.ClearEliteLists();
-            }
-        }
         private static void UpdateAllMinions(On.RoR2.DevotionInventoryController.orig_UpdateAllMinions orig,
             DevotionInventoryController self, bool shouldEvolve)
         {

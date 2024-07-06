@@ -1,11 +1,14 @@
 ﻿using LemurFusion.Config;
 using LemurFusion.Devotion;
+using LemurFusion;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace LemurFusion
 {
@@ -119,7 +122,7 @@ namespace LemurFusion
             Vector3 vect = NearestPointOnLine(point, p1, p2);
             Vector3 otherVect = NearestPointOnLine(point, p3, p4);
 
-            if (Vector3.Distance(vect, point) < Vector3.Distance(otherVect, point))
+            if ((vect - point).sqrMagnitude < (otherVect - point).sqrMagnitude)
                 return vect;
             return otherVect;
         }
@@ -137,119 +140,155 @@ namespace LemurFusion
             return start + line * d;
         }
 
-        public static bool AllowPrediction(CharacterBody body)
-        {
-            return body && body.master && body.master.name.Contains(DevotionTweaks.devotedMasterName) && body.teamComponent.teamIndex == TeamIndex.Player;
-        }
+        public static bool IsDevoted(CharacterBody body) => body && IsDevoted(body.master);
+        public static bool IsDevoted(CharacterMaster master) => master && master.gameObject.name == DevotionTweaks.clonedMasterName && master.teamIndex == TeamIndex.Player;
 
-        public static Ray PredictAimrayPS(Ray aimRay, GameObject projectilePrefab, HurtBox targetHurtBox)
+        public static Ray PredictAimray(CharacterBody body, Ray aimRay, GameObject projectilePrefab, float projectileSpeed = 0)
         {
-            float speed = -1f;
-            if (projectilePrefab)
+            if (projectileSpeed == 0 && projectilePrefab && projectilePrefab.TryGetComponent<ProjectileSimple>(out var ps))
             {
-                ProjectileSimple ps = projectilePrefab.GetComponent<ProjectileSimple>();
-                if (ps)
-                {
-                    speed = ps.desiredForwardSpeed;
-                }
+                projectileSpeed = ps.desiredForwardSpeed;
             }
 
-            if (speed <= 0f)
+            if (projectileSpeed > 0f && GetTargetHurtbox(body, aimRay, out var targetBody, out var targetPosition))
             {
-                LemurFusionPlugin.LogError("Could not get speed of ProjectileSimple.");
-                return aimRay;
-            }
-
-            return PredictAimray(aimRay, speed, targetHurtBox);
-        }
-
-        public static Ray PredictAimray(Ray aimRay, float projectileSpeed, HurtBox targetHurtBox)
-        {
-            if (targetHurtBox == null)
-            {
-                targetHurtBox = AcquireTarget(aimRay);
-            }
-
-            bool hasHurtbox = targetHurtBox && targetHurtBox.healthComponent && targetHurtBox.healthComponent.body && targetHurtBox.healthComponent.body.characterMotor;
-            if (hasHurtbox && projectileSpeed > 0f)
-            {
-                CharacterBody targetBody = targetHurtBox.healthComponent.body;
-                Vector3 targetPosition = targetHurtBox.transform.position;
-
                 //Velocity shows up as 0 for clients due to not having authority over the CharacterMotor
-                Vector3 targetVelocity = targetBody.characterMotor.velocity;
+                //Less accurate, but it works online.
+                Vector3 targetVelocity;
                 if (!targetBody.hasAuthority)
-                {
-                    //Less accurate, but it works online.
                     targetVelocity = (targetBody.transform.position - targetBody.previousPosition) / Time.fixedDeltaTime;
-                }
+                else
+                    targetVelocity = targetBody.characterMotor.velocity;
 
-                if (targetVelocity.sqrMagnitude > 0f && !(targetBody && targetBody.hasCloakBuff))   //Dont bother predicting stationary targets
+                if (targetVelocity.sqrMagnitude > 0f) //Dont bother predicting stationary targets
                 {
-                    //A very simplified way of estimating, won't be 100% accurate.
-                    Vector3 currentDistance = targetPosition - aimRay.origin;
-                    float timeToImpact = currentDistance.magnitude / projectileSpeed;
-                    //Vertical movenent isn't predicted well by this, so just use the target's current Y
-                    Vector3 lateralVelocity = new Vector3(targetVelocity.x, 0f, targetVelocity.z);
-                    Vector3 futurePosition = targetPosition + lateralVelocity * timeToImpact;
-
-                    //Only attempt prediction if player is jumping upwards.
-                    //Predicting downwards movement leads to groundshots.
-                    if (targetBody.characterMotor && !targetBody.characterMotor.isFlying && !targetBody.characterMotor.isGrounded && targetVelocity.y > 0f)
-                    {
-                        //point + vt + 0.5at^2
-                        float futureY = targetPosition.y + targetVelocity.y * timeToImpact;
-                        futureY += 0.5f * Physics.gravity.y * timeToImpact * timeToImpact;
-                        futurePosition.y = futureY;
-                    }
-
-                    Ray newAimray = new()
-                    {
-                        origin = aimRay.origin,
-                        direction = (futurePosition - aimRay.origin).normalized
-                    };
-
-                    float angleBetweenVectors = Vector3.Angle(aimRay.direction, newAimray.direction);
-                    if (angleBetweenVectors <= AITweaks.basePredictionAngle)
-                    {
-                        return newAimray;
-                    }
+                    return GetRay(aimRay, projectileSpeed, targetPosition, targetVelocity);
                 }
             }
 
             return aimRay;
         }
 
-        public static HurtBox AcquireTarget(Ray aimRay)
+        // i hate math dont loook :(
+        private static Ray GetRay(Ray aimRay, float v, Vector3 y, Vector3 dy)
         {
-            BullseyeSearch search = new()
-            {
-                teamMaskFilter = TeamMask.GetEnemyTeams(TeamIndex.Player),
-                filterByLoS = true,
-                searchOrigin = aimRay.origin,
-                sortMode = BullseyeSearch.SortMode.Angle,
-                maxDistanceFilter = 200f,
-                maxAngleFilter = AITweaks.basePredictionAngle,
-                searchDirection = aimRay.direction
-            };
-            search.RefreshCandidates();
+            /*
+                origin x
+                speed of the projectile v
 
-            return search.GetResults().FirstOrDefault();
-        }
+                target's initial position y
+                velocity of the target dy
 
-        public static HurtBox GetMasterAITargetHurtbox(CharacterMaster cm)
-        {
-            if (cm && cm.aiComponents.Length > 0)
+                find unit vector direction d
+                for some time to impact t
+
+                and
+                yx.x = y.x - x.x
+                yx.y = y.y - x.y
+                yx.z = y.z - x.z
+
+                yx = y - x
+
+                equations to solve:
+                x.x + v*t*d.x = y.x + dy.x*t
+                x.y + v*t*d.y = y.y + dy.y*t
+                x.z + v*t*d.z = y.z + dy.z*t
+                x   + v*t*d   = y   + dy  *t
+
+                x + v*t*d = y + dy*t
+                    v*t*d = y + dy*t - x
+                    v*t*d = (y - x) + dy*t
+                    dv*t  = yx + dy*t
+
+                v*t*d.x = dy.x*t + (y.x-x.x)
+                v*t*d.y = dy.y*t + (y.y-x.y)
+                v*t*d.z = dy.z*t + (y.z-x.z)
+
+                Noting that d is a unit vector we have
+                d.x^2 + d.y^2 + d.z^2 == 1
+                            Dot(d, d) == 1
+            
+                (v*t)^2 = (dy.x*t + (y.x-x.x))^2 
+                        + (dy.y*t + (y.y-x.y))^2 
+                        + (dy.z*t + (y.z-x.z))^2
+
+                (v*t)^2 = dy.x^2*t^2 + 2*dy.x*(y.x-x.x)*t + (y.x-x.x)^2
+                        + dy.y^2*t^2 + 2*dy.y*(y.y-x.y)*t + (y.y-x.y)^2
+                        + dy.z^2*t^2 + 2*dy.z*(y.z-x.z)*t + (y.z-x.z)^2
+                v^2*t^2 = dy^2*t^2 + 2dy*yx*t + yx^2
+                
+                so
+                    0 = a*t^2 + b*t + c
+
+                where
+                a = v^2 - dy.x^2 - dy.y^2 - dy.z^2
+                  = v^2 - (dy.x^2 + dy.y^2 + dy.z^2) 
+                  = v^2 - Dot(dy, dy)
+
+                b = -2*dy.x(y.x-x.x) - 2*dy.y(y.y-x.y) - 2*dy.z(y.z-x.z)
+                  = -2 * (dy.x*yx.x  +   dy.y * yx.y   +   dy.z*yx.z)
+                  = -2 * Dot(dy, yx)
+
+                c = (y.x-x.x)^2 + (y.y-x.y)^2 + (y.z-x.z)^2
+                  = -1 * ((y.x-x.x)^2 + (y.y-x.y)^2 + (y.z-x.z)^2)
+                  = -1 * ((yx.x)^2    + (yx.y)^2    + (yx.z)^2)
+                  = -1 * Dot(yx, yx)
+
+                This is a quadratic equation in t and has solutions
+                t = (-b +- sqrt(b^2 - 4*a*c)) / (2*a)
+            
+            finally d (direction normalized) can be solved
+                x + dx*t = y + dy*t
+                dx = (dy*t + yx) * (1/t)
+                dx = dy + yx/t
+                
+             */
+            var yx = y - aimRay.origin;
+
+            var a = (v * v) - Vector3.Dot(dy, dy);
+            var b = -2 * Vector3.Dot(dy, yx);
+            var c = -1 * Vector3.Dot(yx, yx);
+
+            var d = (b * b) - (4 * a * c);
+            if (d > 0)
             {
-                foreach (BaseAI ai in cm.aiComponents)
+                d = Mathf.Sqrt(d);
+                var t1 = (-b + d) / (2 * a);
+                var t2 = (-b - d) / (2 * a);
+                var t = Mathf.Max(t1, t2);
+                if (t > 0)
                 {
-                    if (ai.currentEnemy != null && ai.currentEnemy.bestHurtBox != null)
-                    {
-                        return ai.currentEnemy.bestHurtBox;
-                    }
+                    aimRay.direction = (dy * t + yx) / t;
                 }
             }
-            return null;
+            return aimRay;
+        }
+
+        public static bool GetTargetHurtbox(CharacterBody body, Ray aimRay, out CharacterBody targetBody, out Vector3 targetPosition)
+        {
+            var aiComponents = body.master.aiComponents;
+            for (int i = 0; i < aiComponents.Length; i++)
+            {
+                var enemy = aiComponents[i].currentEnemy;
+                enemy.Update();
+                if (enemy.gameObject && enemy.bestHurtBox && FuckMyAss.FuckingNullCheckHurtBox(enemy.bestHurtBox, out targetBody, out targetPosition))
+                    return true;
+            }
+
+            var enemySearch = new BullseyeSearch
+            {
+                viewer = body,
+                teamMaskFilter = TeamMask.GetEnemyTeams(body.teamComponent.teamIndex),
+                sortMode = BullseyeSearch.SortMode.DistanceAndAngle,
+                minDistanceFilter = 0f,
+                maxDistanceFilter = 200f,
+                searchOrigin = aimRay.origin,
+                searchDirection = aimRay.direction,
+                maxAngleFilter = 180f,
+                filterByLoS = true
+            };
+            enemySearch.RefreshCandidates();
+            return FuckMyAss.FuckingNullCheckHurtBox(enemySearch.GetResults().FirstOrDefault(), out targetBody, out targetPosition);
         }
         #endregion
     }

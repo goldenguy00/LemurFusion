@@ -1,5 +1,6 @@
 ﻿using LemurFusion.Config;
 using RoR2;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace LemurFusion.Devotion
@@ -33,11 +34,14 @@ namespace LemurFusion.Devotion
             {
                 lemCtrl._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
                 
-                if (lemCtrl.FusionCount == 0)
+                if (lemCtrl.FusionCount == 0 && PluginConfig.enableSharedInventory.Value)
                     lemCtrl.LemurianInventory.AddItemsFrom(lemCtrl.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
 
                 Utils.AddItem(lemCtrl._devotedItemList, itemIndex);
-                lemCtrl.BetterInventoryController.ShareItemWithFriends(itemIndex);
+                if (PluginConfig.enableSharedInventory.Value)
+                    lemCtrl.BetterInventoryController.ShareItemWithFriends(itemIndex);
+                else
+                    lemCtrl.LemurianInventory.GiveItem(itemIndex);
 
                 Utils.AddItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness.itemIndex);
                 lemCtrl.SyncPersonalInventory();
@@ -51,13 +55,10 @@ namespace LemurFusion.Devotion
                 orig(self);
                 return;
             }
-
+            
             if (!lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") && !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
             {
-                lemCtrl._lemurianMaster.destroyOnBodyDeath = true;
                 lemCtrl.KillYourSelf();
-
-                Object.Destroy(lemCtrl._lemurianMaster.gameObject, 1f);
             }
         }
         #endregion

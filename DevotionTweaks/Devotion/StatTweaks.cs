@@ -33,7 +33,7 @@ namespace LemurFusion.Devotion
         #region UI
         private static string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
         {
-            if (characterMaster && characterMaster.name.StartsWith(DevotionTweaks.devotedMasterName) && characterMaster.hasBody)
+            if (Utils.IsDevoted(characterMaster) && characterMaster.hasBody)
             {
                 return characterMaster.GetBody().GetDisplayName();
             }
@@ -43,12 +43,12 @@ namespace LemurFusion.Devotion
         private static string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
         {
             var baseName = orig(self);
-            if (!string.IsNullOrEmpty(baseName))
+            if (!string.IsNullOrEmpty(baseName) && Utils.IsDevoted(self))
             {
-                var meldCount = self?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-                if (meldCount.HasValue && meldCount.Value > 0)
+                var fusionCount = self.inventory.GetItemCount(CU8Content.Items.LemurianHarness);
+                if (fusionCount > 0)
                 {
-                    return $"{baseName} <style=cStack>x{meldCount}</style>";
+                    return $"{baseName} <style=cStack>x{fusionCount}</style>";
                 }
             }
             return baseName;
@@ -68,18 +68,22 @@ namespace LemurFusion.Devotion
                 masters.Add(instance.master);
             }
 
+            List<BetterLemurController> lemCtrlList = [];
             // fuck splitscreen players amirite
             var master = LocalUserManager.readOnlyLocalUsersList.First().cachedMasterController.master;
-            List<BetterLemurController> lemCtrlList = [];
             if (master)
             {
-                foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(master.netId)?.members ?? [])
+                var minionGroup = MinionOwnership.MinionGroup.FindGroup(master.netId);
+                if (minionGroup != null)
                 {
-                    if (minionOwnership && minionOwnership.gameObject.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                    foreach (MinionOwnership minionOwnership in minionGroup.members)
                     {
-                        lemCtrlList.Add(lemCtrl);
-                        if (!PluginConfig.showPersonalInventory.Value)
-                            break;
+                        if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var lemCtrl))
+                        {
+                            lemCtrlList.Add(lemCtrl);
+                            if (!PluginConfig.showPersonalInventory.Value)
+                                break;
+                        }
                     }
                 }
             }
@@ -115,7 +119,7 @@ namespace LemurFusion.Devotion
         #region Stats
         private static void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-            if (body && body.bodyFlags.HasFlag(CharacterBody.BodyFlags.Devotion))
+            if (Utils.IsDevoted(body))
             {
                 if (AITweaks.disableFallDamage.Value)
                     body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
@@ -131,24 +135,24 @@ namespace LemurFusion.Devotion
 
         private static void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
         {
-            var meldCount = sender?.inventory?.GetItemCount(CU8Content.Items.LemurianHarness);
-            if (meldCount.HasValue && meldCount.Value > 0 && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
+            if (Utils.IsDevoted(sender) && sender.masterObject && sender.masterObject.TryGetComponent<BetterLemurController>(out var lem))
             {
+                var fusionCount = lem.FusionCount;
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
                     args.levelHealthAdd += sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
                     args.levelRegenAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
                     args.armorAdd += 20f + 5f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
-                    args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.attackSpeedMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultAttackSpeed.Value, meldCount.Value, lem.DevotedEvolutionLevel);
+                    args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, fusionCount, lem.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultAttackSpeed.Value, fusionCount, lem.DevotedEvolutionLevel);
                 }
                 else
                 {
-                    args.healthMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.damageMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, lem.DevotedEvolutionLevel);
-                    args.attackSpeedMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, meldCount.Value, 0);
+                    args.healthMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, 0);
                 }
             }
         }
@@ -156,15 +160,15 @@ namespace LemurFusion.Devotion
         private static void ResizeBody(CharacterBody body)
         {
             // todo: fix this shit.
-            if (NetworkClient.active)
+            if (NetworkClient.active && body.modelLocator)
             {
-                var transform = body?.modelLocator?.modelTransform;
+                var transform = body.modelLocator.modelTransform;
                 if (transform)
                 {
                     if (PluginConfig.miniElders.Value)
                         transform.localScale = Vector3.one * 0.2f;
 
-                    if (transform.gameObject.TryGetComponent<FootstepHandler>(out var footstep))
+                    if (transform.TryGetComponent<FootstepHandler>(out var footstep))
                     {
                         //holy fuck its annoying
                         footstep.baseFootstepString = "";

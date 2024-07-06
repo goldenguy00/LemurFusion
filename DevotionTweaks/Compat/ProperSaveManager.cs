@@ -1,4 +1,5 @@
-﻿using LemurFusion.Config;
+﻿using Facepunch.Steamworks;
+using LemurFusion.Config;
 using RoR2;
 using System;
 using System.Collections.Generic;
@@ -99,7 +100,7 @@ namespace LemurFusion.Compat
                 CharacterMaster.onStartGlobal += SpawnMinion;
                 void SpawnMinion(CharacterMaster master)
                 {
-                    if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && FuckingNullCheck(master, out var netId))
+                    if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && FuckMyAss.FuckingNullCheckNetId(master, out var netId))
                     {
                         var savedLemData = lemurData.FirstOrDefault(lem => lem.summonerId.Load().Equals(netId));
                         if (savedLemData != null)
@@ -117,43 +118,18 @@ namespace LemurFusion.Compat
             }
         }
 
-        private static bool FuckingNullCheck(CharacterMaster master, out NetworkUserId netId)
-        {
-            // this is how you correctly nullcheck in unity.
-            // fucking kill me in the face man.
-            netId = default;
-
-            if (!master)
-                return false;
-
-            var minion = master.minionOwnership;
-            if (!minion)
-                return false;
-
-            var ownerMaster = minion.ownerMaster;
-            if (!ownerMaster)
-                return false;
-
-            var pCMC = ownerMaster.playerCharacterMasterController;
-            if (!pCMC)
-                return false;
-
-            var networkUser = pCMC.networkUser;
-            if (!networkUser) 
-                return false;
-
-            netId = networkUser.id;
-            return true; 
-        }
-
         private static List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
         {
             List<BetterLemurController> lemCtrlList = [];
-            foreach (MinionOwnership minionOwnership in MinionOwnership.MinionGroup.FindGroup(masterID)?.members ?? [])
+            MinionOwnership.MinionGroup minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
+            if (minionGroup != null)
             {
-                if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                foreach (MinionOwnership minionOwnership in minionGroup.members)
                 {
-                    lemCtrlList.Add(lemCtrl);
+                    if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var friend))
+                    {
+                        lemCtrlList.Add(friend);
+                    }
                 }
             }
 

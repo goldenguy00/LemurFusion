@@ -2,12 +2,16 @@
 using R2API;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace LemurFusion.Devotion.Components
 {
     public class BetterInventoryController : DevotionInventoryController
     {
+        #region Static Methods
         public static List<EquipmentIndex> gigaChadLvl = [];
+
+        public static bool initialized { get; set; }
 
         public static void CreateEliteLists()
         {
@@ -78,6 +82,41 @@ namespace LemurFusion.Devotion.Components
             DevotionInventoryController.lowLevelEliteBuffs.Clear();
             DevotionInventoryController.highLevelEliteBuffs.Clear();
         }
+
+        public static void InitializeDevotion()
+        {
+            if (!BetterInventoryController.initialized)
+            {
+                BetterInventoryController.initialized = true;
+                Run.onRunDestroyGlobal += DevotionInventoryController.OnRunDestroy;
+                BossGroup.onBossGroupDefeatedServer += DevotionInventoryController.OnBossGroupDefeatedServer;
+                On.RoR2.MasterSummon.Perform += DevotionTweaks.MasterSummon_Perform;
+
+                StatTweaks.InitHooks();
+                BetterInventoryController.CreateEliteLists();
+            }
+        }
+
+        public static new void OnDevotionArtifactEnabled(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
+        {
+            if (artifactDef == CU8Content.Artifacts.Devotion)
+                InitializeDevotion();
+        }
+
+        public static new void OnDevotionArtifactDisabled(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
+        {
+            if (artifactDef == CU8Content.Artifacts.Devotion && BetterInventoryController.initialized)
+            {
+                BetterInventoryController.initialized = false;
+                Run.onRunDestroyGlobal -= DevotionInventoryController.OnRunDestroy;
+                BossGroup.onBossGroupDefeatedServer -= DevotionInventoryController.OnBossGroupDefeatedServer;
+                On.RoR2.MasterSummon.Perform -= DevotionTweaks.MasterSummon_Perform;
+
+                StatTweaks.RemoveHooks();
+                BetterInventoryController.ClearEliteLists();
+            }
+        }
+        #endregion
 
         public List<BetterLemurController> GetFriends()
         {

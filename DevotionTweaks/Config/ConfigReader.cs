@@ -63,7 +63,20 @@ namespace LemurFusion.Config
                 "High Tier Elites Only For Final Evolution",
                 true,
                 "When rerolling the fully evolved elite elder lemurian aspects, should it always be a lategame elite type?");
-            
+
+            PluginConfig.permaDevotion = PluginConfig.BindOption(GENERAL,
+                "Permenant Devotion",
+                false,
+                "When enabled, the devotion artifact no longer have any effect, Instead, the egg spawnrate will be decided by \"Egg Spawn Chance\"." +
+                " Disable this option if you would like to be able to toggle the artifact's effects like normal.",
+                true);
+
+            PluginConfig.eggSpawnChance = PluginConfig.BindOptionSlider(GENERAL,
+                "Egg Spawn Chance",
+                100,
+                "Sets the chance of replacing a drone spawn with an egg.",
+                0, 100);
+
             //
             // misc
             //
@@ -74,11 +87,6 @@ namespace LemurFusion.Config
                 "Disabling this setting will make all lemurians visible on the scoreboard.",
                 true);
 
-            PluginConfig.cloneReplacesRevive = PluginConfig.BindOption(EXPERIMENTAL,
-                "Clone Replaces Revive",
-                false,
-                "Spawns a clone of the target lemurian when a Dio's or Larva is given.");
-
             PluginConfig.miniElders = PluginConfig.BindOption(EXPERIMENTAL,
                 "Mini Elder Lemurians",
                 true,
@@ -88,12 +96,6 @@ namespace LemurFusion.Config
                 "Enable Detailed Logs",
                 false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.");
-
-            PluginConfig.eggSpawnChance = PluginConfig.BindOptionSlider(EXPERIMENTAL,
-                "Egg Spawn Chance",
-                100,
-                "When Devotion Aftifact is enabled, sets the chance of replacing a drone spawn with an egg.",
-                0, 100);
 
             //
             // stats
@@ -163,10 +165,10 @@ namespace LemurFusion.Config
 
             AITweaks.updateFrequency = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "In Combat Update Frequency",
-                0.1f,
+                0.05f,
                 "Requires \"Enable Projectile Tracking\". Controls how often to refresh the projectile targeting. " +
                 "Increasing this value may change how the AI pathing behaves but will result in getting hit more often.",
-                0.1f, 0.5f);
+                0.05f, 0.5f);
 
             AITweaks.detectionRadius = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "Detection Radius",

@@ -13,12 +13,12 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> enableMinionScoreboard;
         public static ConfigEntry<bool> showPersonalInventory;
         public static ConfigEntry<bool> highTierElitesOnly;
+        public static ConfigEntry<bool> permaDevotion;
+        public static ConfigEntry<int> eggSpawnChance;
 
         public static ConfigEntry<bool> enableSharedInventory;
-        public static ConfigEntry<bool> cloneReplacesRevive;
         public static ConfigEntry<bool> miniElders;
         public static ConfigEntry<bool> enableDetailedLogs;
-        public static ConfigEntry<int> eggSpawnChance;
 
         public static ConfigEntry<bool> rebalanceHealthScaling;
         public static ConfigEntry<int> statMultHealth;

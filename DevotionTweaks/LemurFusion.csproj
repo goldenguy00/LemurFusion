@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Compile Remove="CrueltyElite.cs" />
+    <Compile Remove="Devotion\Components\BetterOutsideInteractableLocker.cs" />
     <Compile Remove="Legacy.cs" />
   </ItemGroup>
 
