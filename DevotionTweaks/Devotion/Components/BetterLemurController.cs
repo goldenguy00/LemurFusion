@@ -57,7 +57,7 @@ public class BetterLemurController : DevotedLemurianController
 
     public void KillYourSelf()
     {
-        if (DevotionTweaks.EnableSharedInventory)
+        if (DevotionTweaks.instance.EnableSharedInventory)
             this.BetterInventoryController.RemoveSharedItemsFromFriends(this._devotedItemList);
         if (this.LemurianInventory)
             this.LemurianInventory.CleanInventory();

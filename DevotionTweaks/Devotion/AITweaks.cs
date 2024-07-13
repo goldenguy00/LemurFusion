@@ -47,13 +47,14 @@ namespace LemurFusion.Devotion
                 IL.EntityStates.LemurianMonster.FireFireball.OnEnter += FireFireball_OnEnter;
                 IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += FireMegaFireball_FixedUpdate;
 
-                DevotionTweaks.masterPrefab.AddComponent<MatrixDodgingController>();
-                var baseAI = DevotionTweaks.masterPrefab.GetComponent<BaseAI>();
+                var masterPrefab = DevotionTweaks.instance.masterPrefab;
+                masterPrefab.AddComponent<MatrixDodgingController>();
+                var baseAI = masterPrefab.GetComponent<BaseAI>();
                 baseAI.fullVision = true;
                 baseAI.aimVectorDampTime = 0.1f;
                 baseAI.aimVectorMaxSpeed = 200f;
 
-                var component = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
+                var component = masterPrefab.AddComponent<AISkillDriver>();
                 component.customName = SKILL_ESCAPE_NAME;
                 component.skillSlot = SkillSlot.Primary;
                 component.maxDistance = detectionRadius.Value * 0.5f;
@@ -65,7 +66,7 @@ namespace LemurFusion.Devotion
                 component.shouldSprint = true;
                 component.driverUpdateTimerOverride = Mathf.Clamp(updateFrequency.Value * 1.5f, 0.3f, 1f);
 
-                var component2 = DevotionTweaks.masterPrefab.AddComponent<AISkillDriver>();
+                var component2 = masterPrefab.AddComponent<AISkillDriver>();
                 component2.customName = SKILL_STRAFE_NAME;
                 component2.skillSlot = SkillSlot.Primary;
                 component2.maxDistance = detectionRadius.Value;
@@ -79,7 +80,7 @@ namespace LemurFusion.Devotion
                 component2.activationRequiresAimTargetLoS = true;
                 component2.activationRequiresAimConfirmation = true;
 
-                var skillDrivers = DevotionTweaks.masterPrefab.GetComponents<AISkillDriver>();
+                var skillDrivers = masterPrefab.GetComponents<AISkillDriver>();
                 for (int i = 0; i < skillDrivers.Length; i++)
                 {
                     var driver = skillDrivers[i];
@@ -87,7 +88,7 @@ namespace LemurFusion.Devotion
                     switch (driver.customName)
                     {
                         case "DevotedSecondarySkill":
-                            driver.minUserHealthFraction = 0.75f;
+                            driver.minUserHealthFraction = 0.6f;
                             driver.shouldSprint = true;
                             driver.activationRequiresAimConfirmation = true;
                             driver.maxDistance = 10f;
@@ -108,6 +109,7 @@ namespace LemurFusion.Devotion
                             break;
                         case "StrafeNearbyEnemies":
                             driver.shouldSprint = true;
+                            skillDrivers[0].nextHighPriorityOverride = driver;
                             break;
                         case "ChaseFarEnemies":
                         case "ReturnToOwnerLeash":
@@ -131,6 +133,7 @@ namespace LemurFusion.Devotion
                     var targetBody = target.GetComponent<CharacterBody>();
                     if (targetBody && targetBody.master && TeamMask.GetEnemyTeams(self.master.teamIndex).HasTeam(targetBody.master.teamIndex))
                     {
+                        LemurFusionPlugin.LogInfo("TARGET ACQUIRED");
                         self.currentEnemy.gameObject = target;
                     }
                 }
@@ -204,7 +207,7 @@ namespace LemurFusion.Devotion
                 c.Emit<Combat>(OpCodes.Ldfld, nameof(Combat.dominantSkillDriver));
                 c.EmitDelegate<Func<Vector3, Vector3, AISkillDriver, Vector3>>((position, fleeDirection, skillDriver) =>
                 {
-                    if (skillDriver && skillDriver.customName == SKILL_STRAFE_NAME)
+                    if (skillDriver && (skillDriver.customName == SKILL_STRAFE_NAME || skillDriver.customName == "StrafeNearbyEnemies"))
                     {
                         return position - fleeDirection * 0.5f;
                     }

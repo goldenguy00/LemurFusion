@@ -42,7 +42,7 @@ namespace LemurFusion.Devotion
         {
             if (PluginConfig.permaDevotion.Value)
             {
-                Run.onRunStartGlobal += (run) => BetterInventoryController.InitializeDevotion();
+                Run.onRunStartGlobal += (_) => BetterInventoryController.InitializeDevotion();
             }
             else
             {
@@ -91,14 +91,14 @@ namespace LemurFusion.Devotion
 
         #region DevInvCtrl Hooks
 
-        private static void UpdateAllMinions(On.RoR2.DevotionInventoryController.orig_UpdateAllMinions orig,
+        private void UpdateAllMinions(On.RoR2.DevotionInventoryController.orig_UpdateAllMinions orig,
             DevotionInventoryController self, bool shouldEvolve)
         {
             if (shouldEvolve)
                 orig(self, shouldEvolve);
         }
 
-        private static void UpdateMinionInventory(On.RoR2.DevotionInventoryController.orig_UpdateMinionInventory orig,
+        private void UpdateMinionInventory(On.RoR2.DevotionInventoryController.orig_UpdateMinionInventory orig,
             DevotionInventoryController self, DevotedLemurianController lem, bool shouldEvolve)
         {
             if (!NetworkServer.active || lem is not BetterLemurController lemCtrl)

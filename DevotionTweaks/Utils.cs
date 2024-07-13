@@ -141,7 +141,7 @@ namespace LemurFusion
         }
 
         public static bool IsDevoted(CharacterBody body) => body && IsDevoted(body.master);
-        public static bool IsDevoted(CharacterMaster master) => master && master.gameObject.name == DevotionTweaks.clonedMasterName && master.teamIndex == TeamIndex.Player;
+        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.gameObject.name.StartsWith(DevotionTweaks.devotedMasterName);
 
         public static Ray PredictAimray(CharacterBody body, Ray aimRay, GameObject projectilePrefab, float projectileSpeed = 0)
         {
@@ -169,80 +169,8 @@ namespace LemurFusion
             return aimRay;
         }
 
-        // i hate math dont loook :(
         private static Ray GetRay(Ray aimRay, float v, Vector3 y, Vector3 dy)
         {
-            /*
-                origin x
-                speed of the projectile v
-
-                target's initial position y
-                velocity of the target dy
-
-                find unit vector direction d
-                for some time to impact t
-
-                and
-                yx.x = y.x - x.x
-                yx.y = y.y - x.y
-                yx.z = y.z - x.z
-
-                yx = y - x
-
-                equations to solve:
-                x.x + v*t*d.x = y.x + dy.x*t
-                x.y + v*t*d.y = y.y + dy.y*t
-                x.z + v*t*d.z = y.z + dy.z*t
-                x   + v*t*d   = y   + dy  *t
-
-                x + v*t*d = y + dy*t
-                    v*t*d = y + dy*t - x
-                    v*t*d = (y - x) + dy*t
-                    dv*t  = yx + dy*t
-
-                v*t*d.x = dy.x*t + (y.x-x.x)
-                v*t*d.y = dy.y*t + (y.y-x.y)
-                v*t*d.z = dy.z*t + (y.z-x.z)
-
-                Noting that d is a unit vector we have
-                d.x^2 + d.y^2 + d.z^2 == 1
-                            Dot(d, d) == 1
-            
-                (v*t)^2 = (dy.x*t + (y.x-x.x))^2 
-                        + (dy.y*t + (y.y-x.y))^2 
-                        + (dy.z*t + (y.z-x.z))^2
-
-                (v*t)^2 = dy.x^2*t^2 + 2*dy.x*(y.x-x.x)*t + (y.x-x.x)^2
-                        + dy.y^2*t^2 + 2*dy.y*(y.y-x.y)*t + (y.y-x.y)^2
-                        + dy.z^2*t^2 + 2*dy.z*(y.z-x.z)*t + (y.z-x.z)^2
-                v^2*t^2 = dy^2*t^2 + 2dy*yx*t + yx^2
-                
-                so
-                    0 = a*t^2 + b*t + c
-
-                where
-                a = v^2 - dy.x^2 - dy.y^2 - dy.z^2
-                  = v^2 - (dy.x^2 + dy.y^2 + dy.z^2) 
-                  = v^2 - Dot(dy, dy)
-
-                b = -2*dy.x(y.x-x.x) - 2*dy.y(y.y-x.y) - 2*dy.z(y.z-x.z)
-                  = -2 * (dy.x*yx.x  +   dy.y * yx.y   +   dy.z*yx.z)
-                  = -2 * Dot(dy, yx)
-
-                c = (y.x-x.x)^2 + (y.y-x.y)^2 + (y.z-x.z)^2
-                  = -1 * ((y.x-x.x)^2 + (y.y-x.y)^2 + (y.z-x.z)^2)
-                  = -1 * ((yx.x)^2    + (yx.y)^2    + (yx.z)^2)
-                  = -1 * Dot(yx, yx)
-
-                This is a quadratic equation in t and has solutions
-                t = (-b +- sqrt(b^2 - 4*a*c)) / (2*a)
-            
-            finally d (direction normalized) can be solved
-                x + dx*t = y + dy*t
-                dx = (dy*t + yx) * (1/t)
-                dx = dy + yx/t
-                
-             */
             var yx = y - aimRay.origin;
 
             var a = (v * v) - Vector3.Dot(dy, dy);

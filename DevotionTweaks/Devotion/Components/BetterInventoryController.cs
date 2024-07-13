@@ -3,6 +3,7 @@ using R2API;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System;
 
 namespace LemurFusion.Devotion.Components
 {
@@ -90,13 +91,13 @@ namespace LemurFusion.Devotion.Components
                 BetterInventoryController.initialized = true;
                 Run.onRunDestroyGlobal += DevotionInventoryController.OnRunDestroy;
                 BossGroup.onBossGroupDefeatedServer += DevotionInventoryController.OnBossGroupDefeatedServer;
-                On.RoR2.MasterSummon.Perform += DevotionTweaks.MasterSummon_Perform;
+                On.RoR2.MasterSummon.Perform += DevotionTweaks.instance.MasterSummon_Perform;
 
                 StatTweaks.InitHooks();
                 BetterInventoryController.CreateEliteLists();
             }
         }
-
+        
         public static new void OnDevotionArtifactEnabled(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
         {
             if (artifactDef == CU8Content.Artifacts.Devotion)
@@ -110,7 +111,7 @@ namespace LemurFusion.Devotion.Components
                 BetterInventoryController.initialized = false;
                 Run.onRunDestroyGlobal -= DevotionInventoryController.OnRunDestroy;
                 BossGroup.onBossGroupDefeatedServer -= DevotionInventoryController.OnBossGroupDefeatedServer;
-                On.RoR2.MasterSummon.Perform -= DevotionTweaks.MasterSummon_Perform;
+                On.RoR2.MasterSummon.Perform -= DevotionTweaks.instance.MasterSummon_Perform;
 
                 StatTweaks.RemoveHooks();
                 BetterInventoryController.ClearEliteLists();

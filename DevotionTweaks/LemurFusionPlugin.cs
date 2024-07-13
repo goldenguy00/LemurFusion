@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using LemurFusion.Compat;
 using LemurFusion.Config;
 using LemurFusion.Devotion;
+using LemurFusion.Devotion.Components;
 
 namespace LemurFusion
 {
@@ -59,10 +60,10 @@ namespace LemurFusion
             DevotedInventoryTweaks.Init();
             LemurControllerTweaks.Init();
             AITweaks.Init();
+            MechaLemur.Init();
 
-            R2API.ContentAddition.AddMaster(DevotionTweaks.masterPrefab);
-            R2API.ContentAddition.AddBody(DevotionTweaks.bodyPrefab);
-            R2API.ContentAddition.AddBody(DevotionTweaks.bigBodyPrefab);
+            R2API.ContentAddition.AddBody(DevotionTweaks.instance.bodyPrefab);
+            R2API.ContentAddition.AddBody(DevotionTweaks.instance.bigBodyPrefab);
 
             CreateHarmonyPatches();
             CreateProperSaveCompat();

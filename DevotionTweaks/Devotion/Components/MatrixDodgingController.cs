@@ -5,6 +5,9 @@ using RoR2.Projectile;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static Facepunch.Steamworks.LobbyList.Filter;
+using static Facepunch.Steamworks.Workshop;
+using UnityEngine.UIElements;
 
 namespace LemurFusion.Devotion.Components
 {
@@ -20,6 +23,7 @@ namespace LemurFusion.Devotion.Components
         private BaseAI ai;
         private CharacterMaster master;
         private CharacterBody body;
+        private LineRenderer laserLineComponent;
 
         private void Start()
         {
@@ -64,7 +68,7 @@ namespace LemurFusion.Devotion.Components
 
                 while (FindProjectiles(out var distance, out var shouldJump))
                 {
-                    this.ai.customTarget.GetBullseyePosition(out var pos);
+                    AimLaser();
                     var driver = distance < this.escapeDistance ? this.ai.skillDrivers[escapeSkillIndex] : this.ai.skillDrivers[strafeSkillIndex];
 
                     if (driver.customName != this.ai.selectedSkilldriverName || this.ai.skillDriverUpdateTimer > 0.2f)
@@ -81,12 +85,13 @@ namespace LemurFusion.Devotion.Components
                     if (body.characterMotor.isGrounded && shouldJump)
                     {
                         body.characterMotor.airControl = 1f;
-                        body.characterMotor.Jump(jumpPower * 0.5f, jumpPower);
+                        body.characterMotor.Jump(jumpPower, jumpPower);
                     }
 
                     yield return new WaitForSeconds(AITweaks.updateFrequency.Value);
                     yield return new WaitForFixedUpdate();
                 }
+                DisableLaser();
 
                 yield return new WaitForSeconds(AITweaks.updateFrequency.Value);
             }
@@ -95,8 +100,8 @@ namespace LemurFusion.Devotion.Components
 
         private bool FindProjectiles(out float distance, out bool shouldJump)
         {
-            this.escapeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 0.75f : 0.5f), 2f);
-            this.safeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 1.5f : 1f), 2f);
+            this.escapeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 1f : 0.5f), 2f);
+            this.safeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 2f : 1f), 2f);
             distance = safeDistance;
             shouldJump = false;
             GameObject target = null;
@@ -104,27 +109,21 @@ namespace LemurFusion.Devotion.Components
 
             if (body)
             {
-                var instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
                 var position = body.footPosition;
+                var enemyTeams = TeamMask.GetEnemyTeams(body.master.teamIndex);
+
+                var instancesList = InstanceTracker.GetInstancesList<ProjectileController>();
                 var count = instancesList.Count;
                 for (int i = 0; i < count; i++)
                 {
                     ProjectileController projectile = ListUtils.GetSafe(instancesList, i);
-                    if (projectile && projectile.teamFilter.teamIndex != body.master.teamIndex)
+                    if (projectile && enemyTeams.HasTeam(projectile.teamFilter.teamIndex))
                     {
-                        Vector3 estimatedPoint;
                         var transform = projectile.transform;
                         float other = (transform.position - position).sqrMagnitude;
 
                         if (other < safeDistance * 4f && projectile.gameObject.name.Contains("Sunder"))
                             shouldJump = true;
-
-                        if (other < escapeDistance)
-                        {
-                            distance = other;
-                            closestPoint = null;
-                            target = projectile.gameObject;
-                        }
 
                         if (projectile.TryGetComponent<HitBoxGroup>(out var hitBoxGroup) && hitBoxGroup.hitBoxes != null)
                         {
@@ -136,28 +135,14 @@ namespace LemurFusion.Devotion.Components
                                     transform = hitBox.transform;
                                     if (transform)
                                     {
-                                        estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
-                                        other = (estimatedPoint - position).sqrMagnitude;
-                                        if (other < distance)
-                                        {
-                                            distance = other;
-                                            closestPoint = estimatedPoint;
-                                            target = hitBox.gameObject;
-                                        }
+                                        CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
-                            other = (estimatedPoint - position).sqrMagnitude;
-                            if (other < distance)
-                            {
-                                distance = other;
-                                closestPoint = estimatedPoint;
-                                target = projectile.gameObject;
-                            }
+                            CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
                         }
                     }
                 }
@@ -172,12 +157,53 @@ namespace LemurFusion.Devotion.Components
             return !ai.customTarget.unset;
         }
 
+        private void CompareAndUpdateTargets(Transform transform, Vector3 position, ref float distance, ref Vector3? closestPoint, ref GameObject target)
+        {
+            var estimatedPoint = Utils.EstimateClosestPoint(transform.position, transform.lossyScale, transform.rotation, position);
+            var other = (estimatedPoint - position).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = estimatedPoint;
+                target = transform.gameObject;
+            }
+        }
+
         private void TryInitMoon()
         {
             if (SceneManager.GetActiveScene().name == "moon2" && !isMoon)
             {
-                jumpPower = 0.4f;
+                jumpPower = 0.75f;
                 isMoon = true;
+            }
+        }
+
+        private void AimLaser()
+        {
+            if (AITweaks.visualizeProjectileTracking.Value && body)
+            {
+                if (!laserLineComponent)
+                    laserLineComponent = body.gameObject.AddComponent<LineRenderer>();
+
+                laserLineComponent.enabled = true;
+                laserLineComponent.startWidth = 0.25f;
+                laserLineComponent.endWidth = 0.25f;
+                ai.customTarget.GetBullseyePosition(out var pos);
+                laserLineComponent.SetPositions([body.footPosition, pos]);
+            }
+            else
+            {
+                DisableLaser();
+            }
+        }
+
+        private void DisableLaser()
+        {
+            if (laserLineComponent)
+            {
+                laserLineComponent.startWidth = 0f;
+                laserLineComponent.endWidth = 0f;
+                laserLineComponent.enabled = false;
             }
         }
     }
