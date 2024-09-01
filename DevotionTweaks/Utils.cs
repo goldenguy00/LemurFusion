@@ -1,14 +1,9 @@
-﻿using LemurFusion.Config;
-using LemurFusion.Devotion;
-using LemurFusion;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using LemurFusion.Config;
 using RoR2;
-using RoR2.CharacterAI;
 using RoR2.Projectile;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Video;
 
 namespace LemurFusion
 {
@@ -119,8 +114,8 @@ namespace LemurFusion
             var p3 = rotation * new Vector3(pos.x + lossyScale.x, pos.y, pos.z - lossyScale.z);
             var p4 = rotation * new Vector3(pos.x - lossyScale.x, pos.y, pos.z + lossyScale.z);
 
-            Vector3 vect = NearestPointOnLine(point, p1, p2);
-            Vector3 otherVect = NearestPointOnLine(point, p3, p4);
+            var vect = NearestPointOnLine(point, p1, p2);
+            var otherVect = NearestPointOnLine(point, p3, p4);
 
             if ((vect - point).sqrMagnitude < (otherVect - point).sqrMagnitude)
                 return vect;
@@ -140,83 +135,205 @@ namespace LemurFusion
             return start + line * d;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDevoted(CharacterBody body) => body && IsDevoted(body.master);
-        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.gameObject.name.StartsWith(DevotionTweaks.devotedMasterName);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.hasBody && master.GetComponent<BetterLemurController>() != null;
 
-        public static Ray PredictAimray(CharacterBody body, Ray aimRay, GameObject projectilePrefab, float projectileSpeed = 0)
+        private const float dt = 0.0333f;
+        private const float zero = 0.00001f;
+
+        public static Ray PredictAimray(Ray aimRay, CharacterBody body, GameObject projectilePrefab)
         {
-            if (projectileSpeed == 0 && projectilePrefab && projectilePrefab.TryGetComponent<ProjectileSimple>(out var ps))
-            {
-                projectileSpeed = ps.desiredForwardSpeed;
-            }
+            if (!IsDevoted(body) || !projectilePrefab)
+                return aimRay;
 
-            if (projectileSpeed > 0f && GetTargetHurtbox(body, aimRay, out var targetBody, out var targetPosition))
+            var projectileSpeed = 0f;
+            if (projectilePrefab.TryGetComponent<ProjectileSimple>(out var ps))
+                projectileSpeed = ps.desiredForwardSpeed;
+
+            if (projectilePrefab.TryGetComponent<ProjectileCharacterController>(out var pcc))
+                projectileSpeed = Mathf.Max(projectileSpeed, pcc.velocity);
+
+            var targetBody = GetAimTargetBody(body);
+            if (projectileSpeed > 0f && targetBody)
             {
                 //Velocity shows up as 0 for clients due to not having authority over the CharacterMotor
                 //Less accurate, but it works online.
-                Vector3 targetVelocity;
-                if (!targetBody.hasAuthority)
-                    targetVelocity = (targetBody.transform.position - targetBody.previousPosition) / Time.fixedDeltaTime;
+                Vector3 vT, aT, pT = targetBody.transform.position;
+                if (targetBody.characterMotor && targetBody.characterMotor.hasEffectiveAuthority)
+                {
+                    vT = targetBody.characterMotor.velocity;
+                    aT = GetAccel(targetBody.characterMotor, ref vT);
+                }
                 else
-                    targetVelocity = targetBody.characterMotor.velocity;
-
-                if (targetVelocity.sqrMagnitude > 0f) //Dont bother predicting stationary targets
                 {
-                    return GetRay(aimRay, projectileSpeed, targetPosition, targetVelocity);
+                    vT = (pT - targetBody.previousPosition) / dt;
+                    aT = Vector3.zero;
+                }
+
+                if (vT.sqrMagnitude > zero) //Dont bother predicting stationary targets
+                {
+                    return GetRay(aimRay, projectileSpeed, pT, vT, aT);
                 }
             }
 
             return aimRay;
         }
-
-        private static Ray GetRay(Ray aimRay, float v, Vector3 y, Vector3 dy)
+        private static Vector3 GetAccel(CharacterMotor motor, ref Vector3 velocity)
         {
-            var yx = y - aimRay.origin;
-
-            var a = (v * v) - Vector3.Dot(dy, dy);
-            var b = -2 * Vector3.Dot(dy, yx);
-            var c = -1 * Vector3.Dot(yx, yx);
-
-            var d = (b * b) - (4 * a * c);
-            if (d > 0)
+            float num = motor.acceleration;
+            if (motor.isAirControlForced || !motor.isGrounded)
             {
-                d = Mathf.Sqrt(d);
-                var t1 = (-b + d) / (2 * a);
-                var t2 = (-b - d) / (2 * a);
-                var t = Mathf.Max(t1, t2);
-                if (t > 0)
+                num *= (motor.disableAirControlUntilCollision ? 0f : motor.airControl);
+            }
+
+            Vector3 vector = motor.moveDirection;
+            if (!motor.isFlying)
+            {
+                vector.y = 0f;
+            }
+
+            if (motor.body.isSprinting)
+            {
+                float magnitude = vector.magnitude;
+                if (magnitude < 1f && magnitude > 0f)
                 {
-                    aimRay.direction = (dy * t + yx) / t;
+                    float num2 = 1f / vector.magnitude;
+                    vector *= num2;
                 }
             }
+
+            Vector3 target = vector * motor.walkSpeed;
+            if (!motor.isFlying)
+            {
+                target.y = velocity.y;
+            }
+
+            velocity = Vector3.MoveTowards(velocity, target, num * Time.fixedDeltaTime);
+            if (motor.useGravity)
+            {
+                ref float y = ref velocity.y;
+                y += Physics.gravity.y * dt;
+                if (motor.isGrounded)
+                {
+                    y = Mathf.Max(y, 0f);
+                }
+            }
+            return velocity;
+        }
+        //All in world space! Gets point you have to aim to
+        //NOTE: this will break with infinite speed projectiles!
+        //https://gamedev.stackexchange.com/questions/149327/projectile-aim-prediction-with-acceleration
+        public static Ray GetRay(Ray aimRay, float sP, Vector3 pT, Vector3 vT, Vector3 aT)
+        {
+            //time to target guess
+            var t = Vector3.Distance(aimRay.origin, pT) / sP;
+
+            // target position relative to ray position
+            pT -= aimRay.origin;
+
+            var useAccel = aT.sqrMagnitude > zero;
+
+            //quartic coefficients
+            // a = t^4 * (aT·aT / 4.0)
+            // b = t^3 * (aT·vT)
+            // c = t^2 * (aT·pT + vT·vT - s^2)
+            // d = t   * (2.0 * vT·pT)
+            // e =       pT·pT
+            var c = vT.sqrMagnitude - Pow2(sP);
+            var d = 2f * Vector3.Dot(vT, pT);
+            var e = pT.sqrMagnitude;
+
+            if (useAccel)
+            {
+                var a = aT.sqrMagnitude * 0.25f;
+                var b = Vector3.Dot(aT, vT);
+                c += Vector3.Dot(aT, pT);
+
+                //solve with newton
+                t = SolveQuarticNewton(t, 6, a, b, c, d, e);
+            }
+            else
+            {
+                t = SolveQuadraticNewton(t, 6, c, d, e);
+            }
+
+            if (t > 0f)
+            {
+                //p(t) = pT + (vT * t) + ((aT/2.0) * t^2)
+                var relativeDest = pT + (vT * t);
+                if (useAccel)
+                    relativeDest += 0.5f * aT * Pow2(t);
+
+                if (Physics.Linecast(aimRay.origin + pT, aimRay.origin + relativeDest, out var hitInfo, LayerIndex.world.intVal, QueryTriggerInteraction.Ignore))
+                {
+                    relativeDest = Vector3.MoveTowards(pT, relativeDest, hitInfo.distance * 0.75f);
+                }
+                return new Ray(aimRay.origin, relativeDest);
+            }
             return aimRay;
+
         }
 
-        public static bool GetTargetHurtbox(CharacterBody body, Ray aimRay, out CharacterBody targetBody, out Vector3 targetPosition)
+        private static float SolveQuarticNewton(float guess, int iterations, float a, float b, float c, float d, float e)
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                guess -= EvalQuartic(guess, a, b, c, d, e) / EvalQuarticDerivative(guess, a, b, c, d);
+            }
+            return guess;
+        }
+
+        private static float EvalQuartic(float t, float a, float b, float c, float d, float e)
+        {
+            return (a * Pow4(t)) + (b * Pow3(t)) + (c * Pow2(t)) + (d * t) + e;
+        }
+
+        private static float EvalQuarticDerivative(float t, float a, float b, float c, float d)
+        {
+            return (4f * a * Pow3(t)) + (3f * b * Pow2(t)) + (2f * c * t) + d;
+        }
+
+        private static float SolveQuadraticNewton(float guess, int iterations, float a, float b, float c)
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                guess -= EvalQuadratic(guess, a, b, c) / EvalQuadraticDerivative(guess, a, b);
+            }
+            return guess;
+        }
+
+        private static float EvalQuadratic(float t, float a, float b, float c)
+        {
+            return (a * Pow2(t)) + (b * t) + c;
+        }
+
+        private static float EvalQuadraticDerivative(float t, float a, float b)
+        {
+            return (2f * a * t) + b;
+        }
+
+        private static float Pow2(float n) => n * n;
+        private static float Pow3(float n) => n * n * n;
+        private static float Pow4(float n) => n * n * n * n;
+
+        private static CharacterBody GetAimTargetBody(CharacterBody body)
         {
             var aiComponents = body.master.aiComponents;
-            for (int i = 0; i < aiComponents.Length; i++)
+            for (var i = 0; i < aiComponents.Length; i++)
             {
-                var enemy = aiComponents[i].currentEnemy;
-                enemy.Update();
-                if (enemy.gameObject && enemy.bestHurtBox && FuckMyAss.FuckingNullCheckHurtBox(enemy.bestHurtBox, out targetBody, out targetPosition))
-                    return true;
+                var ai = aiComponents[i];
+                if (ai && ai.hasAimTarget)
+                {
+                    var aimTarget = ai.skillDriverEvaluation.aimTarget;
+                    if (aimTarget.characterBody && aimTarget.healthComponent && aimTarget.healthComponent.alive)
+                    {
+                        return aimTarget.characterBody;
+                    }
+                }
             }
-
-            var enemySearch = new BullseyeSearch
-            {
-                viewer = body,
-                teamMaskFilter = TeamMask.GetEnemyTeams(body.teamComponent.teamIndex),
-                sortMode = BullseyeSearch.SortMode.DistanceAndAngle,
-                minDistanceFilter = 0f,
-                maxDistanceFilter = 200f,
-                searchOrigin = aimRay.origin,
-                searchDirection = aimRay.direction,
-                maxAngleFilter = 180f,
-                filterByLoS = true
-            };
-            enemySearch.RefreshCandidates();
-            return FuckMyAss.FuckingNullCheckHurtBox(enemySearch.GetResults().FirstOrDefault(), out targetBody, out targetPosition);
+            return null;
         }
         #endregion
     }

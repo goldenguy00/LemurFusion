@@ -18,6 +18,8 @@ namespace LemurFusion.Config
 
         public static ConfigEntry<bool> enableSharedInventory;
         public static ConfigEntry<bool> miniElders;
+        public static ConfigEntry<int> scaleValue;
+        public static ConfigEntry<int> initScaleValue;
         public static ConfigEntry<bool> enableDetailedLogs;
 
         public static ConfigEntry<bool> rebalanceHealthScaling;
@@ -41,7 +43,7 @@ namespace LemurFusion.Config
                 description += " (restart required)";
             }
 
-            ConfigEntry<T> configEntry = myConfig.Bind(section, name, defaultValue, description);
+            var configEntry = myConfig.Bind(section, name, defaultValue, description);
 
             if (LemurFusionPlugin.rooInstalled)
             {
@@ -66,7 +68,7 @@ namespace LemurFusion.Config
                 description += " (restart required)";
             }
 
-            ConfigEntry<T> configEntry = myConfig.Bind(section, name, defaultValue, description);
+            var configEntry = myConfig.Bind(section, name, defaultValue, description);
 
             if (LemurFusionPlugin.rooInstalled)
             {

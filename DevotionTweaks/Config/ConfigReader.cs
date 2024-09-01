@@ -92,6 +92,17 @@ namespace LemurFusion.Config
                 true,
                 "Theyre so cute omg");
 
+            PluginConfig.scaleValue = PluginConfig.BindOptionSlider(EXPERIMENTAL,
+                "Mini Elder Scale Value",
+                5,
+                "Size to grow for every fusion level",
+                0, 20);
+            PluginConfig.initScaleValue = PluginConfig.BindOptionSlider(EXPERIMENTAL,
+                "Mini Elder Initial Scale",
+                20,
+                "Initial size of elder lemurians",
+                0, 200);
+
             PluginConfig.enableDetailedLogs = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Detailed Logs",
                 false,

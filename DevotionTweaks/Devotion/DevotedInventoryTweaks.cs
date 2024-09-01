@@ -1,14 +1,11 @@
 ﻿using LemurFusion.Config;
 using MonoMod.Cil;
 using RoR2;
-using System;
 using UE = UnityEngine;
 using UnityEngine.Networking;
 using Mono.Cecil.Cil;
 using LemurFusion.Devotion.Components;
 using System.Linq;
-using UnityEngine;
-using RoR2.CharacterAI;
 
 namespace LemurFusion.Devotion
 {
@@ -16,13 +13,7 @@ namespace LemurFusion.Devotion
     {
         public static DevotedInventoryTweaks instance { get; private set; }
 
-        public static void Init()
-        {
-            if (instance != null)
-                return;
-
-            instance = new DevotedInventoryTweaks();
-        }
+        public static void Init() => instance ??= new DevotedInventoryTweaks();
 
         private DevotedInventoryTweaks()
         {
@@ -40,15 +31,9 @@ namespace LemurFusion.Devotion
 
         private static void DevotionInventoryController_Init(On.RoR2.DevotionInventoryController.orig_Init orig)
         {
-            if (PluginConfig.permaDevotion.Value)
-            {
-                Run.onRunStartGlobal += (_) => BetterInventoryController.InitializeDevotion();
-            }
-            else
-            {
-                RunArtifactManager.onArtifactEnabledGlobal += BetterInventoryController.OnDevotionArtifactEnabled;
-                RunArtifactManager.onArtifactDisabledGlobal += BetterInventoryController.OnDevotionArtifactDisabled;
-            }
+            Run.onRunStartGlobal += (_) => BetterInventoryController.OnRunStartGlobal();
+            RunArtifactManager.onArtifactEnabledGlobal += (_, _) => BetterInventoryController.OnRunStartGlobal();
+            RunArtifactManager.onArtifactDisabledGlobal += BetterInventoryController.OnDevotionArtifactDisabled;
         }
 
         #region IL Hooks
@@ -56,36 +41,27 @@ namespace LemurFusion.Devotion
         {
             var c = new ILCursor(il);
 
-            if (c.TryGotoNext(MoveType.Before,
-                x => x.MatchLdstr(DevotionTweaks.bigLemBodyName)
-                ))
-            {
-                c.Remove();
-                c.Emit(OpCodes.Ldstr, DevotionTweaks.devotedBigLemBodyName);
-            }
+            if (c.TryGotoNext(x => x.MatchLdstr(DevotionTweaks.bigLemBodyName)))
+                c.Next.Operand = DevotionTweaks.devotedBigLemBodyName;
             else
-            {
                 LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #1");
-            }
 
             if (c.TryGotoNext(MoveType.AfterLabel,
                 i => i.MatchLdstr("shouldn't evolve!"),
                 i => i.MatchCall<UE.Debug>("LogError")))
             {
                 c.Emit(OpCodes.Ldarg_1);
-                c.EmitDelegate<Action<DevotedLemurianController>>((lem) =>
+                c.EmitDelegate(delegate (DevotedLemurianController lem)
                 {
                     var list = PluginConfig.highTierElitesOnly.Value ? BetterInventoryController.gigaChadLvl : DevotionInventoryController.highLevelEliteBuffs;
-
+                    
                     var idx = UE.Random.Range(0, list.Count);
                     lem.LemurianInventory.SetEquipmentIndex(list[idx]);
                 });
                 c.RemoveRange(2);
             }
             else
-            {
                 LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #2");
-            }
         }
         #endregion
 

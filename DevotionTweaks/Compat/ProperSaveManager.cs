@@ -28,19 +28,19 @@ namespace LemurFusion.Compat
         {
             summonerId = userID;
 
-            devotedItemData = lemCtrl._devotedItemList.Select(kvp =>
+            devotedItemData = [.. lemCtrl._devotedItemList.Select(kvp =>
                 new ProperSave.Data.ItemData()
                 {
                     itemIndex = (int)kvp.Key,
                     count = kvp.Value
-                }).ToArray();
+                })];
 
-            untrackedItemData = lemCtrl._untrackedItemList.Select(kvp =>
+            untrackedItemData = [.. lemCtrl._untrackedItemList.Select(kvp =>
                 new ProperSave.Data.ItemData()
                 {
                     itemIndex = (int)kvp.Key,
                     count = kvp.Value
-                }).ToArray();
+                })];
         }
 
         public void LoadData(BetterLemurController lemCtrl)
@@ -48,18 +48,17 @@ namespace LemurFusion.Compat
             lemCtrl._devotedItemList = [];
             lemCtrl._untrackedItemList = [];
 
-            for (int i = 0; i < devotedItemData.Length; i++)
+            for (var i = 0; i < devotedItemData.Length; i++)
             {
                 var item = devotedItemData[i];
                 Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
             }
 
-            for (int i = 0; i < untrackedItemData.Length; i++)
+            for (var i = 0; i < untrackedItemData.Length; i++)
             {
                 var item = untrackedItemData[i];
                 Utils.SetItem(lemCtrl._untrackedItemList, (ItemIndex)item.itemIndex, item.count);
             }
-            lemCtrl.SyncPersonalInventory();
         }
     }
 
@@ -75,14 +74,12 @@ namespace LemurFusion.Compat
         {
             List<BetterLemurianData> lemurData = [];
 
-            foreach (PlayerCharacterMasterController player in PlayerCharacterMasterController.instances)
+            foreach (var player in PlayerCharacterMasterController.instances)
             {
                 if (player.networkUser && player.master)
                 {
                     var userID = new ProperSave.Data.UserIDData(player.networkUser.id);
-                    var lemList = GetLemurControllers(player.master.netId);
-
-                    foreach (var lem in lemList)
+                    foreach (var lem in GetLemurControllers(player.master.netId))
                     {
                         lemurData.Add(new BetterLemurianData(userID, lem));
                     }
@@ -121,10 +118,10 @@ namespace LemurFusion.Compat
         private static List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
         {
             List<BetterLemurController> lemCtrlList = [];
-            MinionOwnership.MinionGroup minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
+            var minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
             if (minionGroup != null)
             {
-                foreach (MinionOwnership minionOwnership in minionGroup.members)
+                foreach (var minionOwnership in minionGroup.members)
                 {
                     if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var friend))
                     {

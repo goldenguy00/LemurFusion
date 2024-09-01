@@ -4,7 +4,6 @@ using BepInEx.Logging;
 using LemurFusion.Compat;
 using LemurFusion.Config;
 using LemurFusion.Devotion;
-using LemurFusion.Devotion.Components;
 
 namespace LemurFusion
 {
@@ -19,7 +18,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.3.2";
+        public const string PluginVersion = "1.4.5";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -31,12 +30,32 @@ namespace LemurFusion
 
         #region Logging
         private static ManualLogSource _logger;
-        public static void LogDebug(string message) => Log(LogLevel.Debug, message);
-        public static void LogInfo(string message) => Log(LogLevel.Info, message);
-        public static void LogMessage(string message) => Log(LogLevel.Message, message);
-        public static void LogWarning(string message) => Log(LogLevel.Warning, message);
-        public static void LogError(string message) => Log(LogLevel.Error, message);
-        public static void LogFatal(string message) => Log(LogLevel.Fatal, message);
+        public static void LogDebug(string message)
+        {
+#if DEBUG
+            Log(LogLevel.Debug, message);
+#endif
+        }
+        public static void LogInfo(string message)
+        {
+            Log(LogLevel.Info, message);
+        }
+        public static void LogMessage(string message)
+        {
+            Log(LogLevel.Message, message);
+        }
+        public static void LogWarning(string message)
+        {
+            Log(LogLevel.Warning, message);
+        }
+        public static void LogError(string message)
+        {
+            Log(LogLevel.Error, message);
+        }
+        public static void LogFatal(string message)
+        {
+            Log(LogLevel.Fatal, message);
+        }
 
         public static void Log(LogLevel logLevel, string message)
         {
@@ -45,7 +64,7 @@ namespace LemurFusion
                 _logger.Log(logLevel, message);
             }
         }
-        #endregion
+#endregion
 
         public void Awake()
         {
@@ -60,10 +79,11 @@ namespace LemurFusion
             DevotedInventoryTweaks.Init();
             LemurControllerTweaks.Init();
             AITweaks.Init();
-            MechaLemur.Init();
+            //MechaLemur.Init();
 
             R2API.ContentAddition.AddBody(DevotionTweaks.instance.bodyPrefab);
             R2API.ContentAddition.AddBody(DevotionTweaks.instance.bigBodyPrefab);
+            R2API.ContentAddition.AddMaster(DevotionTweaks.instance.bruiserMasterPrefab);
 
             CreateHarmonyPatches();
             CreateProperSaveCompat();
@@ -72,7 +92,6 @@ namespace LemurFusion
         private void CreateHarmonyPatches()
         {
             var harmony = new HarmonyLib.Harmony(PluginGUID);
-            harmony.CreateClassProcessor(typeof(CombatSquadFixedUpdate)).Patch();
 
             if (LemurFusionPlugin.lemNamesInstalled)
             {
@@ -82,7 +101,7 @@ namespace LemurFusion
 
             if (LemurFusionPlugin.vApiInstalled)
             {
-                harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
+                //harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
             }
         }
 

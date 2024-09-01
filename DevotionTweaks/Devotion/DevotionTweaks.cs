@@ -27,6 +27,7 @@ namespace LemurFusion.Devotion
         public static DevotionTweaks instance { get; private set; }
 
         public GameObject masterPrefab;
+        public GameObject bruiserMasterPrefab;
         public GameObject bodyPrefab;
         public GameObject bigBodyPrefab;
 
@@ -34,19 +35,14 @@ namespace LemurFusion.Devotion
         public const string lemBodyName = "LemurianBody";
         public const string bigLemBodyName = "LemurianBruiserBody";
         public const string devotedMasterName = "DevotedLemurianMaster";
+        public const string devotedBruiserMasterName = "DevotedLemurianBruiserMaster";
 
         public const string devotedLemBodyName = devotedPrefix + lemBodyName;
         public const string devotedBigLemBodyName = devotedPrefix + bigLemBodyName;
 
-        public bool EnableSharedInventory { get; private set; }
+        public readonly bool EnableSharedInventory;
 
-        public static void Init()
-        {
-            if (instance != null)
-                return;
-
-            instance = new DevotionTweaks();
-        }
+        public static void Init() => instance ??= new DevotionTweaks();
 
         private DevotionTweaks()
         {
@@ -58,8 +54,6 @@ namespace LemurFusion.Devotion
             if (ConfigExtended.Blacklist_Enable.Value)
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
 
-            On.RoR2.BulletAttack.DefaultFilterCallbackImplementation += BulletAttack_DefaultFilterCallbackImplementation;
-            On.RoR2.Projectile.ProjectileController.IgnoreCollisionsWithOwner += ProjectileController_IgnoreCollisionsWithOwner;
             IL.RoR2.SceneDirector.PopulateScene += PopulateScene;
         }
 
@@ -68,9 +62,9 @@ namespace LemurFusion.Devotion
             var c = new ILCursor(il);
 
             if (c.TryGotoNext(MoveType.Before,
-                    i => i.MatchCall<RoR2.RunArtifactManager>("get_instance"),
+                    i => i.MatchCall<RunArtifactManager>("get_instance"),
                     i => i.MatchLdsfld("RoR2.CU8Content/Artifacts", "Devotion"),
-                    i => i.MatchCallvirt<RoR2.RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
+                    i => i.MatchCallvirt<RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
                 ))
             {
                 c.RemoveRange(3);
@@ -87,55 +81,12 @@ namespace LemurFusion.Devotion
             }
         }
 
-        private static bool BulletAttack_DefaultFilterCallbackImplementation(On.RoR2.BulletAttack.orig_DefaultFilterCallbackImplementation orig, BulletAttack bulletAttack, ref BulletAttack.BulletHit hitInfo)
-        {
-            return orig(bulletAttack, ref hitInfo) && !ShouldIgnoreAttackCollision(hitInfo.hitHurtBox, bulletAttack.owner);
-        }
-
-        private static bool ShouldIgnoreAttackCollision(HurtBox victimHurtBox, GameObject attacker)
-        {
-            return attacker && attacker.TryGetComponent(out TeamComponent attackerTeamComponent) &&
-                attackerTeamComponent.teamIndex == TeamIndex.Player && victimHurtBox && victimHurtBox.healthComponent &&
-                !FriendlyFireManager.ShouldDirectHitProceed(victimHurtBox.healthComponent, attackerTeamComponent.teamIndex);
-        }
-
-        private static void ProjectileController_IgnoreCollisionsWithOwner(On.RoR2.Projectile.ProjectileController.orig_IgnoreCollisionsWithOwner orig, RoR2.Projectile.ProjectileController self, bool shouldIgnore)
-        {
-            orig(self, shouldIgnore);
-
-            if (!shouldIgnore || self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0)
-                return;
-
-            foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
-            {
-                var body = tc.body;
-                if (body && body.healthComponent && body.hurtBoxGroup && !FriendlyFireManager.ShouldSplashHitProceed(body.healthComponent, TeamIndex.Player))
-                {
-                    HurtBox[] hurtBoxes = body.hurtBoxGroup.hurtBoxes;
-                    for (int i = 0; i < hurtBoxes.Length; i++)
-                    {
-                        List<Collider> gameObjectComponents = GetComponentsCache<Collider>.GetGameObjectComponents(hurtBoxes[i].gameObject);
-                        int j = 0;
-                        while (j < gameObjectComponents.Count)
-                        {
-                            Collider collider = gameObjectComponents[j];
-                            for (int k = 0; k < self.myColliders.Length; k++)
-                            {
-                                Physics.IgnoreCollision(collider, self.myColliders[k]);
-                            }
-                            j++;
-                        }
-                        GetComponentsCache<Collider>.ReturnBuffer(gameObjectComponents);
-                    }
-                }
-            }
-        }
 
         #region Artifact Setup
         private void LoadAssets()
         {
             #region Clone
-            GameObject lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
+            var lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
             bodyPrefab = lemurianBodyPrefab.InstantiateClone(devotedLemBodyName, true);
             var body = bodyPrefab.GetComponent<CharacterBody>();
             body.bodyFlags |= CharacterBody.BodyFlags.Devotion;
@@ -144,7 +95,7 @@ namespace LemurFusion.Devotion
             body.baseMoveSpeed = 7f;
 
             // dupe body pt2
-            GameObject lemurianBruiserBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/LemurianBruiser/LemurianBruiserBody.prefab").WaitForCompletion();
+            var lemurianBruiserBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/LemurianBruiser/LemurianBruiserBody.prefab").WaitForCompletion();
             bigBodyPrefab = lemurianBruiserBodyPrefab.InstantiateClone(devotedBigLemBodyName, true);
             var bigBody = bigBodyPrefab.GetComponent<CharacterBody>();
             bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion;
@@ -166,13 +117,12 @@ namespace LemurFusion.Devotion
             UE.Object.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
             masterPrefab.AddComponent<BetterLemurController>();
             masterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bodyPrefab;
+            bruiserMasterPrefab = masterPrefab.InstantiateClone(devotedBruiserMasterName, true);
+            bruiserMasterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bigBodyPrefab;
 
-            ItemDef itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
-            if (itemDef && itemDef.ContainsTag(ItemTag.BrotherBlacklist))
-                LemurFusionPlugin.LogError("YOURE A FUCKING IDIOT");
-            if (itemDef && itemDef.ContainsTag(ItemTag.CannotSteal))
-                LemurFusionPlugin.LogError("YOURE A FUCKING IDIOT again");
-            if (itemDef) itemDef.tags = [.. itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct()];
+            var itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
+            itemDef.tags = [.. itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct()];
+            CU8Content.Items.LemurianHarness = itemDef;
             #endregion
         }
         #endregion
@@ -191,7 +141,7 @@ namespace LemurFusion.Devotion
             {
                 if (ConfigExtended.Blacklist_Filter(itemIndex))
                 {
-                    PickupIndex pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
+                    var pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
                     if (pickupIndex != PickupIndex.none)
                     {
                         list.Add(new PickupPickerController.Option
@@ -207,21 +157,22 @@ namespace LemurFusion.Devotion
 
         public CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
-            if (self.masterPrefab == masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body.isPlayerControlled)
+            if (self.masterPrefab?.name == devotedMasterName && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body.isPlayerControlled)
             {
                 CharacterMaster lemMaster = null;
-                int lowestCount = int.MaxValue;
-                int lemCount = 0;
+                var lowestCount = int.MaxValue;
+                var lemCount = 0;
 
                 var minionGroup = MinionOwnership.MinionGroup.FindGroup(body.masterObjectId);
                 if (minionGroup != null)
                 {
-                    foreach (MinionOwnership minionOwnership in minionGroup.members)
+                    foreach (var minionOwnership in minionGroup.members)
                     {
-                        if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var lemCtrl))
+                        var master = minionOwnership ? minionOwnership.GetComponent<CharacterMaster>() : null;
+                        if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory)
                         {
                             lemCount++;
-                            var fc = lemCtrl.FusionCount;
+                            var fc = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
                             if (fc < lowestCount)
                             {
                                 lowestCount = fc;

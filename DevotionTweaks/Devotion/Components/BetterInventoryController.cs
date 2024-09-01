@@ -2,8 +2,6 @@
 using R2API;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using System;
 
 namespace LemurFusion.Devotion.Components
 {
@@ -31,7 +29,7 @@ namespace LemurFusion.Devotion.Components
 
                     var isT2 = false;
                     var isT1 = false;
-                    foreach (EliteDef ed in etd.eliteTypes)
+                    foreach (var ed in etd.eliteTypes)
                     {
                         if (!ed || !ed.eliteEquipmentDef)
                             continue;
@@ -84,9 +82,9 @@ namespace LemurFusion.Devotion.Components
             DevotionInventoryController.highLevelEliteBuffs.Clear();
         }
 
-        public static void InitializeDevotion()
+        public static void OnRunStartGlobal()
         {
-            if (!BetterInventoryController.initialized)
+            if (!BetterInventoryController.initialized && (Config.PluginConfig.permaDevotion.Value || RunArtifactManager.instance.IsArtifactEnabled(CU8Content.Artifacts.Devotion)))
             {
                 BetterInventoryController.initialized = true;
                 Run.onRunDestroyGlobal += DevotionInventoryController.OnRunDestroy;
@@ -97,16 +95,10 @@ namespace LemurFusion.Devotion.Components
                 BetterInventoryController.CreateEliteLists();
             }
         }
-        
-        public static new void OnDevotionArtifactEnabled(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
-        {
-            if (artifactDef == CU8Content.Artifacts.Devotion)
-                InitializeDevotion();
-        }
 
         public static new void OnDevotionArtifactDisabled(RunArtifactManager runArtifactManager, ArtifactDef artifactDef)
         {
-            if (artifactDef == CU8Content.Artifacts.Devotion && BetterInventoryController.initialized)
+            if (BetterInventoryController.initialized && !Config.PluginConfig.permaDevotion.Value && artifactDef == CU8Content.Artifacts.Devotion)
             {
                 BetterInventoryController.initialized = false;
                 Run.onRunDestroyGlobal -= DevotionInventoryController.OnRunDestroy;
@@ -124,10 +116,10 @@ namespace LemurFusion.Devotion.Components
             List<BetterLemurController> friends = [];
             if (SummonerMaster)
             {
-                MinionOwnership.MinionGroup minionGroup = MinionOwnership.MinionGroup.FindGroup(SummonerMaster.netId);
+                var minionGroup = MinionOwnership.MinionGroup.FindGroup(SummonerMaster.netId);
                 if (minionGroup != null)
                 {
-                    foreach (MinionOwnership minionOwnership in minionGroup.members)
+                    foreach (var minionOwnership in minionGroup.members)
                     {
                         if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var friend))
                         {
@@ -141,8 +133,7 @@ namespace LemurFusion.Devotion.Components
 
         public void ShareItemWithFriends(ItemIndex item, int count = 1)
         {
-            var friends = GetFriends();
-            foreach (var friend in friends)
+            foreach (var friend in GetFriends())
             {
                 friend.LemurianInventory.GiveItem(item, count);
             }
@@ -150,11 +141,10 @@ namespace LemurFusion.Devotion.Components
 
         public void RemoveSharedItemsFromFriends(SortedList<ItemIndex, int> itemList)
         {
-            var friends = GetFriends();
             foreach (var item in itemList)
             {
                 _devotionMinionInventory.RemoveItem(item.Key, item.Value);
-                foreach (var friend in friends)
+                foreach (var friend in GetFriends())
                 {
                     friend.LemurianInventory.RemoveItem(item.Key, item.Value);
                 }

@@ -1,15 +1,18 @@
 ﻿using BepInEx.Configuration;
+using EntityStates;
 using EntityStates.AI.Walker;
 using EntityStates.LemurianBruiserMonster;
 using EntityStates.LemurianMonster;
+using HarmonyLib;
 using LemurFusion.Devotion.Components;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using R2API.Utils;
 using RoR2;
 using RoR2.CharacterAI;
 using System;
 using UnityEngine;
-using UnityEngine.Networking;
+using static RoR2.Console;
 
 namespace LemurFusion.Devotion
 {
@@ -42,16 +45,15 @@ namespace LemurFusion.Devotion
         {
             if (improveAI.Value)
             {
-                On.RoR2.CharacterAI.BaseAI.UpdateTargets += BaseAI_UpdateTargets;
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
-                IL.EntityStates.LemurianMonster.FireFireball.OnEnter += FireFireball_OnEnter;
-                IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += FireMegaFireball_FixedUpdate;
+                IL.EntityStates.LemurianMonster.FireFireball.OnEnter += (il) => FireProjectile<FireFireball>(new(il));
+                IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += (il) => FireProjectile<FireMegaFireball>(new(il));
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
                 masterPrefab.AddComponent<MatrixDodgingController>();
                 var baseAI = masterPrefab.GetComponent<BaseAI>();
                 baseAI.fullVision = true;
-                baseAI.aimVectorDampTime = 0.1f;
+                baseAI.aimVectorDampTime = 0.05f;
                 baseAI.aimVectorMaxSpeed = 200f;
 
                 var component = masterPrefab.AddComponent<AISkillDriver>();
@@ -81,7 +83,7 @@ namespace LemurFusion.Devotion
                 component2.activationRequiresAimConfirmation = true;
 
                 var skillDrivers = masterPrefab.GetComponents<AISkillDriver>();
-                for (int i = 0; i < skillDrivers.Length; i++)
+                for (var i = 0; i < skillDrivers.Length; i++)
                 {
                     var driver = skillDrivers[i];
 
@@ -109,7 +111,6 @@ namespace LemurFusion.Devotion
                             break;
                         case "StrafeNearbyEnemies":
                             driver.shouldSprint = true;
-                            skillDrivers[0].nextHighPriorityOverride = driver;
                             break;
                         case "ChaseFarEnemies":
                         case "ReturnToOwnerLeash":
@@ -123,73 +124,26 @@ namespace LemurFusion.Devotion
             }
         }
 
-        private static void BaseAI_UpdateTargets(On.RoR2.CharacterAI.BaseAI.orig_UpdateTargets orig, BaseAI self)
+        private static void FireProjectile<T>(ILCursor c)
         {
-            orig(self);
-            if (NetworkServer.active)
+            if (c.TryGotoNext(MoveType.After, x => x.MatchCall<BaseState>(nameof(BaseState.GetAimRay))))
             {
-                if (Utils.IsDevoted(self.master) && FuckMyAss.FuckingNullCheckPing(self.master.minionOwnership.ownerMaster, out var target))
-                {
-                    var targetBody = target.GetComponent<CharacterBody>();
-                    if (targetBody && targetBody.master && TeamMask.GetEnemyTeams(self.master.teamIndex).HasTeam(targetBody.master.teamIndex))
-                    {
-                        LemurFusionPlugin.LogInfo("TARGET ACQUIRED");
-                        self.currentEnemy.gameObject = target;
-                    }
-                }
-            }
-        }
-
-        private static void FireMegaFireball_FixedUpdate(ILContext il)
-        {
-            ILCursor c = new(il);
-            if (c.TryGotoNext(MoveType.After,
-                x => x.MatchStloc(2)
-                ))
-            {
+                //this.characterbody
                 c.Emit(OpCodes.Ldarg_0);
-                c.Emit(OpCodes.Ldloc_2);
-                c.EmitDelegate<Func<FireMegaFireball, Ray, Ray>>((self, aimRay) =>
-                {
-                    var body = self.characterBody;
-                    if (Utils.IsDevoted(body))
-                    {
-                        return Utils.PredictAimray(body, aimRay, FireMegaFireball.projectilePrefab, FireMegaFireball.projectileSpeed);
-                    }
-                    return aimRay;
-                });
-                c.Emit(OpCodes.Stloc_2);
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate IL Hook failed");
-            }
-        }
+                c.Emit(OpCodes.Call, AccessTools.PropertyGetter(typeof(EntityState), nameof(EntityState.characterBody)));
 
-        private static void FireFireball_OnEnter(ILContext il)
-        {
-            ILCursor c = new(il);
-            if (c.TryGotoNext(MoveType.After,
-                 i => i.MatchStloc(0)
-                ))
-            {
-                c.Emit(OpCodes.Ldarg_0);
-                c.Emit(OpCodes.Ldloc_0);
-                c.EmitDelegate<Func<FireFireball, Ray, Ray>>((self, aimRay) =>
-                {
-                    var body = self.characterBody;
-                    if (Utils.IsDevoted(body))
-                    {
-                        return Utils.PredictAimray(body, aimRay, FireFireball.projectilePrefab);
-                    }
-                    return aimRay;
-                });
-                c.Emit(OpCodes.Stloc_0);
+                // this.projectilePrefab
+                // - or -
+                // {TYPE}.projectilePrefab
+                var fieldInfo = AccessTools.Field(typeof(T), nameof(FireFireball.projectilePrefab));
+                if (!fieldInfo.IsStatic) c.Emit(OpCodes.Ldarg_0);
+                if (!fieldInfo.IsStatic) c.Emit(OpCodes.Ldfld, fieldInfo);
+                else c.Emit(OpCodes.Ldsfld, fieldInfo);
+
+                // Utils.PredictAimRay(aimRay, characterBody, projectilePrefab);
+                c.Emit(OpCodes.Call, typeof(Utils).GetMethodCached(nameof(Utils.PredictAimray)));
             }
-            else
-            {
-                LemurFusionPlugin.LogError("EntityStates.LemurianMonster.FireFireball.OnEnter IL Hook failed");
-            }
+            else LemurFusionPlugin.LogError("AccurateEnemies: Generic OnEnter IL Hook failed ");
         }
 
         private static void Combat_UpdateAI(ILContext il)

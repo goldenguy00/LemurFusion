@@ -1,21 +1,13 @@
 ﻿using HarmonyLib;
 using LemurFusion.Devotion;
+using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace LemurFusion.Compat
 {
-    [HarmonyPatch(typeof(RoR2.CombatSquad), "FixedUpdate")]
-    public class CombatSquadFixedUpdate
-    {
-        [HarmonyFinalizer]
-        public static Exception Finalizer(Exception __exception)
-        {
-            return null;
-        }
-    }
-
     [HarmonyPatch(typeof(LemurianNames.LemurianNames), "UpdateNameFriend")]
     public class LemurianUpdateNameFriend
     {
@@ -51,7 +43,7 @@ namespace LemurFusion.Compat
             return null;
         }
     }
-
+    /*
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI
     {
@@ -75,8 +67,24 @@ namespace LemurFusion.Compat
                 var newVariant = UnityEngine.Object.Instantiate(variant);
                 newVariant.name = DevotionTweaks.devotedPrefix + variant.name;
                 newVariant.bodyName = DevotionTweaks.devotedPrefix + variant.bodyName;
-                newVariant.spawnRate = 100f / originalVariants.Count();
+                newVariant.moveSpeedMultiplier = Mathf.Clamp(variant.moveSpeedMultiplier, 0.5f, 2f);
                 newVariant.aiModifier = VAPI.BasicAIModifier.Default;
+
+                if (newVariant.variantInventory && newVariant.variantInventory.itemInventory?.Any() == true)
+                {
+                    foreach (var itemPair in newVariant.variantInventory.itemInventory.Where(i => i?.itemDef != null))
+                    {
+                        var itemDef = itemPair.itemDef.Asset;
+                        if (itemDef != null)
+                        {
+                            LemurFusionPlugin.LogInfo("Item def found " + itemDef.name + " | " + itemDef.nameToken);
+                            if(itemDef == RoR2.RoR2Content.Items.Hoof)
+                            {
+                                itemPair.amount = Math.Min(2, itemPair.amount);
+                            }
+                        }
+                    }
+                }
                 
 
                 registerVariant.Invoke(null, [newVariant, (VAPI.VariantIndex)num]);
@@ -88,5 +96,5 @@ namespace LemurFusion.Compat
             }
             return devotedVariants;
         }
-    }
+    }*/
 }

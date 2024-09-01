@@ -159,7 +159,7 @@ namespace LemurFusion.Config
                     var itemDef = ItemCatalog.GetItemDef(idx);
                     if (!itemDef || itemDef.hidden || !itemDef.canRemove || itemDef.tier == ItemTier.NoTier) return false;
 
-                    bool valid = !Blacklisted_Items.Contains(idx) && !Blacklisted_ItemTiers.Contains(itemDef.tier);
+                    var valid = !Blacklisted_Items.Contains(idx) && !Blacklisted_ItemTiers.Contains(itemDef.tier);
 
                     if (Blacklist_Filter_CannotCopy.Value)
                         valid &= itemDef.DoesNotContainTag(ItemTag.CannotCopy);

@@ -13,40 +13,8 @@ public class BetterLemurController : DevotedLemurianController
     #region Lemur Instance
     public SortedList<ItemIndex, int> _devotedItemList { get; set; } = [];
     public SortedList<ItemIndex, int> _untrackedItemList { get; set; } = [];
-
-    public int FusionCount
-    {
-        get
-        {
-            if (!base.LemurianInventory) return 0;
-            return base.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
-        }
-    }
-
+    
     public BetterInventoryController BetterInventoryController => base._devotionInventoryController as BetterInventoryController;
-
-    public void SyncPersonalInventory()
-    {
-        Utils.SetItem(this._untrackedItemList, RoR2Content.Items.MinionLeash.itemIndex);
-        Utils.SetItem(this._untrackedItemList, RoR2Content.Items.UseAmbientLevel.itemIndex);
-        Utils.SetItem(this._untrackedItemList, RoR2Content.Items.TeleportWhenOob.itemIndex);
-        if (LemurFusionPlugin.riskyInstalled)
-        {
-            this.AddRiskyAllyItem();
-        }
-
-        if (this.LemurianInventory)
-        {
-            foreach (var item in _untrackedItemList)
-            {
-                var held = this.LemurianInventory.GetItemCount(item.Key);
-                if (this._untrackedItemList.TryGetValue(item.Key, out var tracked) && held != tracked)
-                {
-                    this.LemurianInventory.GiveItem(item.Key, tracked - held);
-                }
-            }
-        }
-    }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public void AddRiskyAllyItem()
@@ -59,8 +27,6 @@ public class BetterLemurController : DevotedLemurianController
     {
         if (DevotionTweaks.instance.EnableSharedInventory)
             this.BetterInventoryController.RemoveSharedItemsFromFriends(this._devotedItemList);
-        if (this.LemurianInventory)
-            this.LemurianInventory.CleanInventory();
 
         var dropType = ConfigExtended.DeathDrop_ItemType.Value;
         if (dropType != DevotionTweaks.DeathItem.None)
@@ -70,16 +36,14 @@ public class BetterLemurController : DevotedLemurianController
                 var pickupIndex = FindPickupIndex(item.Key, dropType);
                 if (pickupIndex != PickupIndex.none)
                 {
-                    int dropCount = ConfigExtended.DeathDrop_DropAll.Value ? item.Value : 1;
-                    for (int i = 0; i < dropCount; i++)
+                    var dropCount = ConfigExtended.DeathDrop_DropAll.Value ? item.Value : 1;
+                    for (var i = 0; i < dropCount; i++)
                     {
                         PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, UnityEngine.Random.insideUnitCircle * 15f);
                     }
                 }
             }
         }
-        this._devotedItemList.Clear();
-        this._untrackedItemList.Clear();
 
         if (ConfigExtended.DeathDrop_DropEgg.Value && Physics.Raycast(this.LemurianBody.corePosition,
             Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
