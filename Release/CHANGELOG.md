@@ -1,3 +1,15 @@
+# 1.5.0
+
+- SotS Update
+
+- Permanant devotion config option. Allows eggs to spawn without the artifact, along with a percent chance to replace a normal drone spawn.
+
+- Variant API support (unsure if this works with SotS though...)
+
+- Full backend rework. This is an absolutely monstrous update but i foolishly did not document things.
+
+- Some features may not be working correctly, please report bugs to the github issues page.
+
 # 1.3.1
 
 - Dodge AI fleshed out for use against the majority of projectiles, integrated seamlessly into the combat loop.

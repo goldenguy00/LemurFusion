@@ -1,10 +1,7 @@
-﻿using Facepunch.Steamworks;
-using LemurFusion.Config;
-using RoR2;
+﻿using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Networking;

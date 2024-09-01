@@ -43,7 +43,7 @@ namespace LemurFusion.Compat
             return null;
         }
     }
-    /*
+    
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI
     {
@@ -53,8 +53,8 @@ namespace LemurFusion.Compat
         {
             num = __result.Length;
             __result = [.. __result,
-                .. CreateDevotionProvider(__result.Where(vd => vd.bodyName == DevotionTweaks.lemBodyName)),
-                .. CreateDevotionProvider(__result.Where(vd => vd.bodyName == DevotionTweaks.bigLemBodyName))];
+                .. CreateDevotionProvider(__result.Where(vd => vd.bodyName == "LemurianBody")),
+                .. CreateDevotionProvider(__result.Where(vd => vd.bodyName == "LemurianBruiserBody"))];
         }
 
         private static List<VAPI.VariantDef> CreateDevotionProvider(IEnumerable<VAPI.VariantDef> originalVariants)
@@ -75,13 +75,10 @@ namespace LemurFusion.Compat
                     foreach (var itemPair in newVariant.variantInventory.itemInventory.Where(i => i?.itemDef != null))
                     {
                         var itemDef = itemPair.itemDef.Asset;
-                        if (itemDef != null)
+                        if (itemDef != null && itemDef == RoR2.RoR2Content.Items.Hoof)
                         {
-                            LemurFusionPlugin.LogInfo("Item def found " + itemDef.name + " | " + itemDef.nameToken);
-                            if(itemDef == RoR2.RoR2Content.Items.Hoof)
-                            {
-                                itemPair.amount = Math.Min(2, itemPair.amount);
-                            }
+                            LemurFusionPlugin.LogDebug("Limiting hoof amount for variant to 2");
+                            itemPair.amount = Math.Min(2, itemPair.amount);
                         }
                     }
                 }
@@ -96,5 +93,5 @@ namespace LemurFusion.Compat
             }
             return devotedVariants;
         }
-    }*/
+    }
 }

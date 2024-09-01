@@ -69,7 +69,7 @@ namespace LemurFusion.Config
                     var split = itemPair.Split(',');
                     if (split.Length != 2)
                     {
-                        LemurFusionPlugin.LogWarning($"String parsing error for (TierDef, ItemDef) pair '({itemPair})' for Custom Drop List.");
+                        LemurFusionPlugin.LogDebug($"String parsing error for (TierDef, ItemDef) pair '({itemPair})' for Custom Drop List.");
                         continue;
                     }
 
@@ -80,7 +80,7 @@ namespace LemurFusion.Config
                     if (tierDef && itemIndex != ItemIndex.None)
                     {
                         if (DeathDrops_TierToItem_Map.ContainsKey(tierDef.tier) && PluginConfig.enableDetailedLogs.Value)
-                            LemurFusionPlugin.LogWarning($"Overwriting duplicate {tierDef?.name} with '({tierDef?.name},{itemIndex})' for Custom Drop List.");
+                            LemurFusionPlugin.LogDebug($"Overwriting duplicate {tierDef?.name} with '({tierDef?.name},{itemIndex})' for Custom Drop List.");
                         DeathDrops_TierToItem_Map[tierDef.tier] = itemIndex;
                     }
                     else
@@ -115,7 +115,7 @@ namespace LemurFusion.Config
                 if (!PluginConfig.enableDetailedLogs.Value) return;
                 foreach (var item in Blacklisted_Items)
                 {
-                    LemurFusionPlugin.LogInfo(ItemCatalog.GetItemDef(item)?.nameToken);
+                    LemurFusionPlugin.LogDebug(ItemCatalog.GetItemDef(item)?.nameToken);
                 }
             }
             catch (Exception e)
@@ -138,7 +138,7 @@ namespace LemurFusion.Config
                 if (!PluginConfig.enableDetailedLogs.Value) return;
                 foreach (var item in Blacklisted_ItemTiers)
                 {
-                    LemurFusionPlugin.LogInfo(ItemTierCatalog.GetItemTierDef(item)?.name);
+                    LemurFusionPlugin.LogDebug(ItemTierCatalog.GetItemTierDef(item)?.name);
                 }
             }
             catch (Exception e)

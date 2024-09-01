@@ -11,14 +11,14 @@ namespace LemurFusion
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.RiskyLives.RiskyMod", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("com.Nebby.VAPI", BepInDependency.DependencyFlags.SoftDependency)]
+    //[BepInDependency("com.Nebby.VAPI", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.4.5";
+        public const string PluginVersion = "1.5.0";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -27,6 +27,51 @@ namespace LemurFusion
         public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
         public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
         public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
+
+        public void Awake()
+        {
+            instance = this;
+            _logger = Logger;
+
+            PluginConfig.myConfig = Config;
+
+            ConfigReader.Setup();
+
+            DevotionTweaks.Init();
+            DevotedInventoryTweaks.Init();
+            LemurControllerTweaks.Init();
+            AITweaks.Init();
+            //MechaLemur.Init();
+
+            R2API.ContentAddition.AddMaster(DevotionTweaks.instance.bruiserMasterPrefab);
+
+            CreateHarmonyPatches();
+            CreateProperSaveCompat();
+        }
+
+        private void CreateHarmonyPatches()
+        {
+            var harmony = new HarmonyLib.Harmony(PluginGUID);
+
+            if (LemurFusionPlugin.lemNamesInstalled)
+            {
+                harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
+                harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
+            }
+
+            if (LemurFusionPlugin.vApiInstalled)
+            {
+                harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
+            }
+        }
+
+        private void CreateProperSaveCompat()
+        {
+            if (LemurFusionPlugin.properSaveInstalled)
+            {
+                new ProperSaveManager();
+            }
+        }
 
         #region Logging
         private static ManualLogSource _logger;
@@ -64,53 +109,7 @@ namespace LemurFusion
                 _logger.Log(logLevel, message);
             }
         }
-#endregion
+        #endregion
 
-        public void Awake()
-        {
-            instance = this;
-            _logger = Logger;
-
-            PluginConfig.myConfig = Config;
-
-            ConfigReader.Setup();
-
-            DevotionTweaks.Init();
-            DevotedInventoryTweaks.Init();
-            LemurControllerTweaks.Init();
-            AITweaks.Init();
-            //MechaLemur.Init();
-
-            R2API.ContentAddition.AddBody(DevotionTweaks.instance.bodyPrefab);
-            R2API.ContentAddition.AddBody(DevotionTweaks.instance.bigBodyPrefab);
-            R2API.ContentAddition.AddMaster(DevotionTweaks.instance.bruiserMasterPrefab);
-
-            CreateHarmonyPatches();
-            CreateProperSaveCompat();
-        }
-
-        private void CreateHarmonyPatches()
-        {
-            var harmony = new HarmonyLib.Harmony(PluginGUID);
-
-            if (LemurFusionPlugin.lemNamesInstalled)
-            {
-                harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
-                harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
-            }
-
-            if (LemurFusionPlugin.vApiInstalled)
-            {
-                //harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
-            }
-        }
-
-        private void CreateProperSaveCompat()
-        {
-            if (LemurFusionPlugin.properSaveInstalled)
-            {
-                new ProperSaveManager();
-            }
-        }
     }
 }

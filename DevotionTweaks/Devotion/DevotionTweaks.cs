@@ -32,13 +32,11 @@ namespace LemurFusion.Devotion
         public GameObject bigBodyPrefab;
 
         public const string devotedPrefix = "Devoted";
-        public const string lemBodyName = "LemurianBody";
-        public const string bigLemBodyName = "LemurianBruiserBody";
         public const string devotedMasterName = "DevotedLemurianMaster";
         public const string devotedBruiserMasterName = "DevotedLemurianBruiserMaster";
 
-        public const string devotedLemBodyName = devotedPrefix + lemBodyName;
-        public const string devotedBigLemBodyName = devotedPrefix + bigLemBodyName;
+        public const string devotedLemBodyName = devotedPrefix + "LemurianBody";
+        public const string devotedBigLemBodyName = devotedPrefix + "LemurianBruiserBody";
 
         public readonly bool EnableSharedInventory;
 
@@ -57,56 +55,22 @@ namespace LemurFusion.Devotion
             IL.RoR2.SceneDirector.PopulateScene += PopulateScene;
         }
 
-        private static void PopulateScene(ILContext il)
-        {
-            var c = new ILCursor(il);
-
-            if (c.TryGotoNext(MoveType.Before,
-                    i => i.MatchCall<RunArtifactManager>("get_instance"),
-                    i => i.MatchLdsfld("RoR2.CU8Content/Artifacts", "Devotion"),
-                    i => i.MatchCallvirt<RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
-                ))
-            {
-                c.RemoveRange(3);
-                c.Emit(OpCodes.Ldarg_0);
-                c.EmitDelegate<Func<SceneDirector, bool>>((self) =>
-                {
-                    return (PluginConfig.permaDevotion.Value || RunArtifactManager.instance.IsArtifactEnabled(CU8Content.Artifacts.Devotion)) &&
-                            self.rng.RangeInt(0, 100) < PluginConfig.eggSpawnChance.Value;
-                });
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("IL Hook failed for SceneDirector_PopulateScene");
-            }
-        }
-
-
         #region Artifact Setup
         private void LoadAssets()
         {
-            #region Clone
-            var lemurianBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianBody.prefab").WaitForCompletion();
-            bodyPrefab = lemurianBodyPrefab.InstantiateClone(devotedLemBodyName, true);
+            bodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/DevotedLemurianBody.prefab").WaitForCompletion();
             var body = bodyPrefab.GetComponent<CharacterBody>();
             body.bodyFlags |= CharacterBody.BodyFlags.Devotion;
             body.baseMaxHealth = 360f;
             body.levelMaxHealth = 11f;
             body.baseMoveSpeed = 7f;
 
-            // dupe body pt2
-            var lemurianBruiserBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/LemurianBruiser/LemurianBruiserBody.prefab").WaitForCompletion();
-            bigBodyPrefab = lemurianBruiserBodyPrefab.InstantiateClone(devotedBigLemBodyName, true);
+            bigBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/DevotedLemurianBruiserBody.prefab").WaitForCompletion();
             var bigBody = bigBodyPrefab.GetComponent<CharacterBody>();
             bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion;
             bigBody.baseMaxHealth = 720f;
             bigBody.levelMaxHealth = 22f;
             bigBody.baseMoveSpeed = 10f;
-            #endregion
-
-            #region Fix Vanilla
-            lemurianBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
-            lemurianBruiserBodyPrefab.GetComponent<CharacterBody>().bodyFlags &= ~CharacterBody.BodyFlags.Devotion;
 
             var betterLemInvCtrlPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/NetworkedObjects/DevotionMinionInventory");
             UE.Object.DestroyImmediate(betterLemInvCtrlPrefab.GetComponent<DevotionInventoryController>());
@@ -123,7 +87,6 @@ namespace LemurFusion.Devotion
             var itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             itemDef.tags = [.. itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct()];
             CU8Content.Items.LemurianHarness = itemDef;
-            #endregion
         }
         #endregion
 
@@ -188,7 +151,30 @@ namespace LemurFusion.Devotion
             }
             return orig(self);
         }
-        #endregion
 
+        private static void PopulateScene(ILContext il)
+        {
+            var c = new ILCursor(il);
+
+            if (c.TryGotoNext(MoveType.Before,
+                    i => i.MatchCall<RunArtifactManager>("get_instance"),
+                    i => i.MatchLdsfld("RoR2.CU8Content/Artifacts", "Devotion"),
+                    i => i.MatchCallvirt<RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
+                ))
+            {
+                c.RemoveRange(3);
+                c.Emit(OpCodes.Ldarg_0);
+                c.EmitDelegate<Func<SceneDirector, bool>>((self) =>
+                {
+                    return (PluginConfig.permaDevotion.Value || RunArtifactManager.instance.IsArtifactEnabled(CU8Content.Artifacts.Devotion)) &&
+                            self.rng.RangeInt(0, 100) < PluginConfig.eggSpawnChance.Value;
+                });
+            }
+            else
+            {
+                LemurFusionPlugin.LogError("IL Hook failed for SceneDirector_PopulateScene");
+            }
+        }
+        #endregion
     }
 }

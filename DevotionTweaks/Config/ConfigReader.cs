@@ -73,7 +73,7 @@ namespace LemurFusion.Config
 
             PluginConfig.eggSpawnChance = PluginConfig.BindOptionSlider(GENERAL,
                 "Egg Spawn Chance",
-                100,
+                50,
                 "Sets the chance of replacing a drone spawn with an egg.",
                 0, 100);
 
@@ -99,9 +99,9 @@ namespace LemurFusion.Config
                 0, 20);
             PluginConfig.initScaleValue = PluginConfig.BindOptionSlider(EXPERIMENTAL,
                 "Mini Elder Initial Scale",
-                20,
+                10,
                 "Initial size of elder lemurians",
-                0, 200);
+                0, 100);
 
             PluginConfig.enableDetailedLogs = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Detailed Logs",

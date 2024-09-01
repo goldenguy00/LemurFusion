@@ -41,11 +41,6 @@ namespace LemurFusion.Devotion
         {
             var c = new ILCursor(il);
 
-            if (c.TryGotoNext(x => x.MatchLdstr(DevotionTweaks.bigLemBodyName)))
-                c.Next.Operand = DevotionTweaks.devotedBigLemBodyName;
-            else
-                LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #1");
-
             if (c.TryGotoNext(MoveType.AfterLabel,
                 i => i.MatchLdstr("shouldn't evolve!"),
                 i => i.MatchCall<UE.Debug>("LogError")))

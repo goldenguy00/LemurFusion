@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using UnityEngine.Networking;
 using UnityEngine;
 using RoR2;
-using System.Linq;
 using LemurFusion.Config;
-using System;
-using LemurFusion.Devotion.Components;
 
 namespace LemurFusion.Devotion
 {

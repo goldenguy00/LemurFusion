@@ -140,7 +140,6 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.hasBody && master.GetComponent<BetterLemurController>() != null;
 
-        private const float dt = 0.0333f;
         private const float zero = 0.00001f;
 
         public static Ray PredictAimray(Ray aimRay, CharacterBody body, GameObject projectilePrefab)
@@ -168,7 +167,7 @@ namespace LemurFusion
                 }
                 else
                 {
-                    vT = (pT - targetBody.previousPosition) / dt;
+                    vT = (pT - targetBody.previousPosition) / Time.fixedDeltaTime;
                     aT = Vector3.zero;
                 }
 
@@ -214,7 +213,7 @@ namespace LemurFusion
             if (motor.useGravity)
             {
                 ref float y = ref velocity.y;
-                y += Physics.gravity.y * dt;
+                y += Physics.gravity.y * Time.fixedDeltaTime;
                 if (motor.isGrounded)
                 {
                     y = Mathf.Max(y, 0f);
@@ -266,10 +265,6 @@ namespace LemurFusion
                 if (useAccel)
                     relativeDest += 0.5f * aT * Pow2(t);
 
-                if (Physics.Linecast(aimRay.origin + pT, aimRay.origin + relativeDest, out var hitInfo, LayerIndex.world.intVal, QueryTriggerInteraction.Ignore))
-                {
-                    relativeDest = Vector3.MoveTowards(pT, relativeDest, hitInfo.distance * 0.75f);
-                }
                 return new Ray(aimRay.origin, relativeDest);
             }
             return aimRay;
