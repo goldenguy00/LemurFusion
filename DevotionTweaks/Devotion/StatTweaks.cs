@@ -31,9 +31,9 @@ namespace LemurFusion.Devotion
         #region UI
         private static string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster)
         {
-            if (Utils.IsDevoted(characterMaster) && characterMaster.hasBody)
+            if (Utils.IsDevoted(characterMaster))
             {
-                return characterMaster.GetBody().GetDisplayName();
+                return characterMaster.GetBody()?.GetDisplayName();
             }
             return orig(characterMaster);
         }
@@ -43,7 +43,8 @@ namespace LemurFusion.Devotion
             var baseName = orig(self);
             if (!string.IsNullOrEmpty(baseName) && Utils.IsDevoted(self))
             {
-                var fusionCount = self.inventory.GetItemCount(CU8Content.Items.LemurianHarness);
+                var lemCtrl = self.master.GetComponent<BetterLemurController>();
+                var fusionCount = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
                 if (fusionCount > 0)
                 {
                     return $"{baseName} <style=cStack>x{fusionCount}</style>";
@@ -69,9 +70,9 @@ namespace LemurFusion.Devotion
                 {
                     foreach (var minionOwnership in minionGroup.members)
                     {
-                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl))
+                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory)
                         {
-                            masters.Add(minionOwnership.GetComponent<CharacterMaster>());
+                            masters.Add(lemCtrl._lemurianMaster);
                         }
                     }
                 }
@@ -145,9 +146,9 @@ namespace LemurFusion.Devotion
 
         private static void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
         {
-            if (Utils.IsDevoted(sender) && sender.master.inventory && sender.master.TryGetComponent<BetterLemurController>(out var lem) && lem != null)
+            if (Utils.IsDevoted(sender) && sender.master.inventory && sender.master.TryGetComponent<BetterLemurController>(out var lem) && lem.LemurianInventory)
             {
-                var fusionCount = sender.master.inventory.GetItemCount(CU8Content.Items.LemurianHarness);
+                var fusionCount = lem.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
                     args.baseHealthAdd += sender.level * sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);

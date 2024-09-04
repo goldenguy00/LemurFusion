@@ -121,7 +121,7 @@ namespace LemurFusion.Devotion.Components
                 {
                     foreach (var minionOwnership in minionGroup.members)
                     {
-                        if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var friend))
+                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend))
                         {
                             friends.Add(friend);
                         }
@@ -135,7 +135,8 @@ namespace LemurFusion.Devotion.Components
         {
             foreach (var friend in GetFriends())
             {
-                friend.LemurianInventory.GiveItem(item, count);
+                if (friend && friend.LemurianInventory)
+                    friend.LemurianInventory.GiveItem(item, count);
             }
         }
 
@@ -146,7 +147,10 @@ namespace LemurFusion.Devotion.Components
                 _devotionMinionInventory.RemoveItem(item.Key, item.Value);
                 foreach (var friend in GetFriends())
                 {
-                    friend.LemurianInventory.RemoveItem(item.Key, item.Value);
+                    if (friend && friend.LemurianInventory)
+                    {
+                        friend.LemurianInventory.RemoveItem(item.Key, System.Math.Min(item.Value, friend.LemurianInventory.GetItemCount(item.Key)));
+                    }
                 }
             }
         }

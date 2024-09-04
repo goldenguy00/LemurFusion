@@ -72,19 +72,23 @@ namespace LemurFusion.Devotion
         private void UpdateMinionInventory(On.RoR2.DevotionInventoryController.orig_UpdateMinionInventory orig,
             DevotionInventoryController self, DevotedLemurianController lem, bool shouldEvolve)
         {
-            if (!NetworkServer.active || lem is not BetterLemurController lemCtrl)
+            if (!NetworkServer.active)
                 return;
 
-            foreach (var item in lemCtrl._devotedItemList.Keys.ToList())
+            if (lem && lem is BetterLemurController lemCtrl && lemCtrl && lemCtrl.BetterInventoryController)
             {
-                lemCtrl._devotedItemList[item]++;
-                lemCtrl.BetterInventoryController.ShareItemWithFriends(item);
-                lemCtrl.BetterInventoryController.GiveItem(item);
-            }
+                foreach (var item in lemCtrl._devotedItemList.Keys.ToList())
+                {
+                    lemCtrl._devotedItemList[item]++;
+                    lemCtrl.BetterInventoryController.ShareItemWithFriends(item);
+                    lemCtrl.BetterInventoryController.GiveItem(item);
+                }
 
-            Util.PlaySound("Play_obj_devotion_egg_evolve", lemCtrl.LemurianBody.gameObject);
-            lem.DevotedEvolutionLevel++;
-            self.EvolveDevotedLumerian(lem);
+                if (lemCtrl.LemurianBody)
+                    Util.PlaySound("Play_obj_devotion_egg_evolve", lemCtrl.LemurianBody.gameObject);
+                lem.DevotedEvolutionLevel++;
+                self.EvolveDevotedLumerian(lem);
+            }
         }
         #endregion
     }

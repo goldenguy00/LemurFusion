@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
@@ -18,7 +19,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.5.0";
+        public const string PluginVersion = "1.5.2";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -26,7 +27,7 @@ namespace LemurFusion
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
         public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
         public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
-        public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
+        //public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
 
         public void Awake()
         {
@@ -45,33 +46,28 @@ namespace LemurFusion
 
             R2API.ContentAddition.AddMaster(DevotionTweaks.instance.bruiserMasterPrefab);
 
-            CreateHarmonyPatches();
-            CreateProperSaveCompat();
+            if (LemurFusionPlugin.properSaveInstalled)
+                CreateProperSaveCompat();
+            if (LemurFusionPlugin.lemNamesInstalled)
+                CreateHarmonyPatches();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void CreateHarmonyPatches()
         {
             var harmony = new HarmonyLib.Harmony(PluginGUID);
 
-            if (LemurFusionPlugin.lemNamesInstalled)
-            {
                 harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
                 harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
-            }
 
-            if (LemurFusionPlugin.vApiInstalled)
-            {
-                harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
-            }
+            //if (LemurFusionPlugin.vApiInstalled)
+            //{
+            //    harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
+            //}
         }
 
-        private void CreateProperSaveCompat()
-        {
-            if (LemurFusionPlugin.properSaveInstalled)
-            {
-                new ProperSaveManager();
-            }
-        }
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private void CreateProperSaveCompat() => ProperSaveManager.Init();
 
         #region Logging
         private static ManualLogSource _logger;
@@ -81,26 +77,11 @@ namespace LemurFusion
             Log(LogLevel.Debug, message);
 #endif
         }
-        public static void LogInfo(string message)
-        {
-            Log(LogLevel.Info, message);
-        }
-        public static void LogMessage(string message)
-        {
-            Log(LogLevel.Message, message);
-        }
-        public static void LogWarning(string message)
-        {
-            Log(LogLevel.Warning, message);
-        }
-        public static void LogError(string message)
-        {
-            Log(LogLevel.Error, message);
-        }
-        public static void LogFatal(string message)
-        {
-            Log(LogLevel.Fatal, message);
-        }
+        public static void LogInfo(string message) => Log(LogLevel.Info, message);
+        public static void LogMessage(string message) => Log(LogLevel.Message, message);
+        public static void LogWarning(string message) => Log(LogLevel.Warning, message);
+        public static void LogError(string message) => Log(LogLevel.Error, message);
+        public static void LogFatal(string message) => Log(LogLevel.Fatal, message);
 
         public static void Log(LogLevel logLevel, string message)
         {

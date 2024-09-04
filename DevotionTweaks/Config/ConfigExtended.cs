@@ -76,7 +76,7 @@ namespace LemurFusion.Config
                     var tierDef = ItemTierCatalog.FindTierDef(split[0]);
                     var itemIndex = ItemCatalog.FindItemIndex(split[1]);
 
-                    if (PluginConfig.enableDetailedLogs.Value) LemurFusionPlugin.LogInfo($"Attemping to add ({tierDef}, {itemIndex}) pair parsed from string'({itemPair})' for Custom Drop List.");
+                    if (PluginConfig.enableDetailedLogs.Value) LemurFusionPlugin.LogDebug($"Attemping to add ({tierDef}, {itemIndex}) pair parsed from string'({itemPair})' for Custom Drop List.");
                     if (tierDef && itemIndex != ItemIndex.None)
                     {
                         if (DeathDrops_TierToItem_Map.ContainsKey(tierDef.tier) && PluginConfig.enableDetailedLogs.Value)

@@ -30,7 +30,7 @@ namespace LemurFusion.Devotion
         {
             orig(self, itemIndex, devInvCtrl);
 
-            if (self is BetterLemurController lemCtrl && lemCtrl != null)
+            if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl.LemurianInventory)
             {
                 lemCtrl._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
                 
@@ -62,7 +62,7 @@ namespace LemurFusion.Devotion
 
         private static void DevotedLemurianController_OnDevotedBodyDead(On.DevotedLemurianController.orig_OnDevotedBodyDead orig, DevotedLemurianController self)
         {
-            if (self is BetterLemurController lemCtrl && lemCtrl != null && Utils.IsDevoted(lemCtrl._lemurianMaster) && 
+            if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl._lemurianMaster &&
                 !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") &&
                 !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
             {

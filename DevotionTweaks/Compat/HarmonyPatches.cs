@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using LemurFusion.Devotion;
-using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +42,7 @@ namespace LemurFusion.Compat
             return null;
         }
     }
-    
+    /*
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI
     {
@@ -93,5 +92,5 @@ namespace LemurFusion.Compat
             }
             return devotedVariants;
         }
-    }
+    }*/
 }

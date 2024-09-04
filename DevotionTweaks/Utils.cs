@@ -138,7 +138,7 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDevoted(CharacterBody body) => body && IsDevoted(body.master);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.hasBody && master.GetComponent<BetterLemurController>() != null;
+        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.hasBody && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory;
 
         private const float zero = 0.00001f;
 

@@ -59,9 +59,12 @@ namespace LemurFusion.Compat
         }
     }
 
-    public class ProperSaveManager : MonoBehaviour
+    public class ProperSaveManager
     {
-        public ProperSaveManager()
+        public static ProperSaveManager Instance { get; private set; }
+        public static void Init() => Instance ??= new ProperSaveManager();
+
+        private ProperSaveManager()
         {
             ProperSave.SaveFile.OnGatherSaveData += SaveFile_OnGatherSaveData;
             ProperSave.Loading.OnLoadingEnded += Loading_OnLoadingEnded;
@@ -112,7 +115,7 @@ namespace LemurFusion.Compat
             }
         }
 
-        private static List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
+        private List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
         {
             List<BetterLemurController> lemCtrlList = [];
             var minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);

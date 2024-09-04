@@ -15,6 +15,7 @@ public class BetterLemurController : DevotedLemurianController
     public SortedList<ItemIndex, int> _untrackedItemList { get; set; } = [];
     
     public BetterInventoryController BetterInventoryController => base._devotionInventoryController as BetterInventoryController;
+    public new Inventory LemurianInventory => this._lemurianMaster ? this._lemurianMaster.inventory : null;
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public void AddRiskyAllyItem()
@@ -25,11 +26,11 @@ public class BetterLemurController : DevotedLemurianController
 
     public void KillYourSelf()
     {
-        if (DevotionTweaks.instance.EnableSharedInventory)
+        if (DevotionTweaks.instance.EnableSharedInventory && this.BetterInventoryController)
             this.BetterInventoryController.RemoveSharedItemsFromFriends(this._devotedItemList);
 
         var dropType = ConfigExtended.DeathDrop_ItemType.Value;
-        if (dropType != DevotionTweaks.DeathItem.None)
+        if (dropType != DevotionTweaks.DeathItem.None && this.LemurianBody)
         {
             foreach (var item in this._devotedItemList)
             {
@@ -45,7 +46,7 @@ public class BetterLemurController : DevotedLemurianController
             }
         }
 
-        if (ConfigExtended.DeathDrop_DropEgg.Value && Physics.Raycast(this.LemurianBody.corePosition,
+        if (ConfigExtended.DeathDrop_DropEgg.Value && this.LemurianBody && Physics.Raycast(this.LemurianBody.corePosition,
             Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))
         {
             DirectorPlacementRule placementRule = new()
@@ -57,7 +58,8 @@ public class BetterLemurController : DevotedLemurianController
                 ("RoR2/CU8/LemurianEgg/iscLemurianEgg.asset").WaitForCompletion(), placementRule, new Xoroshiro128Plus(0UL)));
         }
 
-        Destroy(this._lemurianMaster.gameObject, 1f);
+        if (this._lemurianMaster)
+            GameObject.Destroy(this._lemurianMaster.gameObject, 1f);
     }
 
     public PickupIndex FindPickupIndex(ItemIndex itemIndex, DevotionTweaks.DeathItem dropType)

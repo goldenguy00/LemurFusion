@@ -47,7 +47,7 @@ namespace LemurFusion.Devotion
             EnableSharedInventory = PluginConfig.enableSharedInventory.Value;
 
             LoadAssets();
-
+            ItemCatalog.availability.CallWhenAvailable(VisibilityFix);
             // egg interaction display
             if (ConfigExtended.Blacklist_Enable.Value)
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
@@ -56,6 +56,16 @@ namespace LemurFusion.Devotion
         }
 
         #region Artifact Setup
+        private void VisibilityFix()
+        {
+            foreach (var idx in ItemCatalog.allItems)
+            {
+                var item = ItemCatalog.GetItemDef(idx);
+                if (item && item.tier == ItemTier.NoTier)
+                    item.hidden = true;
+            }
+        }
+
         private void LoadAssets()
         {
             bodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/DevotedLemurianBody.prefab").WaitForCompletion();
@@ -86,7 +96,6 @@ namespace LemurFusion.Devotion
 
             var itemDef = Addressables.LoadAssetAsync<ItemDef>("RoR2/CU8/Harness/LemurianHarness.asset").WaitForCompletion();
             itemDef.tags = [.. itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct()];
-            CU8Content.Items.LemurianHarness = itemDef;
         }
         #endregion
 
@@ -120,19 +129,18 @@ namespace LemurFusion.Devotion
 
         public CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
-            if (self.masterPrefab?.name == devotedMasterName && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var body) && body.isPlayerControlled)
+            if (self.masterPrefab?.name == devotedMasterName && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody) && summonerBody.isPlayerControlled)
             {
                 CharacterMaster lemMaster = null;
                 var lowestCount = int.MaxValue;
                 var lemCount = 0;
 
-                var minionGroup = MinionOwnership.MinionGroup.FindGroup(body.masterObjectId);
+                var minionGroup = MinionOwnership.MinionGroup.FindGroup(summonerBody.masterObjectId);
                 if (minionGroup != null)
                 {
                     foreach (var minionOwnership in minionGroup.members)
                     {
-                        var master = minionOwnership ? minionOwnership.GetComponent<CharacterMaster>() : null;
-                        if (master && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory)
+                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory)
                         {
                             lemCount++;
                             var fc = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);

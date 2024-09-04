@@ -1,3 +1,11 @@
+# 1.5.2
+
+- Fixed some nullref issues when spawning clones
+
+# 1.5.1
+
+- Fixed possible dependency issues
+
 # 1.5.0
 
 - SotS Update
