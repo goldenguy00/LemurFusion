@@ -1,9 +1,5 @@
 ﻿using HarmonyLib;
-using LemurFusion.Devotion;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 namespace LemurFusion.Compat
 {

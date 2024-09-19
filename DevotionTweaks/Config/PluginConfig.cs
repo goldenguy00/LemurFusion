@@ -21,6 +21,7 @@ namespace LemurFusion.Config
         public static ConfigEntry<int> scaleValue;
         public static ConfigEntry<int> initScaleValue;
         public static ConfigEntry<bool> enableDetailedLogs;
+        public static ConfigEntry<bool> disableTeamCollision;
 
         public static ConfigEntry<bool> rebalanceHealthScaling;
         public static ConfigEntry<int> statMultHealth;
@@ -100,7 +101,7 @@ namespace LemurFusion.Config
                 {
                     min = 0,
                     max = 20,
-                    formatString = "{0:0.00}",
+                    FormatString = "{0:0.00}",
                     restartRequired = restartRequired
                 }));
                 return;
@@ -148,7 +149,7 @@ namespace LemurFusion.Config
                 {
                     min = min,
                     max = max,
-                    formatString = "{0:0.00}",
+                    FormatString = "{0:0.00}",
                     restartRequired = restartRequired
                 }));
             }

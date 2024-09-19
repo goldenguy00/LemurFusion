@@ -1,3 +1,12 @@
+# 1.6.0
+
+- Removed prediction. Download https://thunderstore.io/package/score/AdvancedPrediction/ instead
+- Added config option to disable Team attack and body collision (player team only) since they love getting in the way.
+- Modified inventory management system to use the native RoR2 inventory more. This should fix scoreboard issues.
+- Bug fixes and refinement of the personal/shared inventory systems.
+- Rewrote some of the hitbox math for better dodging and readded visualizer
+- various bits of cleanup
+
 # 1.5.2
 
 - Fixed some nullref issues when spawning clones

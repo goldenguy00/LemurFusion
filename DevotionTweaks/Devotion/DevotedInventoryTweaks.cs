@@ -75,19 +75,24 @@ namespace LemurFusion.Devotion
             if (!NetworkServer.active)
                 return;
 
-            if (lem && lem is BetterLemurController lemCtrl && lemCtrl && lemCtrl.BetterInventoryController)
+            if (lem is BetterLemurController lemCtrl && lemCtrl)
             {
-                foreach (var item in lemCtrl._devotedItemList.Keys.ToList())
+                if (lemCtrl.PersonalInventory)
                 {
-                    lemCtrl._devotedItemList[item]++;
-                    lemCtrl.BetterInventoryController.ShareItemWithFriends(item);
-                    lemCtrl.BetterInventoryController.GiveItem(item);
+                    foreach (var item in lemCtrl.PersonalInventory.itemAcquisitionOrder.ToList())
+                    {
+                        if (lemCtrl.BetterInventoryController)
+                            lemCtrl.BetterInventoryController.GiveItem(item);
+
+                        lemCtrl.PersonalInventory.GiveItem(item);
+                        lemCtrl.ShareItem(item);
+                    }
                 }
 
                 if (lemCtrl.LemurianBody)
                     Util.PlaySound("Play_obj_devotion_egg_evolve", lemCtrl.LemurianBody.gameObject);
-                lem.DevotedEvolutionLevel++;
-                self.EvolveDevotedLumerian(lem);
+                lemCtrl.DevotedEvolutionLevel++;
+                self.EvolveDevotedLumerian(lemCtrl);
             }
         }
         #endregion

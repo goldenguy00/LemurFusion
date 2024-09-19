@@ -11,6 +11,8 @@ using LemurFusion.Config;
 using UnityEngine.AddressableAssets;
 using UE = UnityEngine;
 using LemurFusion.Devotion.Components;
+using static RoR2.FriendlyFireManager;
+using RoR2.Projectile;
 
 namespace LemurFusion.Devotion
 {
@@ -47,23 +49,55 @@ namespace LemurFusion.Devotion
             EnableSharedInventory = PluginConfig.enableSharedInventory.Value;
 
             LoadAssets();
-            ItemCatalog.availability.CallWhenAvailable(VisibilityFix);
+
             // egg interaction display
             if (ConfigExtended.Blacklist_Enable.Value)
                 On.RoR2.PickupPickerController.SetOptionsFromInteractor += PickupPickerController_SetOptionsFromInteractor;
 
             IL.RoR2.SceneDirector.PopulateScene += PopulateScene;
+
+            if (PluginConfig.disableTeamCollision.Value)
+            {
+                On.RoR2.BulletAttack.DefaultFilterCallbackImplementation += BulletAttack_DefaultFilterCallbackImplementation;
+                On.RoR2.Projectile.ProjectileController.IgnoreCollisionsWithOwner += ProjectileController_IgnoreCollisionsWithOwner;
+            }
         }
 
-        #region Artifact Setup
-        private void VisibilityFix()
+        #region Misc
+        private static bool BulletAttack_DefaultFilterCallbackImplementation(On.RoR2.BulletAttack.orig_DefaultFilterCallbackImplementation orig, BulletAttack bulletAttack, ref BulletAttack.BulletHit hitInfo)
         {
-            foreach (var idx in ItemCatalog.allItems)
+            return orig(bulletAttack, ref hitInfo)
+                && !(hitInfo.hitHurtBox
+                && hitInfo.hitHurtBox.healthComponent
+                && bulletAttack.owner
+                && bulletAttack.owner.TryGetComponent<TeamComponent>(out var attackerTeamComponent)
+                && attackerTeamComponent.teamIndex == TeamIndex.Player
+                && !FriendlyFireManager.ShouldDirectHitProceed(hitInfo.hitHurtBox.healthComponent, attackerTeamComponent.teamIndex));
+        }
+
+        private static void ProjectileController_IgnoreCollisionsWithOwner(On.RoR2.Projectile.ProjectileController.orig_IgnoreCollisionsWithOwner orig, ProjectileController self, bool shouldIgnore)
+        {
+            if (self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0 || !self.owner || !self.owner.TryGetComponent<CharacterBody>(out var ownerBody))
             {
-                var item = ItemCatalog.GetItemDef(idx);
-                if (item && item.tier == ItemTier.NoTier)
-                    item.hidden = true;
+                orig(self, shouldIgnore);
+                return;
             }
+
+            foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
+            {
+                var body = tc.body;
+                if (body && body.hurtBoxGroup && (body == ownerBody || FriendlyFireManager.friendlyFireMode == FriendlyFireMode.Off))
+                {
+                    var hurtBoxes = body.hurtBoxGroup.hurtBoxes;
+                    for (int i = 0; i < hurtBoxes.Length; i++)
+                    {
+                        for (int j = 0; j < self.myColliders.Length; j++)
+                        {
+                            Physics.IgnoreCollision(hurtBoxes[i].collider, self.myColliders[j], shouldIgnore);
+                        } // end for
+                    } // end for
+                }
+            } // endforeach
         }
 
         private void LoadAssets()
@@ -90,6 +124,7 @@ namespace LemurFusion.Devotion
             masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion();
             UE.Object.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
             masterPrefab.AddComponent<BetterLemurController>();
+            masterPrefab.AddComponent<Inventory>();
             masterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bodyPrefab;
             bruiserMasterPrefab = masterPrefab.InstantiateClone(devotedBruiserMasterName, true);
             bruiserMasterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bigBodyPrefab;
@@ -129,7 +164,7 @@ namespace LemurFusion.Devotion
 
         public CharacterMaster MasterSummon_Perform(On.RoR2.MasterSummon.orig_Perform orig, MasterSummon self)
         {
-            if (self.masterPrefab?.name == devotedMasterName && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody) && summonerBody.isPlayerControlled)
+            if (self.masterPrefab && self.masterPrefab == this.masterPrefab && self.summonerBodyObject && self.summonerBodyObject.TryGetComponent<CharacterBody>(out var summonerBody) && summonerBody.isPlayerControlled)
             {
                 CharacterMaster lemMaster = null;
                 var lowestCount = int.MaxValue;
@@ -143,10 +178,10 @@ namespace LemurFusion.Devotion
                         if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory)
                         {
                             lemCount++;
-                            var fc = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
-                            if (fc < lowestCount)
+                            var fusionCount = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
+                            if (fusionCount < lowestCount)
                             {
-                                lowestCount = fc;
+                                lowestCount = fusionCount;
                                 lemMaster = lemCtrl._lemurianMaster;
                             }
                         }

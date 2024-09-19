@@ -1,9 +1,7 @@
 ﻿using RoR2;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using UnityEngine;
 using UnityEngine.Networking;
 
 namespace LemurFusion.Compat
@@ -14,10 +12,7 @@ namespace LemurFusion.Compat
         public ProperSave.Data.UserIDData summonerId;
 
         [DataMember(Name = "blddid")]
-        public ProperSave.Data.ItemData[] devotedItemData;
-
-        [DataMember(Name = "blduid")]
-        public ProperSave.Data.ItemData[] untrackedItemData;
+        public ProperSave.Data.InventoryData devotedItemData;
 
         public BetterLemurianData() { }
 
@@ -25,37 +20,15 @@ namespace LemurFusion.Compat
         {
             summonerId = userID;
 
-            devotedItemData = [.. lemCtrl._devotedItemList.Select(kvp =>
-                new ProperSave.Data.ItemData()
-                {
-                    itemIndex = (int)kvp.Key,
-                    count = kvp.Value
-                })];
-
-            untrackedItemData = [.. lemCtrl._untrackedItemList.Select(kvp =>
-                new ProperSave.Data.ItemData()
-                {
-                    itemIndex = (int)kvp.Key,
-                    count = kvp.Value
-                })];
+            devotedItemData = new ProperSave.Data.InventoryData(lemCtrl.PersonalInventory);
         }
 
         public void LoadData(BetterLemurController lemCtrl)
         {
-            lemCtrl._devotedItemList = [];
-            lemCtrl._untrackedItemList = [];
+            if (!lemCtrl.PersonalInventory)
+                lemCtrl.PersonalInventory = lemCtrl._lemurianMaster.GetComponents<Inventory>().Last();
 
-            for (var i = 0; i < devotedItemData.Length; i++)
-            {
-                var item = devotedItemData[i];
-                Utils.SetItem(lemCtrl._devotedItemList, (ItemIndex)item.itemIndex, item.count);
-            }
-
-            for (var i = 0; i < untrackedItemData.Length; i++)
-            {
-                var item = untrackedItemData[i];
-                Utils.SetItem(lemCtrl._untrackedItemList, (ItemIndex)item.itemIndex, item.count);
-            }
+            devotedItemData.LoadInventory(lemCtrl.PersonalInventory);
         }
     }
 

@@ -11,7 +11,6 @@ namespace LemurFusion
     [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("com.RiskyLives.RiskyMod", BepInDependency.DependencyFlags.SoftDependency)]
     //[BepInDependency("com.Nebby.VAPI", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
@@ -19,7 +18,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.5.2";
+        public const string PluginVersion = "1.6.0";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -36,7 +35,7 @@ namespace LemurFusion
 
             PluginConfig.myConfig = Config;
 
-            ConfigReader.Setup();
+            ConfigReader.Init();
 
             DevotionTweaks.Init();
             DevotedInventoryTweaks.Init();

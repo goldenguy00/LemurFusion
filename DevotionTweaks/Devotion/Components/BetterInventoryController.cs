@@ -111,7 +111,7 @@ namespace LemurFusion.Devotion.Components
         }
         #endregion
 
-        public List<BetterLemurController> GetFriends()
+        public List<BetterLemurController> GetFriends(BetterLemurController self = null)
         {
             List<BetterLemurController> friends = [];
             if (SummonerMaster)
@@ -121,7 +121,8 @@ namespace LemurFusion.Devotion.Components
                 {
                     foreach (var minionOwnership in minionGroup.members)
                     {
-                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend))
+                        if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend) &&
+                            friend && friend != self && friend.LemurianInventory)
                         {
                             friends.Add(friend);
                         }
@@ -129,30 +130,6 @@ namespace LemurFusion.Devotion.Components
                 }
             }
             return friends;
-        }
-
-        public void ShareItemWithFriends(ItemIndex item, int count = 1)
-        {
-            foreach (var friend in GetFriends())
-            {
-                if (friend && friend.LemurianInventory)
-                    friend.LemurianInventory.GiveItem(item, count);
-            }
-        }
-
-        public void RemoveSharedItemsFromFriends(SortedList<ItemIndex, int> itemList)
-        {
-            foreach (var item in itemList)
-            {
-                _devotionMinionInventory.RemoveItem(item.Key, item.Value);
-                foreach (var friend in GetFriends())
-                {
-                    if (friend && friend.LemurianInventory)
-                    {
-                        friend.LemurianInventory.RemoveItem(item.Key, System.Math.Min(item.Value, friend.LemurianInventory.GetItemCount(item.Key)));
-                    }
-                }
-            }
         }
     }
 }

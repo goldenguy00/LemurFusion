@@ -16,7 +16,7 @@ namespace LemurFusion.Config
 
         private const string Desc_Enable = "Enables changes for this section.";
 
-        internal static void Setup()
+        internal static void Init()
         {
             ReadConfig();
             ReadAIConfig();
@@ -108,6 +108,12 @@ namespace LemurFusion.Config
                 false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.");
 
+            PluginConfig.disableTeamCollision = PluginConfig.BindOption(EXPERIMENTAL,
+                "Disable Team Attack Collision",
+                true,
+                "Lightweight filter to allow all teammate bullets and projectiles to pass through allies.",
+                true);
+
             //
             // stats
             //
@@ -159,11 +165,6 @@ namespace LemurFusion.Config
                 "Makes minions less likely to stand around and makes them better at not dying.",
                 true);
 
-            AITweaks.enablePredictiveAiming = PluginConfig.BindOption(AI_CONFIG,
-                "Enable Predictive Aiming",
-                true,
-                "Requires \"Improve AI\". Predicts target movement based on velocity.");
-
             AITweaks.enableProjectileTracking = PluginConfig.BindOption(AI_CONFIG,
                 "Enable Projectile Tracking",
                 true,
@@ -176,10 +177,10 @@ namespace LemurFusion.Config
 
             AITweaks.updateFrequency = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "In Combat Update Frequency",
-                0.05f,
+                0.1f,
                 "Requires \"Enable Projectile Tracking\". Controls how often to refresh the projectile targeting. " +
                 "Increasing this value may change how the AI pathing behaves but will result in getting hit more often.",
-                0.05f, 0.5f);
+                0.1f, 0.5f);
 
             AITweaks.detectionRadius = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "Detection Radius",

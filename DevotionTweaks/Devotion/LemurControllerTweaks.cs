@@ -1,26 +1,16 @@
-﻿using LemurFusion.Config;
-using Mono.Cecil;
-using RoR2;
-using System.Linq;
+﻿using RoR2;
 
 namespace LemurFusion.Devotion
 {
     internal class LemurControllerTweaks
     {
-        public static LemurControllerTweaks instance { get; private set; }
+        public static LemurControllerTweaks Instance { get; private set; }
+        public static void Init() => Instance ??= new LemurControllerTweaks();
 
         private LemurControllerTweaks()
         {
             On.DevotedLemurianController.InitializeDevotedLemurian += DevotedLemurianController_InitializeDevotedLemurian;
             On.DevotedLemurianController.OnDevotedBodyDead += DevotedLemurianController_OnDevotedBodyDead;
-        }
-
-        public static void Init()
-        {
-            if (instance != null)
-                return;
-
-            instance = new LemurControllerTweaks();
         }
 
         #region Hooks
@@ -30,33 +20,9 @@ namespace LemurFusion.Devotion
         {
             orig(self, itemIndex, devInvCtrl);
 
-            if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl.LemurianInventory)
+            if (self is BetterLemurController lemCtrl && lemCtrl)
             {
-                lemCtrl._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
-                
-                if (lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness) == 0 && PluginConfig.enableSharedInventory.Value)
-                    lemCtrl.LemurianInventory.AddItemsFrom(lemCtrl.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
-
-                Utils.AddItem(lemCtrl._devotedItemList, itemIndex);
-                if (PluginConfig.enableSharedInventory.Value)
-                    lemCtrl.BetterInventoryController.ShareItemWithFriends(itemIndex);
-                else
-                    lemCtrl.LemurianInventory.GiveItem(itemIndex);
-
-                Utils.AddItem(lemCtrl._untrackedItemList, CU8Content.Items.LemurianHarness.itemIndex);
-                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.MinionLeash.itemIndex);
-                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.UseAmbientLevel.itemIndex);
-                Utils.SetItem(lemCtrl._untrackedItemList, RoR2Content.Items.TeleportWhenOob.itemIndex);
-                if (LemurFusionPlugin.riskyInstalled)
-                {
-                    lemCtrl.AddRiskyAllyItem();
-                }
-
-                foreach (var item in lemCtrl._untrackedItemList)
-                {
-                    var held = lemCtrl.LemurianInventory.GetItemCount(item.Key);
-                    lemCtrl.LemurianInventory.GiveItem(item.Key, item.Value - held);
-                }
+                lemCtrl.InitializeDevotedLemurian();
             }
         }
 
@@ -64,7 +30,8 @@ namespace LemurFusion.Devotion
         {
             if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl._lemurianMaster &&
                 !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") &&
-                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife"))
+                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLifeShrine") &&
+                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLifeVoid"))
             {
                 lemCtrl.KillYourSelf();
             }

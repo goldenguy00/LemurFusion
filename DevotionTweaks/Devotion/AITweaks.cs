@@ -1,18 +1,12 @@
 ﻿using BepInEx.Configuration;
-using EntityStates;
 using EntityStates.AI.Walker;
-using EntityStates.LemurianBruiserMonster;
-using EntityStates.LemurianMonster;
-using HarmonyLib;
 using LemurFusion.Devotion.Components;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using R2API.Utils;
 using RoR2;
 using RoR2.CharacterAI;
 using System;
 using UnityEngine;
-using static RoR2.Console;
 
 namespace LemurFusion.Devotion
 {
@@ -24,7 +18,6 @@ namespace LemurFusion.Devotion
         public static ConfigEntry<bool> immuneToVoidDeath;
 
         public static ConfigEntry<bool> improveAI;
-        public static ConfigEntry<bool> enablePredictiveAiming;
         public static ConfigEntry<bool> enableProjectileTracking;
         public static ConfigEntry<bool> visualizeProjectileTracking;
         public static ConfigEntry<float> updateFrequency;
@@ -33,24 +26,17 @@ namespace LemurFusion.Devotion
         public const string SKILL_STRAFE_NAME = "StrafeAroundExplosion";
         public const string SKILL_ESCAPE_NAME = "BackUpFromExplosion";
 
-        public static void Init()
-        {
-            if (instance != null)
-                return;
-
-            instance = new AITweaks();
-        }
+        public static void Init() => instance ??= new AITweaks();
 
         private AITweaks()
         {
             if (improveAI.Value)
             {
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
-                IL.EntityStates.LemurianMonster.FireFireball.OnEnter += (il) => FireProjectile<FireFireball>(new(il));
-                IL.EntityStates.LemurianBruiserMonster.FireMegaFireball.FixedUpdate += (il) => FireProjectile<FireMegaFireball>(new(il));
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
                 masterPrefab.AddComponent<MatrixDodgingController>();
+                masterPrefab.AddComponent<LineRenderer>();
                 var baseAI = masterPrefab.GetComponent<BaseAI>();
                 baseAI.fullVision = true;
                 baseAI.aimVectorDampTime = 0.05f;
@@ -124,28 +110,6 @@ namespace LemurFusion.Devotion
             }
         }
 
-        private static void FireProjectile<T>(ILCursor c)
-        {
-            if (c.TryGotoNext(MoveType.After, x => x.MatchCall<BaseState>(nameof(BaseState.GetAimRay))))
-            {
-                //this.characterbody
-                c.Emit(OpCodes.Ldarg_0);
-                c.Emit(OpCodes.Call, AccessTools.PropertyGetter(typeof(EntityState), nameof(EntityState.characterBody)));
-
-                // this.projectilePrefab
-                // - or -
-                // {TYPE}.projectilePrefab
-                var fieldInfo = AccessTools.Field(typeof(T), nameof(FireFireball.projectilePrefab));
-                if (!fieldInfo.IsStatic) c.Emit(OpCodes.Ldarg_0);
-                if (!fieldInfo.IsStatic) c.Emit(OpCodes.Ldfld, fieldInfo);
-                else c.Emit(OpCodes.Ldsfld, fieldInfo);
-
-                // Utils.PredictAimRay(aimRay, characterBody, projectilePrefab);
-                c.Emit(OpCodes.Call, typeof(Utils).GetMethodCached(nameof(Utils.PredictAimray)));
-            }
-            else LemurFusionPlugin.LogError("AccurateEnemies: Generic OnEnter IL Hook failed ");
-        }
-
         private static void Combat_UpdateAI(ILContext il)
         {
             ILCursor c = new(il);
@@ -162,9 +126,7 @@ namespace LemurFusion.Devotion
                 c.EmitDelegate<Func<Vector3, Vector3, AISkillDriver, Vector3>>((position, fleeDirection, skillDriver) =>
                 {
                     if (skillDriver && (skillDriver.customName == SKILL_STRAFE_NAME || skillDriver.customName == "StrafeNearbyEnemies"))
-                    {
-                        return position - fleeDirection * 0.5f;
-                    }
+                        return position - (fleeDirection * 0.5f);
                     return position;
                 });
                 c.Emit(OpCodes.Stloc, 12);
