@@ -11,8 +11,8 @@ using LemurFusion.Config;
 using UnityEngine.AddressableAssets;
 using UE = UnityEngine;
 using LemurFusion.Devotion.Components;
-using static RoR2.FriendlyFireManager;
 using RoR2.Projectile;
+using static RoR2.FriendlyFireManager;
 
 namespace LemurFusion.Devotion
 {
@@ -77,7 +77,7 @@ namespace LemurFusion.Devotion
 
         private static void ProjectileController_IgnoreCollisionsWithOwner(On.RoR2.Projectile.ProjectileController.orig_IgnoreCollisionsWithOwner orig, ProjectileController self, bool shouldIgnore)
         {
-            if (self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0 || !self.owner || !self.owner.TryGetComponent<CharacterBody>(out var ownerBody))
+            if (!shouldIgnore || self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0 || !self.owner || !self.owner.TryGetComponent<CharacterBody>(out var ownerBody))
             {
                 orig(self, shouldIgnore);
                 return;

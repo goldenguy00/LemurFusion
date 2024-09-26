@@ -1,3 +1,8 @@
+# 1.6.1
+
+- Fixed ally attack and body collision cfg options
+- Changed default to false
+
 # 1.6.0
 
 - Removed prediction. Download https://thunderstore.io/package/score/AdvancedPrediction/ instead
@@ -5,7 +10,7 @@
 - Modified inventory management system to use the native RoR2 inventory more. This should fix scoreboard issues.
 - Bug fixes and refinement of the personal/shared inventory systems.
 - Rewrote some of the hitbox math for better dodging and readded visualizer
-- various bits of cleanup
+- various bits of cleanup, i know the readme needs updating but ill get around to it later
 
 # 1.5.2
 

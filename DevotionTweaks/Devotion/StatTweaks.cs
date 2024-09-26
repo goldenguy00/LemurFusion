@@ -5,7 +5,6 @@ using UnityEngine;
 using RoR2;
 using LemurFusion.Config;
 using System.Linq;
-using static RoR2.FriendlyFireManager;
 
 namespace LemurFusion.Devotion
 {
@@ -94,21 +93,24 @@ namespace LemurFusion.Devotion
                 if (AITweaks.immuneToVoidDeath.Value)
                     lemBody.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath | CharacterBody.BodyFlags.ResistantToAOE;
                 
-                if (NetworkServer.active && lemBody.hurtBoxGroup && lemBody.hurtBoxGroup.hurtBoxes.Length > 0)
+                if (NetworkServer.active && PluginConfig.disableTeamCollision.Value)
                 {
-                    var hurtBoxes = lemBody.hurtBoxGroup.hurtBoxes;
-                    foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player).Where(tc => tc && tc.body && tc.body.isPlayerControlled))
+                    if (lemBody.hurtBoxGroup && lemBody.hurtBoxGroup.hurtBoxes?.Any() == true)
                     {
-                        var teamBoxes = tc.body.hurtBoxGroup ? tc.body.hurtBoxGroup.hurtBoxes : null;
-                        if (teamBoxes?.Any() == true && FriendlyFireManager.friendlyFireMode == FriendlyFireMode.Off)
+                        var lemBoxes = lemBody.hurtBoxGroup.hurtBoxes;
+                        foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
                         {
-                            for (int i = 0; i < teamBoxes.Length; i++)
+                            if (tc && tc.body && tc.body.isPlayerControlled && tc.body.hurtBoxGroup)
                             {
-                                for (int j = 0; j < hurtBoxes.Length; j++)
+                                var hurtBoxes = tc.body.hurtBoxGroup.hurtBoxes ?? [];
+                                for (int i = 0; i < hurtBoxes.Length; i++)
                                 {
-                                    Physics.IgnoreCollision(teamBoxes[i].collider, hurtBoxes[j].collider, true);
-                                } // end for
-                            } // end for
+                                    for (int j = 0; j < lemBoxes.Length; j++)
+                                    {
+                                        Physics.IgnoreCollision(hurtBoxes[i].collider, lemBoxes[j].collider, true);
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -38,7 +38,7 @@ namespace LemurFusion.Config
             //
             PluginConfig.maxLemurs = PluginConfig.BindOptionSlider(GENERAL,
                 "Max Lemurs",
-                1,
+                3,
                 "Max dudes",
                 1, 20);
 
@@ -110,8 +110,8 @@ namespace LemurFusion.Config
 
             PluginConfig.disableTeamCollision = PluginConfig.BindOption(EXPERIMENTAL,
                 "Disable Team Attack Collision",
-                true,
-                "Lightweight filter to allow all teammate bullets and projectiles to pass through allies.",
+                false,
+                "Lightweight filter to allow all teammate bullets and projectiles to pass through allies. Also allows you to walk through lemurians.",
                 true);
 
             //
