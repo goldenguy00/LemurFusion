@@ -6,6 +6,9 @@ using UnityEngine.Networking;
 using Mono.Cecil.Cil;
 using LemurFusion.Devotion.Components;
 using System.Linq;
+using MonoMod.RuntimeDetour;
+using HarmonyLib;
+using System;
 
 namespace LemurFusion.Devotion
 {
@@ -27,6 +30,7 @@ namespace LemurFusion.Devotion
 
             On.RoR2.DevotionInventoryController.UpdateMinionInventory += UpdateMinionInventory;
             On.RoR2.DevotionInventoryController.UpdateAllMinions += UpdateAllMinions;
+            new Hook(AccessTools.PropertyGetter(typeof(DevotionInventoryController), nameof(DevotionInventoryController.isDevotionEnable)), DevotionInventoryController_isDevotionEnable);
         }
 
         private static void DevotionInventoryController_Init(On.RoR2.DevotionInventoryController.orig_Init orig)
@@ -34,6 +38,10 @@ namespace LemurFusion.Devotion
             Run.onRunStartGlobal += (_) => BetterInventoryController.OnRunStartGlobal();
             RunArtifactManager.onArtifactEnabledGlobal += (_, _) => BetterInventoryController.OnRunStartGlobal();
             RunArtifactManager.onArtifactDisabledGlobal += BetterInventoryController.OnDevotionArtifactDisabled;
+        }
+        private static bool DevotionInventoryController_isDevotionEnable(Func<bool> orig)
+        {
+            return PluginConfig.permaDevotion.Value || orig();
         }
 
         #region IL Hooks
@@ -75,7 +83,7 @@ namespace LemurFusion.Devotion
             if (!NetworkServer.active)
                 return;
 
-            if (lem is BetterLemurController lemCtrl && lemCtrl)
+            if (lem is BetterLemurController lemCtrl && lemCtrl && lemCtrl._lemurianMaster)
             {
                 if (lemCtrl.PersonalInventory)
                 {
@@ -84,13 +92,18 @@ namespace LemurFusion.Devotion
                         if (lemCtrl.BetterInventoryController)
                             lemCtrl.BetterInventoryController.GiveItem(item);
 
-                        lemCtrl.PersonalInventory.GiveItem(item);
+                        if (lemCtrl.LemurianInventory)
+                            lemCtrl.LemurianInventory.GiveItem(item);
+
                         lemCtrl.ShareItem(item);
                     }
                 }
 
-                if (lemCtrl.LemurianBody)
-                    Util.PlaySound("Play_obj_devotion_egg_evolve", lemCtrl.LemurianBody.gameObject);
+                if (BetterInventoryController.activationSoundEventDef)
+                {
+                    EffectManager.SimpleSoundEffect(BetterInventoryController.activationSoundEventDef.index, lemCtrl.LemurianBody.transform.position, transmit: true);
+                }
+
                 lemCtrl.DevotedEvolutionLevel++;
                 self.EvolveDevotedLumerian(lemCtrl);
             }

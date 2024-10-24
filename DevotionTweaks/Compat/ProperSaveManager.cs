@@ -1,8 +1,9 @@
-﻿using RoR2;
+﻿using LemurFusion.Devotion.Components;
+using RoR2;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using UnityEngine.Networking;
 
 namespace LemurFusion.Compat
 {
@@ -25,17 +26,25 @@ namespace LemurFusion.Compat
 
         public void LoadData(BetterLemurController lemCtrl)
         {
-            if (!lemCtrl.PersonalInventory)
-                lemCtrl.PersonalInventory = lemCtrl._lemurianMaster.GetComponents<Inventory>().Last();
+            if (lemCtrl && lemCtrl._lemurianMaster)
+            {
+                if (!lemCtrl.PersonalInventory)
+                    lemCtrl.PersonalInventory = lemCtrl._lemurianMaster.GetComponents<Inventory>().Last();
 
-            devotedItemData.LoadInventory(lemCtrl.PersonalInventory);
+                devotedItemData.LoadInventory(lemCtrl.PersonalInventory);
+            }
         }
     }
 
     public class ProperSaveManager
     {
         public static ProperSaveManager Instance { get; private set; }
-        public static void Init() => Instance ??= new ProperSaveManager();
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        public static void Init()
+        {
+            Instance ??= new ProperSaveManager();
+        }
 
         private ProperSaveManager()
         {
@@ -52,7 +61,7 @@ namespace LemurFusion.Compat
                 if (player.networkUser && player.master)
                 {
                     var userID = new ProperSave.Data.UserIDData(player.networkUser.id);
-                    foreach (var lem in GetLemurControllers(player.master.netId))
+                    foreach (var lem in BetterInventoryController.GetFriends(player.master.netId))
                     {
                         lemurData.Add(new BetterLemurianData(userID, lem));
                     }
@@ -65,7 +74,7 @@ namespace LemurFusion.Compat
         private void Loading_OnLoadingEnded(ProperSave.SaveFile saveFile)
         {
             if (saveFile.ModdedData.TryGetValue(LemurFusionPlugin.PluginGUID, out var rawData) &&
-                rawData?.Value is List<BetterLemurianData> lemurData && lemurData.Any())
+                rawData?.Value is List<BetterLemurianData> { Count: > 0 } lemurData)
             {
                 CharacterMaster.onStartGlobal += SpawnMinion;
                 void SpawnMinion(CharacterMaster master)
@@ -86,24 +95,6 @@ namespace LemurFusion.Compat
                     }
                 }
             }
-        }
-
-        private List<BetterLemurController> GetLemurControllers(NetworkInstanceId masterID)
-        {
-            List<BetterLemurController> lemCtrlList = [];
-            var minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
-            if (minionGroup != null)
-            {
-                foreach (var minionOwnership in minionGroup.members)
-                {
-                    if (minionOwnership && minionOwnership.GetComponent<CharacterMaster>().TryGetComponent<BetterLemurController>(out var friend))
-                    {
-                        lemCtrlList.Add(friend);
-                    }
-                }
-            }
-
-            return lemCtrlList;
         }
     }
 

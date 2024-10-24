@@ -89,36 +89,21 @@ namespace LemurFusion.Devotion
             if (Utils.IsDevoted(lemBody))
             {
                 if (AITweaks.disableFallDamage.Value)
-                    lemBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+                    lemBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage | CharacterBody.BodyFlags.ResistantToAOE;
                 if (AITweaks.immuneToVoidDeath.Value)
-                    lemBody.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath | CharacterBody.BodyFlags.ResistantToAOE;
-                
-                if (NetworkServer.active && PluginConfig.disableTeamCollision.Value)
+                    lemBody.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath | CharacterBody.BodyFlags.OverheatImmune;
+
+                if (PluginConfig.disableTeamCollision.Value)
                 {
-                    if (lemBody.hurtBoxGroup && lemBody.hurtBoxGroup.hurtBoxes?.Any() == true)
-                    {
-                        var lemBoxes = lemBody.hurtBoxGroup.hurtBoxes;
-                        foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
-                        {
-                            if (tc && tc.body && tc.body.isPlayerControlled && tc.body.hurtBoxGroup)
-                            {
-                                var hurtBoxes = tc.body.hurtBoxGroup.hurtBoxes ?? [];
-                                for (int i = 0; i < hurtBoxes.Length; i++)
-                                {
-                                    for (int j = 0; j < lemBoxes.Length; j++)
-                                    {
-                                        Physics.IgnoreCollision(hurtBoxes[i].collider, lemBoxes[j].collider, true);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    lemBody.gameObject.layer = LayerIndex.fakeActor.intVal;
+                    if (lemBody.characterMotor)
+                        lemBody.characterMotor.Motor.RebuildCollidableLayers();
                 }
 
-                if (NetworkClient.active && lemBody.modelLocator)
+                if (NetworkClient.active)
                 {
-                    var transform = lemBody.modelLocator.modelTransform;
-                    if (transform)
+                    var lemModel = lemBody.modelLocator ? lemBody.modelLocator.modelTransform : null;
+                    if (lemModel)
                     {
                         if (PluginConfig.miniElders.Value && lemBody.bodyIndex == BodyCatalog.FindBodyIndex(DevotionTweaks.devotedBigLemBodyName))
                         {
@@ -126,10 +111,10 @@ namespace LemurFusion.Devotion
                             var stack = PluginConfig.scaleValue.Value * 0.01f;
                             var count = lemBody.master.inventory.GetItemCount(CU8Content.Items.LemurianHarness);
 
-                            transform.localScale = Vector3.one * (init + (stack * count));
+                            lemModel.localScale = Vector3.one * (init + (stack * count));
                         }
 
-                        if (transform.TryGetComponent<FootstepHandler>(out var footstep))
+                        if (lemModel.TryGetComponent<FootstepHandler>(out var footstep))
                             footstep.baseFootstepString = "";
                     }
                 }

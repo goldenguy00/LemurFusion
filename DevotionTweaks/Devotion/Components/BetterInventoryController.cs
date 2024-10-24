@@ -2,6 +2,7 @@
 using R2API;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Networking;
 
 namespace LemurFusion.Devotion.Components
 {
@@ -130,6 +131,25 @@ namespace LemurFusion.Devotion.Components
                 }
             }
             return friends;
+        }
+
+
+        public static List<BetterLemurController> GetFriends(NetworkInstanceId masterID)
+        {
+            List<BetterLemurController> lemCtrlList = [];
+            var minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
+            if (minionGroup != null)
+            {
+                foreach (var minionOwnership in minionGroup.members)
+                {
+                    if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend) && friend && friend.PersonalInventory)
+                    {
+                        lemCtrlList.Add(friend);
+                    }
+                }
+            }
+
+            return lemCtrlList;
         }
     }
 }

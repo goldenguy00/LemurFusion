@@ -18,8 +18,11 @@ namespace LemurFusion
         public static void ResetItem(this Inventory self, ItemIndex itemIndex, int count)
         {
             if (count == 0)
+            {
+                self.itemAcquisitionOrder.Remove(itemIndex);
                 self.ResetItem(itemIndex);
-            else if((uint)itemIndex < self.itemStacks.Length)
+            }
+            else if ((uint)itemIndex < self.itemStacks.Length)
             {
                 ref int reference = ref self.itemStacks[(int)itemIndex];
                 if (reference != count)

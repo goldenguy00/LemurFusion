@@ -77,6 +77,12 @@ namespace LemurFusion.Config
                 "Sets the chance of replacing a drone spawn with an egg.",
                 0, 100);
 
+            PluginConfig.disableTeamCollision = PluginConfig.BindOption(GENERAL,
+                "Disable Team Attack Collision",
+                true,
+                "Lightweight filter to allow all teammate bullets and projectiles to pass through allies. Also allows you to walk through lemurians.",
+                true);
+
             //
             // misc
             //
@@ -107,12 +113,6 @@ namespace LemurFusion.Config
                 "Enable Detailed Logs",
                 false,
                 "For dev use/debugging. Keep this on if you want to submit a bug report.");
-
-            PluginConfig.disableTeamCollision = PluginConfig.BindOption(EXPERIMENTAL,
-                "Disable Team Attack Collision",
-                false,
-                "Lightweight filter to allow all teammate bullets and projectiles to pass through allies. Also allows you to walk through lemurians.",
-                true);
 
             //
             // stats

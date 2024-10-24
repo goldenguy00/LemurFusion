@@ -1,5 +1,10 @@
 ﻿using HarmonyLib;
+using LemurFusion.Devotion;
+using RoR2;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace LemurFusion.Compat
 {
@@ -38,7 +43,26 @@ namespace LemurFusion.Compat
             return null;
         }
     }
-    /*
+
+    [HarmonyPatch(typeof(ProperSave.Data.CharacterMasterData), MethodType.Constructor, [typeof(CharacterMaster)])]
+    public class FixProperSave
+    {
+        [HarmonyPostfix]
+        public static void Postfix(CharacterMaster master, ProperSave.Data.CharacterMasterData __instance)
+        {
+            if (__instance.devotionInventory == null)
+            {
+                foreach (var dev in DevotionInventoryController.InstanceList)
+                {
+                    if (dev.SummonerMaster == master)
+                    {
+                        __instance.devotionInventory = new ProperSave.Data.InventoryData(dev._devotionMinionInventory);
+                    }
+                }
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI
     {
@@ -67,9 +91,9 @@ namespace LemurFusion.Compat
 
                 if (newVariant.variantInventory && newVariant.variantInventory.itemInventory?.Any() == true)
                 {
-                    foreach (var itemPair in newVariant.variantInventory.itemInventory.Where(i => i?.itemDef != null))
+                    foreach (var itemPair in newVariant.variantInventory.itemInventory.Where(i => i?.item != null))
                     {
-                        var itemDef = itemPair.itemDef.Asset;
+                        var itemDef = itemPair.item.Asset;
                         if (itemDef != null && itemDef == RoR2.RoR2Content.Items.Hoof)
                         {
                             LemurFusionPlugin.LogDebug("Limiting hoof amount for variant to 2");
@@ -88,5 +112,5 @@ namespace LemurFusion.Compat
             }
             return devotedVariants;
         }
-    }*/
+    }
 }

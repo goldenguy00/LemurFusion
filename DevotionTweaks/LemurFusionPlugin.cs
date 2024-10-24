@@ -2,9 +2,11 @@ using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
+using HarmonyLib;
 using LemurFusion.Compat;
 using LemurFusion.Config;
 using LemurFusion.Devotion;
+using LemurFusion.Devotion.Components;
 
 namespace LemurFusion
 {
@@ -12,13 +14,14 @@ namespace LemurFusion
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
     //[BepInDependency("com.Nebby.VAPI", BepInDependency.DependencyFlags.SoftDependency)]
+    //[BepInDependency("com.TeamSandswept.Sandswept", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.6.1";
+        public const string PluginVersion = "1.6.3";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -26,8 +29,10 @@ namespace LemurFusion
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
         public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
         public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
-        //public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
+        public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
+        public static bool sandInstalled => Chainloader.PluginInfos.ContainsKey("com.TeamSandswept.Sandswept");
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public void Awake()
         {
             instance = this;
@@ -41,32 +46,41 @@ namespace LemurFusion
             DevotedInventoryTweaks.Init();
             LemurControllerTweaks.Init();
             AITweaks.Init();
-            //MechaLemur.Init();
+            RoR2.RoR2Application.onLoad += MechaLemur.Init;
 
             R2API.ContentAddition.AddMaster(DevotionTweaks.instance.bruiserMasterPrefab);
 
-            if (LemurFusionPlugin.properSaveInstalled)
-                CreateProperSaveCompat();
-            if (LemurFusionPlugin.lemNamesInstalled)
-                CreateHarmonyPatches();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void CreateHarmonyPatches()
-        {
             var harmony = new HarmonyLib.Harmony(PluginGUID);
 
-                harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
-                harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
+            if (LemurFusionPlugin.lemNamesInstalled)
+                CreateLemNameCompat(harmony);
 
-            //if (LemurFusionPlugin.vApiInstalled)
-            //{
-            //    harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
-            //}
+            if (LemurFusionPlugin.vApiInstalled)
+                CreateVAPICompat(harmony);
+
+            if (LemurFusionPlugin.properSaveInstalled)
+                CreateProperSaveCompat(harmony);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private void CreateProperSaveCompat() => ProperSaveManager.Init();
+        private static void CreateLemNameCompat(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
+            harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static void CreateVAPICompat(Harmony harmony)
+        {
+            //harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static void CreateProperSaveCompat(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(FixProperSave)).Patch();
+            ProperSaveManager.Init();
+        }
 
         #region Logging
         private static ManualLogSource _logger;

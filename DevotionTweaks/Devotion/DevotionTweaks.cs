@@ -58,8 +58,8 @@ namespace LemurFusion.Devotion
 
             if (PluginConfig.disableTeamCollision.Value)
             {
-                On.RoR2.BulletAttack.DefaultFilterCallbackImplementation += BulletAttack_DefaultFilterCallbackImplementation;
-                On.RoR2.Projectile.ProjectileController.IgnoreCollisionsWithOwner += ProjectileController_IgnoreCollisionsWithOwner;
+                //On.RoR2.BulletAttack.DefaultFilterCallbackImplementation += BulletAttack_DefaultFilterCallbackImplementation;
+                //On.RoR2.Projectile.ProjectileController.IgnoreCollisionsWithOwner += ProjectileController_IgnoreCollisionsWithOwner;
             }
         }
 
@@ -77,16 +77,17 @@ namespace LemurFusion.Devotion
 
         private static void ProjectileController_IgnoreCollisionsWithOwner(On.RoR2.Projectile.ProjectileController.orig_IgnoreCollisionsWithOwner orig, ProjectileController self, bool shouldIgnore)
         {
-            if (!shouldIgnore || self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0 || !self.owner || !self.owner.TryGetComponent<CharacterBody>(out var ownerBody))
+            orig(self, shouldIgnore);
+
+            if (!shouldIgnore || FriendlyFireManager.friendlyFireMode != FriendlyFireMode.Off || self.teamFilter.teamIndex != TeamIndex.Player || self.myColliders.Length == 0 || !self.owner)
             {
-                orig(self, shouldIgnore);
                 return;
             }
 
             foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
             {
                 var body = tc.body;
-                if (body && body.hurtBoxGroup && (body == ownerBody || FriendlyFireManager.friendlyFireMode == FriendlyFireMode.Off))
+                if (Utils.IsDevoted(body) && body.hurtBoxGroup && body.gameObject != self.owner)
                 {
                     var hurtBoxes = body.hurtBoxGroup.hurtBoxes;
                     for (int i = 0; i < hurtBoxes.Length; i++)
@@ -104,14 +105,14 @@ namespace LemurFusion.Devotion
         {
             bodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/DevotedLemurianBody.prefab").WaitForCompletion();
             var body = bodyPrefab.GetComponent<CharacterBody>();
-            body.bodyFlags |= CharacterBody.BodyFlags.Devotion;
+            body.bodyFlags |= CharacterBody.BodyFlags.Devotion | CharacterBody.BodyFlags.ImmuneToLava | CharacterBody.BodyFlags.Mechanical;
             body.baseMaxHealth = 360f;
             body.levelMaxHealth = 11f;
             body.baseMoveSpeed = 7f;
 
             bigBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/DevotedLemurianBruiserBody.prefab").WaitForCompletion();
             var bigBody = bigBodyPrefab.GetComponent<CharacterBody>();
-            bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion;
+            bigBody.bodyFlags |= CharacterBody.BodyFlags.Devotion | CharacterBody.BodyFlags.ImmuneToLava | CharacterBody.BodyFlags.Mechanical;
             bigBody.baseMaxHealth = 720f;
             bigBody.levelMaxHealth = 22f;
             bigBody.baseMoveSpeed = 10f;
@@ -119,7 +120,11 @@ namespace LemurFusion.Devotion
             var betterLemInvCtrlPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/NetworkedObjects/DevotionMinionInventory");
             UE.Object.DestroyImmediate(betterLemInvCtrlPrefab.GetComponent<DevotionInventoryController>());
             betterLemInvCtrlPrefab.AddComponent<BetterInventoryController>().sfxLocator = betterLemInvCtrlPrefab.GetComponent<SfxLocator>();
-            DevotionInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
+            BetterInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
+            LegacyResourcesAPI.LoadAsyncCallback("NetworkSoundEventDefs/nseNullifiedBuffApplied", delegate (NetworkSoundEventDef asset)
+            {
+                BetterInventoryController.activationSoundEventDef = asset;
+            });
 
             masterPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/CU8/LemurianEgg/DevotedLemurianMaster.prefab").WaitForCompletion();
             UE.Object.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
@@ -199,17 +204,16 @@ namespace LemurFusion.Devotion
         {
             var c = new ILCursor(il);
 
-            if (c.TryGotoNext(MoveType.Before,
+            if (c.TryGotoNext(MoveType.After,
                     i => i.MatchCall<RunArtifactManager>("get_instance"),
                     i => i.MatchLdsfld("RoR2.CU8Content/Artifacts", "Devotion"),
                     i => i.MatchCallvirt<RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
                 ))
             {
-                c.RemoveRange(3);
                 c.Emit(OpCodes.Ldarg_0);
-                c.EmitDelegate<Func<SceneDirector, bool>>((self) =>
+                c.EmitDelegate<Func<bool, SceneDirector, bool>>((isArtifactEnabled, self) =>
                 {
-                    return (PluginConfig.permaDevotion.Value || RunArtifactManager.instance.IsArtifactEnabled(CU8Content.Artifacts.Devotion)) &&
+                    return (PluginConfig.permaDevotion.Value || isArtifactEnabled) &&
                             self.rng.RangeInt(0, 100) < PluginConfig.eggSpawnChance.Value;
                 });
             }

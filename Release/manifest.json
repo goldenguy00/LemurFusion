@@ -1,7 +1,7 @@
 {
     "name": "LemurFusion",
     "author": "score",
-    "version_number": "1.6.1",
+    "version_number": "1.6.3",
     "description": "Devotion rework; If you have too many Lemurians, just fuse them together!",
     "website_url": "https://github.com/goldenguy00/LemurFusion",
     "dependencies": [

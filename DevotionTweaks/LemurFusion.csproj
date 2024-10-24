@@ -24,7 +24,6 @@
   <ItemGroup>
     <Compile Remove="CrueltyElite.cs" />
     <Compile Remove="Devotion\Components\BetterOutsideInteractableLocker.cs" />
-    <Compile Remove="Devotion\Components\MechaLemur.cs" />
     <Compile Remove="Legacy.cs" />
   </ItemGroup>
 
@@ -49,8 +48,14 @@
     <Reference Include="MoonstormSharedUtils">
       <HintPath>..\libs\MoonstormSharedUtils.dll</HintPath>
     </Reference>
+    <Reference Include="MSU.Runtime">
+      <HintPath>..\..\SharedRef\MSU.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="ProperSave">
-      <HintPath>..\libs\ProperSave.dll</HintPath>
+      <HintPath>..\..\SharedRef\ProperSave.dll</HintPath>
+    </Reference>
+    <Reference Include="R2API.Addressables">
+      <HintPath>..\..\SharedRef\R2API.Addressables.dll</HintPath>
     </Reference>
     <Reference Include="RiskyMod">
       <HintPath>..\libs\RiskyMod.dll</HintPath>
@@ -58,8 +63,11 @@
     <Reference Include="Risky_Artifacts">
       <HintPath>..\libs\Risky_Artifacts.dll</HintPath>
     </Reference>
+    <Reference Include="Sandswept">
+      <HintPath>..\..\SharedRef\Sandswept.dll</HintPath>
+    </Reference>
     <Reference Include="VarianceAPI">
-      <HintPath>..\libs\VarianceAPI.dll</HintPath>
+      <HintPath>..\..\SharedRef\VarianceAPI.dll</HintPath>
     </Reference>
   </ItemGroup>
 

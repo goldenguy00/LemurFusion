@@ -1,3 +1,9 @@
+# 1.6.3
+
+- I promise i fixed collision for real this time
+- Default is back to true and cfg option moved to General
+- Fixed error with propersave when loading malformed data on stage start
+
 # 1.6.1
 
 - Fixed ally attack and body collision cfg options

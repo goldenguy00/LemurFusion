@@ -14,6 +14,7 @@ public class BetterLemurController : DevotedLemurianController
     #region Lemur Instance
     public BetterInventoryController BetterInventoryController => base._devotionInventoryController as BetterInventoryController;
     public new Inventory LemurianInventory => this._lemurianMaster ? this._lemurianMaster.inventory : null;
+    public new CharacterBody LemurianBody => this._lemurianMaster ? this._lemurianMaster.GetBody() : null;
     public Inventory PersonalInventory { get; set; }
 
     public void InitializeDevotedLemurian()
@@ -22,27 +23,32 @@ public class BetterLemurController : DevotedLemurianController
 
         if (!this.PersonalInventory)
             this.PersonalInventory = this._lemurianMaster.GetComponents<Inventory>().Last();
-        this.PersonalInventory.GiveItem(this.DevotionItem);
 
-        ShareItem(this.DevotionItem);
+        if (LemurianInventory)
+        {
+            var inv = this._lemurianMaster.inventory;
+            if (inv.GetItemCount(CU8Content.Items.LemurianHarness) == 0)
+                inv.AddItemsFrom(this.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
 
-        var inv = this._lemurianMaster.inventory;
-        inv.GiveItem(this.DevotionItem);
-        inv.GiveItem(CU8Content.Items.LemurianHarness.itemIndex);
-        inv.ResetItem(RoR2Content.Items.MinionLeash.itemIndex, 1);
-        inv.ResetItem(RoR2Content.Items.UseAmbientLevel.itemIndex, 1);
-        inv.ResetItem(RoR2Content.Items.TeleportWhenOob.itemIndex, 1);
-        if (LemurFusionPlugin.riskyInstalled)
-            AddRiskyAllyItem();
+            ShareItem(this.DevotionItem);
+
+            inv.GiveItem(this.DevotionItem);
+            inv.GiveItem(CU8Content.Items.LemurianHarness.itemIndex);
+            inv.ResetItem(RoR2Content.Items.MinionLeash.itemIndex, 1);
+            inv.ResetItem(RoR2Content.Items.UseAmbientLevel.itemIndex, 1);
+            inv.ResetItem(RoR2Content.Items.TeleportWhenOob.itemIndex, 1);
+            if (LemurFusionPlugin.riskyInstalled)
+                AddRiskyAllyItem();
+        }
     }
 
     public void ShareItem(ItemIndex item)
     {
+        if (this.PersonalInventory)
+            this.PersonalInventory.GiveItem(item);
+
         if (PluginConfig.enableSharedInventory.Value)
         {
-            if (LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness) == 0)
-                LemurianInventory.AddItemsFrom(this.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
-
             foreach (var friend in this.BetterInventoryController.GetFriends(this))
             {
                 friend.LemurianInventory.GiveItem(item);
