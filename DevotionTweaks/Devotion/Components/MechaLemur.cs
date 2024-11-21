@@ -8,7 +8,7 @@ namespace LemurFusion.Devotion.Components
 {
     public class MechaLemur
     {
-        private static GameObject hatDisplay, chaingunDisplay, launcherDisplay, robotArm;
+        private static GameObject chaingunDisplay, launcherDisplay, robotArm;
         private static Material mechaMat, wolfMat;
 
         public static MechaLemur instance { get; private set; }
@@ -401,7 +401,7 @@ namespace LemurFusion.Devotion.Components
                     }
                 }
             }
-
+            /*
             LemurFusionPlugin.LogError("****************************************** UNUSUED");
             foreach (var pair in pairs)
             {
@@ -411,7 +411,7 @@ namespace LemurFusion.Devotion.Components
             foreach (var pair in missingPairs.Distinct())
             {
                 LemurFusionPlugin.LogError(pair);
-            }
+            }*/
             return lemGroups;
         }
 

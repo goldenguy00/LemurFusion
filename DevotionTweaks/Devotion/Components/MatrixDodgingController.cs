@@ -107,8 +107,7 @@ namespace LemurFusion.Devotion.Components
             {
                 if (projectile && enemyTeams.HasTeam(projectile.teamFilter.teamIndex))
                 {
-                    var transform = projectile.transform;
-                    if (projectile.gameObject.name.Contains("Sunder") && (transform.position - position).sqrMagnitude < this.safeDistance * 10f)
+                    if (projectile.gameObject.name.Contains("Sunder") && (projectile.transform.position - position).sqrMagnitude < this.safeDistance * 5f)
                     {
                         shouldJump = true;
                     }
@@ -117,20 +116,15 @@ namespace LemurFusion.Devotion.Components
                     {
                         for (var j = 0; j < hitBoxGroup.hitBoxes.Length; j++)
                         {
-                            var hitBox = hitBoxGroup.hitBoxes[j];
-                            if (hitBox)
+                            if (hitBoxGroup.hitBoxes[j])
                             {
-                                transform = hitBox.transform;
-                                if (transform)
-                                {
-                                    CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
-                                }
+                                CompareAndUpdateTargets(hitBoxGroup.hitBoxes[j].transform, position, ref distance, ref closestPoint, ref target);
                             }
                         }
                     }
                     else
                     {
-                        CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
+                        CompareAndUpdateTargets(projectile.transform, position, ref distance, ref closestPoint, ref target);
                     }
                 }
             }

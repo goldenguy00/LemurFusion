@@ -86,10 +86,9 @@ namespace LemurFusion.Devotion
 
             foreach (var tc in TeamComponent.GetTeamMembers(TeamIndex.Player))
             {
-                var body = tc.body;
-                if (Utils.IsDevoted(body) && body.hurtBoxGroup && body.gameObject != self.owner)
+                if (Utils.IsDevoted(tc.body) && tc.body.hurtBoxGroup && tc.gameObject != self.owner)
                 {
-                    var hurtBoxes = body.hurtBoxGroup.hurtBoxes;
+                    var hurtBoxes = tc.body.hurtBoxGroup.hurtBoxes;
                     for (int i = 0; i < hurtBoxes.Length; i++)
                     {
                         for (int j = 0; j < self.myColliders.Length; j++)
