@@ -1,5 +1,8 @@
 ﻿using BepInEx.Configuration;
+using System;
+using System.IO;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace LemurFusion.Config
 {
@@ -84,7 +87,21 @@ namespace LemurFusion.Config
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void InitRoO()
         {
-            RiskOfOptions.ModSettingsManager.SetModDescription("Devotion Artifact but better.");
+            try
+            {
+                RiskOfOptions.ModSettingsManager.SetModDescription("Devotion Artifact but better.", LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
+
+                var iconStream = File.ReadAllBytes(Path.Combine(Path.GetDirectoryName(LemurFusionPlugin.instance.Info.Location), "icon.png"));
+                var tex = new Texture2D(256, 256);
+                tex.LoadImage(iconStream);
+                var icon = Sprite.Create(tex, new Rect(0, 0, 256, 256), new Vector2(0.5f, 0.5f));
+
+                RiskOfOptions.ModSettingsManager.SetModIcon(icon);
+            }
+            catch (Exception e)
+            {
+                LemurFusionPlugin.LogDebug(e.ToString());
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

@@ -75,27 +75,53 @@ namespace LemurFusion
         public static Vector3 NearestPointOnTransform(Transform hitbox, Vector3 footPosition, out float distance)
         {
             // take slice
-            var pos = hitbox.position;
-            var rotation = hitbox.rotation;
-            var lossyScale = hitbox.lossyScale * 0.5f;
-            var posY = Mathf.Clamp(footPosition.y, pos.y - lossyScale.y, pos.y + lossyScale.y);
+            var bounds = new Bounds(Vector3.zero, hitbox.lossyScale);
+            var localFootPos = hitbox.InverseTransformPoint(footPosition);
+            var localClosest = bounds.ClosestPoint(localFootPos);
+            if (localClosest != localFootPos || (Mathf.Abs(bounds.size.x / bounds.size.y) < 2f))
+            {
+                distance = (localClosest - localFootPos).sqrMagnitude;
+                return hitbox.TransformPoint(localClosest);
+            }
 
-            var fr = rotation * new Vector3(pos.x + lossyScale.x, posY, pos.z + lossyScale.z);
-            var bl = rotation * new Vector3(pos.x - lossyScale.x, posY, pos.z - lossyScale.z);
-            var fl = rotation * new Vector3(pos.x + lossyScale.x, posY, pos.z - lossyScale.z);
-            var br = rotation * new Vector3(pos.x - lossyScale.x, posY, pos.z + lossyScale.z);
+            return hitbox.TransformPoint(ClosetPointOnBounds(localFootPos, bounds, out distance));
+        }
 
-            // compare diagonals
-            var v1 = Util.ClosestPointOnLine(fl, br, footPosition);
-            var v2 = Util.ClosestPointOnLine(fr, bl, footPosition);
+        public static Vector3 ClosetPointOnBounds(Vector3 point, Bounds bounds, out float distance)
+        {
+            var points = HG.ListPool<Vector3>.RentCollection();
 
-            distance = (v1 - footPosition).sqrMagnitude;
-            var distance2 = (v2 - footPosition).sqrMagnitude;
-            if (distance < distance2)
-                return v1;
+            var plane = new Plane(Vector3.up, bounds.max);
+            points.Add(plane.ClosestPointOnPlane(point));
 
-            distance = distance2;
-            return v2;
+            plane.SetNormalAndPosition(Vector3.down, bounds.min);
+            points.Add(plane.ClosestPointOnPlane(point));
+
+            plane.SetNormalAndPosition(Vector3.forward, bounds.max);
+            points.Add(plane.ClosestPointOnPlane(point));
+
+            plane.SetNormalAndPosition(Vector3.back, bounds.min);
+            points.Add(plane.ClosestPointOnPlane(point));
+
+            plane.SetNormalAndPosition(Vector3.right, bounds.max);
+            points.Add(plane.ClosestPointOnPlane(point));
+
+            plane.SetNormalAndPosition(Vector3.left, bounds.min);
+            points.Add(plane.ClosestPointOnPlane(point));
+
+            Vector3 closest = point;
+            distance = float.MaxValue;
+            foreach (var p in  points)
+            {
+                float dist = (p - point).sqrMagnitude;
+                if (dist < distance)
+                {
+                    distance = dist;
+                    closest = p;
+                }
+            }
+
+            return closest;
         }
         #endregion
     }

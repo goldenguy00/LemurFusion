@@ -35,6 +35,7 @@ namespace LemurFusion.Devotion
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
+                DevotionTweaks.instance.bigBodyPrefab.GetComponent<SkillLocator>().primary.skillDef.canceledFromSprinting = false;
                 masterPrefab.AddComponent<MatrixDodgingController>();
                 masterPrefab.AddComponent<LineRenderer>();
                 var baseAI = masterPrefab.GetComponent<BaseAI>();
@@ -77,14 +78,14 @@ namespace LemurFusion.Devotion
                     {
                         case "DevotedSecondarySkill":
                             driver.minUserHealthFraction = 0.6f;
-                            driver.shouldSprint = true;
+                            driver.shouldSprint = false;
                             driver.activationRequiresAimConfirmation = true;
                             driver.maxDistance = 10f;
                             break;
                         case "StrafeAndShoot":
                             driver.maxDistance = 100f;
                             driver.activationRequiresAimTargetLoS = true;
-                            driver.shouldSprint = true;
+                            driver.shouldSprint = false;
                             break;
                         case "ReturnToLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;

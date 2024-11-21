@@ -1,3 +1,10 @@
+# 1.7.0
+
+- Item displays
+- Lemurian are now considered drones and can get buffed by SpareDroneParts
+- No more lava death
+- Fixed for new update probably
+
 # 1.6.3
 
 - I promise i fixed collision for real this time

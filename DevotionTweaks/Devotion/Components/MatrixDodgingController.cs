@@ -140,6 +140,7 @@ namespace LemurFusion.Devotion.Components
             {
                 ai.customTarget.gameObject = target;
                 ai.customTarget.lastKnownBullseyePosition = closestPoint;
+                ai.customTarget.lastKnownBullseyePositionTime = Run.FixedTimeStamp.now;
             }
             return !ai.customTarget.unset;
         }
