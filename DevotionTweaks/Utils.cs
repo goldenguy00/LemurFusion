@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
 using LemurFusion.Config;
 using RoR2;
 using UnityEngine;
@@ -72,57 +73,125 @@ namespace LemurFusion
         #endregion
 
         #region Vector Math
-        public static Vector3 NearestPointOnTransform(Transform hitbox, Vector3 footPosition, out float distance)
-        {
-            // take slice
-            var bounds = new Bounds(Vector3.zero, hitbox.lossyScale);
-            var localFootPos = hitbox.InverseTransformPoint(footPosition);
-            var localClosest = bounds.ClosestPoint(localFootPos);
-            if (localClosest != localFootPos || (Mathf.Abs(bounds.size.x / bounds.size.y) < 2f))
-            {
-                distance = (localClosest - localFootPos).sqrMagnitude;
-                return hitbox.TransformPoint(localClosest);
-            }
 
-            return hitbox.TransformPoint(ClosetPointOnBounds(localFootPos, bounds, out distance));
+        public static Vector3 ClosestPointOnCollider(Collider collider, Vector3 worldPoint, out float distance)
+        {
+            var closestPoint = collider.ClosestPoint(worldPoint);
+
+            if ((closestPoint - worldPoint).sqrMagnitude < 0.001f)
+                return ClosestPointOnTransform(collider.transform, worldPoint, out distance);
+
+            distance = (closestPoint - worldPoint).sqrMagnitude;
+            return closestPoint;
         }
 
-        public static Vector3 ClosetPointOnBounds(Vector3 point, Bounds bounds, out float distance)
+        public static Vector3 ClosestPointOnTransform(Transform transform, Vector3 worldPoint, out float distance)
         {
-            var points = HG.ListPool<Vector3>.RentCollection();
+            var localPoint = transform.InverseTransformPoint(worldPoint);
+            var closestPoint = transform.TransformPoint(ClosestPointOnBounds(Vector3.zero, Vector3.one, localPoint, out distance));
 
-            var plane = new Plane(Vector3.up, bounds.max);
-            points.Add(plane.ClosestPointOnPlane(point));
+            distance = Mathf.Sign(distance) * (closestPoint - worldPoint).sqrMagnitude;
+            return closestPoint;
+        }
 
-            plane.SetNormalAndPosition(Vector3.down, bounds.min);
-            points.Add(plane.ClosestPointOnPlane(point));
+        public static Vector3 ClosestPointOnBounds(Vector3 position, Vector3 size, Vector3 otherPoint, out float distance)
+        {
+            var bounds = new Bounds(position, size);
 
-            plane.SetNormalAndPosition(Vector3.forward, bounds.max);
-            points.Add(plane.ClosestPointOnPlane(point));
-
-            plane.SetNormalAndPosition(Vector3.back, bounds.min);
-            points.Add(plane.ClosestPointOnPlane(point));
-
-            plane.SetNormalAndPosition(Vector3.right, bounds.max);
-            points.Add(plane.ClosestPointOnPlane(point));
-
-            plane.SetNormalAndPosition(Vector3.left, bounds.min);
-            points.Add(plane.ClosestPointOnPlane(point));
-
-            Vector3 closest = point;
-            distance = float.MaxValue;
-            foreach (var p in  points)
+            Vector3 closestPoint;
+            if (bounds.Contains(otherPoint))
             {
-                float dist = (p - point).sqrMagnitude;
-                if (dist < distance)
-                {
-                    distance = dist;
-                    closest = p;
-                }
+                closestPoint = bounds.ClosestPointInternal(otherPoint);
+                distance = -(closestPoint - otherPoint).sqrMagnitude;
+            }
+            else
+            {
+                closestPoint = bounds.ClosestPoint(otherPoint);
+                distance = (closestPoint - otherPoint).sqrMagnitude;
             }
 
-            return closest;
+            return closestPoint;
         }
+
+        public static Vector3 ClosestPointInternal(this ref Bounds bounds, Vector3 localPoint)
+        {
+            var max = bounds.max;
+            var min = bounds.min;
+
+            // right
+            var plane = new Plane(Vector3.right, max.x);
+            var closestPoint = plane.ClosestPointOnPlane(localPoint);
+            var distance = (closestPoint - localPoint).sqrMagnitude;
+
+            // left
+            plane.distance = min.x;
+            var planePoint = plane.ClosestPointOnPlane(localPoint);
+            var other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // up
+            plane.distance = max.y;
+            plane.normal = Vector3.up;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // down
+            plane.distance = min.y;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // forward
+            plane.distance = max.z;
+            plane.normal = Vector3.forward;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // back
+            plane.distance = min.z;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            return Vector3.MoveTowards(localPoint, closestPoint, -distance);
+        }
+
         #endregion
+        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
+        {
+            var component = go.GetComponent<T>();
+            if (!component)
+                return go.AddComponent<T>();
+            return component;
+        }
+        public static T GetOrAddComponent<T>(this Component c) where T : Component
+        {
+            var component = c.GetComponent<T>();
+            if (!component)
+                return c.gameObject.AddComponent<T>();
+            return component;
+        }
     }
 }

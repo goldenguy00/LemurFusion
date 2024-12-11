@@ -1,3 +1,11 @@
+# 1.8.0
+
+- Fixed propersave being required **again**
+- Projectile dodging changes
+- Fixed attacks being repeatedly fired when by elder lemurians
+- Small tweaks to regen and armor. They were a little bit too unkillable.
+- Other stuff probably its been a while
+
 # 1.7.0
 
 - Item displays

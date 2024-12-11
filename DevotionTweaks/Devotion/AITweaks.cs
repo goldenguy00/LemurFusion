@@ -33,9 +33,9 @@ namespace LemurFusion.Devotion
             if (improveAI.Value)
             {
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
+                LemHitboxGroupRevealer.Init();
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
-                DevotionTweaks.instance.bigBodyPrefab.GetComponent<SkillLocator>().primary.skillDef.canceledFromSprinting = false;
                 masterPrefab.AddComponent<MatrixDodgingController>();
                 masterPrefab.AddComponent<LineRenderer>();
                 var baseAI = masterPrefab.GetComponent<BaseAI>();
@@ -66,8 +66,6 @@ namespace LemurFusion.Devotion
                 component2.ignoreNodeGraph = true;
                 component2.shouldSprint = true;
                 component2.driverUpdateTimerOverride = Mathf.Clamp(updateFrequency.Value * 1.5f, 0.3f, 1f);
-                component2.activationRequiresAimTargetLoS = true;
-                component2.activationRequiresAimConfirmation = true;
 
                 var skillDrivers = masterPrefab.GetComponents<AISkillDriver>();
                 for (var i = 0; i < skillDrivers.Length; i++)

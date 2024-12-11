@@ -173,7 +173,7 @@ namespace LemurFusion.Config
             AITweaks.visualizeProjectileTracking = PluginConfig.BindOption(AI_CONFIG,
                 "Visualize Projectile Tracking",
                 false,
-                "Requires \"Enable Projectile Tracking\". Creates a line connecting the foot position to the tracked projectile.");
+                "Requires \"Enable Projectile Tracking\". Creates a line connecting the foot position to the tracked projectile and makes the hitbox visible.");
 
             AITweaks.updateFrequency = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "In Combat Update Frequency",
@@ -184,10 +184,10 @@ namespace LemurFusion.Config
 
             AITweaks.detectionRadius = PluginConfig.BindOptionSlider(AI_CONFIG,
                 "Detection Radius",
-                25,
+                5,
                 "Requires \"Enable Projectile Tracking\". Controls the size of the detection area to use when deciding whether running away is necessary. " +
                 "Distance from large AOE zones is estimated using the hitbox instead of center point to account for size and rotation.",
-                10, 40);
+                5, 20);
         }
 
         private static void ReadConfigExtended()
