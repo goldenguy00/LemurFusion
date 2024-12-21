@@ -109,7 +109,7 @@ namespace LemurFusion.Config
         {
             if (entry is ConfigEntry<string> stringEntry)
             {
-                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.StringInputFieldOption(stringEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.StringInputFieldOption(stringEntry, restartRequired), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
             if (entry is ConfigEntry<float> floatEntry)
@@ -120,27 +120,27 @@ namespace LemurFusion.Config
                     max = 20,
                     FormatString = "{0:0.00}",
                     restartRequired = restartRequired
-                }));
+                }), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
             if (entry is ConfigEntry<int> intEntry)
             {
-                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.IntSliderOption(intEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.IntSliderOption(intEntry, restartRequired), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
             if (entry is ConfigEntry<bool> boolEntry)
             {
-                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.CheckBoxOption(boolEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.CheckBoxOption(boolEntry, restartRequired), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
             if (entry is ConfigEntry<KeyboardShortcut> shortCutEntry)
             {
-                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.KeyBindOption(shortCutEntry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.KeyBindOption(shortCutEntry, restartRequired), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
             if (typeof(T).IsEnum)
             {
-                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.ChoiceOption(entry, restartRequired));
+                RiskOfOptions.ModSettingsManager.AddOption(new RiskOfOptions.Options.ChoiceOption(entry, restartRequired), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
         }
@@ -156,7 +156,7 @@ namespace LemurFusion.Config
                     max = (int)max,
                     formatString = "{0:0.00}",
                     restartRequired = restartRequired
-                }));
+                }), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
                 return;
             }
 
@@ -168,7 +168,7 @@ namespace LemurFusion.Config
                     max = max,
                     FormatString = "{0:0.00}",
                     restartRequired = restartRequired
-                }));
+                }), LemurFusionPlugin.PluginGUID, LemurFusionPlugin.PluginName);
             }
         }
         #endregion

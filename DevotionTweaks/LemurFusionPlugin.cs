@@ -21,7 +21,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.8.0";
+        public const string PluginVersion = "1.8.1";
 
         public static LemurFusionPlugin instance { get; private set; }
         

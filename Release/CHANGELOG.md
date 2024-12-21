@@ -1,3 +1,8 @@
+# 1.8.1
+
+- Fixed propersave being required **again**
+- AGAIN
+
 # 1.8.0
 
 - Fixed propersave being required **again**
