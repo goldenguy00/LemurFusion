@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LemurFusion", "DevotionTwea
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3AB74532-F0AE-494E-B473-38A8EAABB2EE}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		Release\CHANGELOG.md = Release\CHANGELOG.md
 		Release\manifest.json = Release\manifest.json
 		Release\README.md = Release\README.md

@@ -33,6 +33,7 @@ namespace LemurFusion.Devotion
             if (improveAI.Value)
             {
                 IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
+                LemHitboxGroupRevealer.Init();
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
                 masterPrefab.AddComponent<MatrixDodgingController>();
@@ -65,8 +66,6 @@ namespace LemurFusion.Devotion
                 component2.ignoreNodeGraph = true;
                 component2.shouldSprint = true;
                 component2.driverUpdateTimerOverride = Mathf.Clamp(updateFrequency.Value * 1.5f, 0.3f, 1f);
-                component2.activationRequiresAimTargetLoS = true;
-                component2.activationRequiresAimConfirmation = true;
 
                 var skillDrivers = masterPrefab.GetComponents<AISkillDriver>();
                 for (var i = 0; i < skillDrivers.Length; i++)
@@ -77,14 +76,14 @@ namespace LemurFusion.Devotion
                     {
                         case "DevotedSecondarySkill":
                             driver.minUserHealthFraction = 0.6f;
-                            driver.shouldSprint = true;
+                            driver.shouldSprint = false;
                             driver.activationRequiresAimConfirmation = true;
                             driver.maxDistance = 10f;
                             break;
                         case "StrafeAndShoot":
                             driver.maxDistance = 100f;
                             driver.activationRequiresAimTargetLoS = true;
-                            driver.shouldSprint = true;
+                            driver.shouldSprint = false;
                             break;
                         case "ReturnToLeaderDefault":
                             driver.driverUpdateTimerOverride = 0.2f;

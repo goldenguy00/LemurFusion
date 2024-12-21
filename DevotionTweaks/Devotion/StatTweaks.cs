@@ -128,9 +128,10 @@ namespace LemurFusion.Devotion
                 var fusionCount = lem.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
                 if (PluginConfig.rebalanceHealthScaling.Value)
                 {
-                    args.baseHealthAdd += sender.level * sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.baseRegenAdd += sender.level * (sender.outOfCombat ? Utils.GetLevelModifier(lem.DevotedEvolutionLevel) : Utils.GetLevelModifier(0));
-                    args.armorAdd += 20f + Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    var scaledHealth = sender.level * sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.baseHealthAdd += scaledHealth;
+                    args.baseRegenAdd += scaledHealth * 0.01f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.armorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
 
                     args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
                     args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, fusionCount, lem.DevotedEvolutionLevel);

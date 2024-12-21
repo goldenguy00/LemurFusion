@@ -3,19 +3,17 @@ using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace LemurFusion.Devotion.Components
 {
     public class MatrixDodgingController : MonoBehaviour
     {
-        private int escapeSkillIndex;
-        private int strafeSkillIndex;
-        private float escapeDistance;
-        private float safeDistance;
-        private float jumpPower = 1f;
-        private bool isMoon;
+        private int escapeSkillIndex, strafeSkillIndex;
+        private float escapeDistance, safeDistance;
 
         private BaseAI ai;
         private CharacterMaster master;
@@ -26,21 +24,17 @@ namespace LemurFusion.Devotion.Components
         {
             ai = GetComponent<BaseAI>();
             master = GetComponent<CharacterMaster>();
-            laserLineComponent = GetComponent<LineRenderer>();
+            laserLineComponent = this.GetOrAddComponent<LineRenderer>();
             DisableLaser();
 
             escapeSkillIndex = ai.skillDrivers.IndexOf(s => s.customName == AITweaks.SKILL_ESCAPE_NAME);
             strafeSkillIndex = ai.skillDrivers.IndexOf(s => s.customName == AITweaks.SKILL_STRAFE_NAME);
 
-            if (escapeSkillIndex != -1 && strafeSkillIndex != -1)
-            {
-                StartCoroutine(UpdateSkillDrivers());
-            }
+            StartCoroutine(UpdateSkillDrivers());
         }
 
         private IEnumerator UpdateSkillDrivers()
         {
-            TryInitMoon();
             while (master)
             {
                 while (!body || !AITweaks.enableProjectileTracking.Value)
@@ -51,18 +45,16 @@ namespace LemurFusion.Devotion.Components
                         break;
 
                     body = master.GetBody();
-                    TryInitMoon();
                 }
 
                 while (FindProjectiles(out var distance, out var shouldJump))
                 {
-                    AimLaser();
-
-                    var driver = distance < this.escapeDistance ? this.ai.skillDrivers[escapeSkillIndex] : this.ai.skillDrivers[strafeSkillIndex];
+                    AISkillDriver driver = distance < this.escapeDistance ? this.ai.skillDrivers[escapeSkillIndex] : this.ai.skillDrivers[strafeSkillIndex];
 
                     if (driver.customName != this.ai.selectedSkilldriverName || this.ai.skillDriverUpdateTimer > 0.2f)
                     {
                         driver.driverUpdateTimerOverride = Mathf.Clamp(AITweaks.updateFrequency.Value * 1.5f, 0.3f, 1f);
+
                         ai.BeginSkillDriver(new BaseAI.SkillDriverEvaluation
                         {
                             target = ai.customTarget,
@@ -74,31 +66,31 @@ namespace LemurFusion.Devotion.Components
                     if (body.characterMotor.isGrounded && shouldJump)
                     {
                         body.characterMotor.airControl = 1f;
-                        body.characterMotor.Jump(jumpPower, jumpPower);
+                        body.characterMotor.Jump(0.75f, 0.75f);
                     }
 
                     yield return new WaitForSeconds(AITweaks.updateFrequency.Value);
                     yield return new WaitForFixedUpdate();
                 }
-                DisableLaser();
 
                 yield return new WaitForSeconds(AITweaks.updateFrequency.Value);
             }
             yield break;
         }
 
+
         private bool FindProjectiles(out float distance, out bool shouldJump)
         {
+            this.escapeDistance = (AITweaks.detectionRadius.Value * 0.5f) * (AITweaks.detectionRadius.Value * 0.5f);
+            this.safeDistance = AITweaks.detectionRadius.Value * AITweaks.detectionRadius.Value;
+
             distance = safeDistance;
             shouldJump = false;
             if (!body || !master)
                 return false;
 
-            this.escapeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 1f : 0.5f), 2f);
-            this.safeDistance = Mathf.Pow(AITweaks.detectionRadius.Value * (isMoon ? 2f : 1f), 2f);
-
             GameObject target = null;
-            Vector3? closestPoint = null;
+            Vector3 closestPoint = Vector3.zero;
 
             var position = body.footPosition;
             var enemyTeams = TeamMask.GetEnemyTeams(body.master.teamIndex);
@@ -107,72 +99,100 @@ namespace LemurFusion.Devotion.Components
             {
                 if (projectile && enemyTeams.HasTeam(projectile.teamFilter.teamIndex))
                 {
-                    var transform = projectile.transform;
-                    if (projectile.gameObject.name.Contains("Sunder") && (transform.position - position).sqrMagnitude < this.safeDistance * 10f)
-                    {
+                    if (projectile.gameObject.name.Contains("Sunder") && (projectile.transform.position - position).sqrMagnitude < this.safeDistance * 9f)
                         shouldJump = true;
-                    }
 
-                    if (projectile.TryGetComponent<HitBoxGroup>(out var hitBoxGroup) && hitBoxGroup.hitBoxes != null)
+                    if (projectile.TryGetComponent<HitBoxGroup>(out var hitboxGroup))
                     {
-                        for (var j = 0; j < hitBoxGroup.hitBoxes.Length; j++)
+                        for (int i = 0; i < hitboxGroup.hitBoxes.Length; i++)
                         {
-                            var hitBox = hitBoxGroup.hitBoxes[j];
-                            if (hitBox)
+                            var estimatedPoint = Utils.ClosestPointOnTransform(hitboxGroup.hitBoxes[i].transform, position, out var other);
+                            if (other < distance)
                             {
-                                transform = hitBox.transform;
-                                if (transform)
-                                {
-                                    CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
-                                }
+                                distance = other;
+                                closestPoint = estimatedPoint;
+                                target = projectile.gameObject;
                             }
+                        }
+                    }
+                    else if (projectile.myColliders.Length > 0)
+                    {
+                        for (int i = 0; i < projectile.myColliders.Length; i++)
+                        {
+                            var estimatedPoint = Utils.ClosestPointOnCollider(projectile.myColliders[i], position, out var other);
+                            if (other < distance)
+                            {
+                                distance = other;
+                                closestPoint = estimatedPoint;
+                                target = projectile.gameObject;
+                            }
+                        }
+                    }
+                    else if (this.TryGetComponent<ProjectileExplosion>(out var impact))
+                    {
+                        var estimatedPoint = Utils.ClosestPointOnBounds(projectile.transform.position, Vector3.one * impact.blastRadius, position, out var other);
+                        if (other < distance)
+                        {
+                            distance = other;
+                            closestPoint = estimatedPoint;
+                            target = projectile.gameObject;
                         }
                     }
                     else
                     {
-                        CompareAndUpdateTargets(transform, position, ref distance, ref closestPoint, ref target);
+                        var estimatedPoint = Utils.ClosestPointOnTransform(projectile.transform, position, out var other);
+                        if (other < distance)
+                        {
+                            distance = other;
+                            closestPoint = estimatedPoint;
+                            target = projectile.gameObject;
+                        }
                     }
                 }
             }
 
-            ai.customTarget.Reset();
+            return SetAITarget(target, closestPoint);
+        }
+
+        private bool SetAITarget(GameObject target, Vector3 closestPoint)
+        {
+            if (ai.customTarget.gameObject && ai.customTarget.gameObject != target && ai.customTarget.gameObject.TryGetComponent<LemHitboxGroupRevealer>(out var revealer))
+                revealer.Reveal(false);
+
             if (target)
             {
-                ai.customTarget.gameObject = target;
+                ai.customTarget._gameObject = target;
                 ai.customTarget.lastKnownBullseyePosition = closestPoint;
-            }
-            return !ai.customTarget.unset;
-        }
+                ai.customTarget.lastKnownBullseyePositionTime = Run.FixedTimeStamp.now;
+                ai.customTarget.unset = false;
 
-        private void CompareAndUpdateTargets(Transform transform, Vector3 position, ref float distance, ref Vector3? closestPoint, ref GameObject target)
-        {
-            var estimatedPoint = Utils.NearestPointOnTransform(transform, position, out float other);
-            if (other < distance)
+                EnableLaser();
+            }
+            else
             {
-                distance = other;
-                closestPoint = estimatedPoint;
-                target = transform.gameObject;
-            }
-        }
+                ai.customTarget._gameObject = null;
+                ai.customTarget.lastKnownBullseyePosition = null;
+                ai.customTarget.lastKnownBullseyePositionTime = Run.FixedTimeStamp.negativeInfinity;
+                ai.customTarget.unset = true;
 
-        private void TryInitMoon()
-        {
-            if (SceneManager.GetActiveScene().name == "moon2" && !isMoon)
-            {
-                jumpPower = 0.75f;
-                isMoon = true;
+                DisableLaser();
             }
-        }
 
-        private void AimLaser()
+            return ai.customTarget.gameObject;
+        }
+        private void EnableLaser()
         {
             if (AITweaks.visualizeProjectileTracking.Value)
             {
+                ai.customTarget.gameObject.GetOrAddComponent<LemHitboxGroupRevealer>().Reveal(true);
+
                 laserLineComponent.enabled = true;
-                laserLineComponent.startWidth = 0.25f;
-                laserLineComponent.endWidth = 0.25f;
+                laserLineComponent.startWidth = 0.1f;
+                laserLineComponent.endWidth = 0.1f;
+
                 ai.customTarget.GetBullseyePosition(out var pos);
-                laserLineComponent.SetPositions([body.footPosition, pos + Vector3.up]);
+
+                laserLineComponent.SetPositions([body.footPosition, pos]);
             }
         }
 

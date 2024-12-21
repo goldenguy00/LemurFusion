@@ -8,45 +8,19 @@ using UnityEngine;
 
 namespace LemurFusion.Compat
 {
-    [HarmonyPatch(typeof(LemurianNames.LemurianNames), "UpdateNameFriend")]
+    [HarmonyPatch]
     public class LemurianUpdateNameFriend
     {
+        [HarmonyPatch(typeof(LemurianNames.LemurianNames), "UpdateNameFriend")]
+        [HarmonyPatch(typeof(LemurianNames.LemurianNames), "NameFriend")]
         [HarmonyFinalizer]
-        public static Exception Finalizer(Exception __exception)
-        {
-            if (__exception != null)
-            {
-                // An exception was thrown by the method!
-                LemurFusionPlugin.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames!");
-                LemurFusionPlugin.LogWarning(__exception.Message);
-            }
-
-            // return null so that no Exception is thrown. You could re-throw as a different Exception as well.
-            return null;
-        }
+        public static Exception Finalizer() => null;
     }
 
-    [HarmonyPatch(typeof(LemurianNames.LemurianNames), "NameFriend")]
-    public class LemurianNameFriend
-    {
-        [HarmonyFinalizer]
-        public static Exception Finalizer(Exception __exception)
-        {
-            if (__exception != null)
-            {
-                // An exception was thrown by the method!
-                LemurFusionPlugin.LogWarning("Exception was thrown by dependency bouncyshield.LemurianNames!");
-                LemurFusionPlugin.LogWarning(__exception.Message);
-            }
-
-            // return null so that no Exception is thrown. You could re-throw as a different Exception as well.
-            return null;
-        }
-    }
-
-    [HarmonyPatch(typeof(ProperSave.Data.CharacterMasterData), MethodType.Constructor, [typeof(CharacterMaster)])]
+    [HarmonyPatch]
     public class FixProperSave
     {
+        [HarmonyPatch(typeof(ProperSave.Data.CharacterMasterData), MethodType.Constructor, [typeof(CharacterMaster)])]
         [HarmonyPostfix]
         public static void Postfix(CharacterMaster master, ProperSave.Data.CharacterMasterData __instance)
         {
@@ -62,7 +36,7 @@ namespace LemurFusion.Compat
             }
         }
     }
-
+    /*
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI
     {
@@ -112,5 +86,5 @@ namespace LemurFusion.Compat
             }
             return devotedVariants;
         }
-    }
+    }*/
 }

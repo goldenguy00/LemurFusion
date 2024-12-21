@@ -21,7 +21,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.6.3";
+        public const string PluginVersion = "1.8.1";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -29,8 +29,8 @@ namespace LemurFusion
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
         public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
         public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
-        public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
-        public static bool sandInstalled => Chainloader.PluginInfos.ContainsKey("com.TeamSandswept.Sandswept");
+        //public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
+        //public static bool sandInstalled => Chainloader.PluginInfos.ContainsKey("com.TeamSandswept.Sandswept");
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public void Awake()
@@ -55,8 +55,8 @@ namespace LemurFusion
             if (LemurFusionPlugin.lemNamesInstalled)
                 CreateLemNameCompat(harmony);
 
-            if (LemurFusionPlugin.vApiInstalled)
-                CreateVAPICompat(harmony);
+            //if (LemurFusionPlugin.vApiInstalled)
+            //    CreateVAPICompat(harmony);
 
             if (LemurFusionPlugin.properSaveInstalled)
                 CreateProperSaveCompat(harmony);
@@ -65,15 +65,14 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void CreateLemNameCompat(Harmony harmony)
         {
-            harmony.CreateClassProcessor(typeof(LemurianNameFriend)).Patch();
             harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
         }
-
+        /*
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void CreateVAPICompat(Harmony harmony)
         {
             //harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
-        }
+        }*/
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void CreateProperSaveCompat(Harmony harmony)

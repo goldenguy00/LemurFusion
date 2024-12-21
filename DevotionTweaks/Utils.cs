@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
 using LemurFusion.Config;
 using RoR2;
 using UnityEngine;
@@ -72,31 +73,125 @@ namespace LemurFusion
         #endregion
 
         #region Vector Math
-        public static Vector3 NearestPointOnTransform(Transform hitbox, Vector3 footPosition, out float distance)
+
+        public static Vector3 ClosestPointOnCollider(Collider collider, Vector3 worldPoint, out float distance)
         {
-            // take slice
-            var pos = hitbox.position;
-            var rotation = hitbox.rotation;
-            var lossyScale = hitbox.lossyScale * 0.5f;
-            var posY = Mathf.Clamp(footPosition.y, pos.y - lossyScale.y, pos.y + lossyScale.y);
+            var closestPoint = collider.ClosestPoint(worldPoint);
 
-            var fr = rotation * new Vector3(pos.x + lossyScale.x, posY, pos.z + lossyScale.z);
-            var bl = rotation * new Vector3(pos.x - lossyScale.x, posY, pos.z - lossyScale.z);
-            var fl = rotation * new Vector3(pos.x + lossyScale.x, posY, pos.z - lossyScale.z);
-            var br = rotation * new Vector3(pos.x - lossyScale.x, posY, pos.z + lossyScale.z);
+            if ((closestPoint - worldPoint).sqrMagnitude < 0.001f)
+                return ClosestPointOnTransform(collider.transform, worldPoint, out distance);
 
-            // compare diagonals
-            var v1 = Util.ClosestPointOnLine(fl, br, footPosition);
-            var v2 = Util.ClosestPointOnLine(fr, bl, footPosition);
-
-            distance = (v1 - footPosition).sqrMagnitude;
-            var distance2 = (v2 - footPosition).sqrMagnitude;
-            if (distance < distance2)
-                return v1;
-
-            distance = distance2;
-            return v2;
+            distance = (closestPoint - worldPoint).sqrMagnitude;
+            return closestPoint;
         }
+
+        public static Vector3 ClosestPointOnTransform(Transform transform, Vector3 worldPoint, out float distance)
+        {
+            var localPoint = transform.InverseTransformPoint(worldPoint);
+            var closestPoint = transform.TransformPoint(ClosestPointOnBounds(Vector3.zero, Vector3.one, localPoint, out distance));
+
+            distance = Mathf.Sign(distance) * (closestPoint - worldPoint).sqrMagnitude;
+            return closestPoint;
+        }
+
+        public static Vector3 ClosestPointOnBounds(Vector3 position, Vector3 size, Vector3 otherPoint, out float distance)
+        {
+            var bounds = new Bounds(position, size);
+
+            Vector3 closestPoint;
+            if (bounds.Contains(otherPoint))
+            {
+                closestPoint = bounds.ClosestPointInternal(otherPoint);
+                distance = -(closestPoint - otherPoint).sqrMagnitude;
+            }
+            else
+            {
+                closestPoint = bounds.ClosestPoint(otherPoint);
+                distance = (closestPoint - otherPoint).sqrMagnitude;
+            }
+
+            return closestPoint;
+        }
+
+        public static Vector3 ClosestPointInternal(this ref Bounds bounds, Vector3 localPoint)
+        {
+            var max = bounds.max;
+            var min = bounds.min;
+
+            // right
+            var plane = new Plane(Vector3.right, max.x);
+            var closestPoint = plane.ClosestPointOnPlane(localPoint);
+            var distance = (closestPoint - localPoint).sqrMagnitude;
+
+            // left
+            plane.distance = min.x;
+            var planePoint = plane.ClosestPointOnPlane(localPoint);
+            var other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // up
+            plane.distance = max.y;
+            plane.normal = Vector3.up;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // down
+            plane.distance = min.y;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // forward
+            plane.distance = max.z;
+            plane.normal = Vector3.forward;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            // back
+            plane.distance = min.z;
+            planePoint = plane.ClosestPointOnPlane(localPoint);
+            other = (planePoint - localPoint).sqrMagnitude;
+            if (other < distance)
+            {
+                distance = other;
+                closestPoint = planePoint;
+            }
+
+            return Vector3.MoveTowards(localPoint, closestPoint, -distance);
+        }
+
         #endregion
+        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
+        {
+            var component = go.GetComponent<T>();
+            if (!component)
+                return go.AddComponent<T>();
+            return component;
+        }
+        public static T GetOrAddComponent<T>(this Component c) where T : Component
+        {
+            var component = c.GetComponent<T>();
+            if (!component)
+                return c.gameObject.AddComponent<T>();
+            return component;
+        }
     }
 }
