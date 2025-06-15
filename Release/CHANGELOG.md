@@ -1,3 +1,16 @@
+# 1.8.4
+
+- Fixed spawncard being null sometimes
+- Fixed itemDisplays
+
+# 1.8.3
+
+- Fixed perma devotion hooks
+
+# 1.8.2
+
+- Fixed Gold affix giving unintended amounts of money
+
 # 1.8.1
 
 - Fixed propersave being required **again**

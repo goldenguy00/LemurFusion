@@ -11,10 +11,16 @@ namespace LemurFusion
         #region Devotion Utils
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDevoted(CharacterBody body) => body && IsDevoted(body.master);
+        public static bool IsDevoted(CharacterBody body, out BetterLemurController lemCtrl) => IsDevoted(body ? body.master : null, out lemCtrl);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsDevoted(CharacterMaster master) => master && master.teamIndex == TeamIndex.Player && master.hasBody && master.TryGetComponent<BetterLemurController>(out var lemCtrl) && lemCtrl.LemurianInventory;
+        public static bool IsDevoted(CharacterMaster master, out BetterLemurController lemCtrl)
+        {
+            lemCtrl = null;
+            if (master && master.teamIndex == TeamIndex.Player && master.hasBody)
+                lemCtrl = master.GetComponent<BetterLemurController>();
+
+            return lemCtrl && lemCtrl.LemurianInventory;
+        }
 
         public static void ResetItem(this Inventory self, ItemIndex itemIndex, int count)
         {
@@ -179,19 +185,5 @@ namespace LemurFusion
         }
 
         #endregion
-        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
-        {
-            var component = go.GetComponent<T>();
-            if (!component)
-                return go.AddComponent<T>();
-            return component;
-        }
-        public static T GetOrAddComponent<T>(this Component c) where T : Component
-        {
-            var component = c.GetComponent<T>();
-            if (!component)
-                return c.gameObject.AddComponent<T>();
-            return component;
-        }
     }
 }
