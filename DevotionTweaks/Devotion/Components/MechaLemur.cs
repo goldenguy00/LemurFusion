@@ -6,34 +6,29 @@ using System.Linq;
 
 namespace LemurFusion.Devotion.Components
 {
-    public class MechaLemur
+    public static class MechaLemur
     {
-        private static GameObject chaingunDisplay, launcherDisplay, robotArm;
+        private static AssetReferenceGameObject chaingunDisplay, launcherDisplay, robotArm;
         private static Material mechaMat, wolfMat;
-
-        public static MechaLemur instance { get; private set; }
 
         public static void Init()
         {
-            if (instance != null)
-                return;
-
-            instance = new MechaLemur();
-        }
-
-        public MechaLemur()
-        {
             mechaMat = Addressables.LoadAssetAsync<Material>("RoR2/DLC1/DroneCommander/matDroneCommander.mat").WaitForCompletion();
             wolfMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/AttackSpeedOnCrit/matWolfhatOverlay.mat").WaitForCompletion();
-            robotArm = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponRobotArm.prefab").WaitForCompletion();
-            chaingunDisplay = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponMinigun.prefab").WaitForCompletion();
-            launcherDisplay = Addressables.LoadAssetAsync<GameObject>("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponLauncher.prefab").WaitForCompletion();
+            robotArm = new AssetReferenceGameObject("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponRobotArm.prefab");
+            chaingunDisplay = new AssetReferenceGameObject("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponMinigun.prefab");
+            launcherDisplay = new AssetReferenceGameObject("RoR2/DLC1/DroneWeapons/DisplayDroneWeaponLauncher.prefab");
             
             SetupChildLocator();
             SetupBigChildLocator();
 
             PopulatePrefab(DevotionTweaks.instance.bodyPrefab);
             PopulateBigPrefab(DevotionTweaks.instance.bigBodyPrefab);
+
+            R2API.TempVisualEffectAPI.AddTemporaryVisualEffect(LegacyResourcesAPI.Load<GameObject>("Prefabs/TemporaryVisualEffects/TeslaFieldBuffEffect"),
+                (body) => Utils.IsDevoted(body, out _) && body.inventory.GetItemCount(DLC1Content.Items.DroneWeaponsBoost) > 0,
+                false,
+                "Pelvis");
 
             On.RoR2.CharacterModel.UpdateOverlays += CharacterModel_UpdateOverlays;
         }
@@ -329,6 +324,7 @@ namespace LemurFusion.Devotion.Components
                                 localPos = rule.localPos * 10f,
                                 localAngles = rule.localAngles,
                                 childName = rule.childName,
+                                followerPrefabAddress = rule.followerPrefabAddress,
                                 followerPrefab = rule.followerPrefab,
                                 limbMask = rule.limbMask,
                                 ruleType = rule.ruleType
@@ -336,10 +332,10 @@ namespace LemurFusion.Devotion.Components
                             pairs.Remove(rule.childName);
                         }
 
-                        lemGroups.Add(new ItemDisplayRuleSet.KeyAssetRuleGroup()
+                        lemGroups.Add(new ItemDisplayRuleSet.KeyAssetRuleGroup
                         {
                             keyAsset = group.keyAsset,
-                            displayRuleGroup = new DisplayRuleGroup()
+                            displayRuleGroup = new DisplayRuleGroup
                             {
                                 rules = rules
                             }
@@ -367,12 +363,13 @@ namespace LemurFusion.Devotion.Components
                         for (int j = 0; j < rules.Length; j++)
                         {
                             rule = group.displayRuleGroup.rules[j];
-                            rules[j] = new()
+                            rules[j] = new ItemDisplayRule
                             {
                                 localScale = rule.localScale,
                                 localPos = rule.localPos,
                                 localAngles = rule.localAngles,
                                 childName = rule.childName,
+                                followerPrefabAddress = rule.followerPrefabAddress,
                                 followerPrefab = rule.followerPrefab,
                                 limbMask = rule.limbMask,
                                 ruleType = rule.ruleType
@@ -390,10 +387,10 @@ namespace LemurFusion.Devotion.Components
                             }
                         }
 
-                        lemGroups.Add(new ItemDisplayRuleSet.KeyAssetRuleGroup()
+                        lemGroups.Add(new ItemDisplayRuleSet.KeyAssetRuleGroup
                         {
                             keyAsset = group.keyAsset,
-                            displayRuleGroup = new DisplayRuleGroup()
+                            displayRuleGroup = new DisplayRuleGroup
                             {
                                 rules = rules
                             }
@@ -432,7 +429,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = chaingunDisplay,
+                                followerPrefabAddress = chaingunDisplay,
                                 limbMask = LimbFlags.None,
                                 childName = "Chest",
                                 localPos = new Vector3(0F, 2F, 1.3F),
@@ -452,7 +449,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = launcherDisplay,
+                                followerPrefabAddress = launcherDisplay,
                                 limbMask = LimbFlags.None,
                                 childName = "Chest",
                                 localPos = new Vector3(0F, 0.6F, 1F),
@@ -472,7 +469,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = robotArm,
+                                followerPrefabAddress = robotArm,
                                 limbMask = LimbFlags.None,
                                 childName = "MuzzleMouth",
                                 localPos = new Vector3(0.75F, 0.68F, -1.1F),
@@ -504,56 +501,56 @@ namespace LemurFusion.Devotion.Components
                 }*/
             ]);
 
-            UpdateDisplayRule(itemDisplayRules, "Behemoth", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "Behemoth", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0F, 2F, 2F),
                 localAngles = new Vector3(0F, 0F, 0F),
                 localScale = new Vector3(0.8F, 0.8F, 0.8F)
             });
-            UpdateDisplayRule(itemDisplayRules, "ArmorReductionOnHit", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "ArmorReductionOnHit", new ItemDisplayRule
             {
                 childName = "MuzzleMouth",
                 localPos = new Vector3(2.9F, 0.5F, -2F),
                 localAngles = new Vector3(1.5F, 93.3F, 13.4F),
                 localScale = new Vector3(2F, 2F, 2F)
             });
-            UpdateDisplayRule(itemDisplayRules, "AttackSpeedOnCrit", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "AttackSpeedOnCrit", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0, 1.45F, -0.5F),
                 localAngles = new Vector3(275F, 200F, 158F),
                 localScale = new Vector3(7.5F, 7.5F, 7.5F)
             });
-            UpdateDisplayRule(itemDisplayRules, "BonusGoldPackOnKill", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "BonusGoldPackOnKill", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(0F, -0.5F, 2.3F),
                 localAngles = new Vector3(30F, 0F, 0F),
                 localScale = new Vector3(0.8F, 0.8F, 0.8F)
             });
-            UpdateDisplayRule(itemDisplayRules, "BounceNearby", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "BounceNearby", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(0F, 1.7F, 3F),
                 localAngles = new Vector3(40.2F, 48.8F, 327.3F),
                 localScale = new Vector3(1F, 1F, 1F)
             });
-            UpdateDisplayRule(itemDisplayRules, "CritDamage", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "CritDamage", new ItemDisplayRule
             {
                 childName = "MuzzleMouth",
                 localPos = new Vector3(-2F, 0.5F, -2F),
                 localAngles = new Vector3(0F, 0F, 343.6F),
                 localScale = new Vector3(1F, 1F, 1F)
             });
-            UpdateDisplayRule(itemDisplayRules, "CritGlasses", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "CritGlasses", new ItemDisplayRule
             {
                 childName = "MuzzleMouth",
                 localPos = new Vector3(0F, 1.5F, -0.6F),
                 localAngles = new Vector3(0F, 0F, 0F),
                 localScale = new Vector3(2.3F, 2.3F, 2.3F)
             });
-            UpdateDisplayRule(itemDisplayRules, "Crowbar", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "Crowbar", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(-1.1F, -0.4F, 2.3F),
@@ -561,42 +558,42 @@ namespace LemurFusion.Devotion.Components
                 localScale = new Vector3(3F, 3F, 3F)
             });
             UpdateDisplayRule(itemDisplayRules, "DelayedDamage", "Stomach");
-            UpdateDisplayRule(itemDisplayRules, "EquipmentMagazine", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "EquipmentMagazine", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(0F, 0.4F, 2.8F),
                 localAngles = new Vector3(0F, 91.3F, 0.4F),
                 localScale = new Vector3(1.5F, 1.5F, 1.5F)
             });
-            UpdateDisplayRule(itemDisplayRules, "EquipmentMagazineVoid", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "EquipmentMagazineVoid", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(0F, 0.4F, 2.8F),
                 localAngles = new Vector3(0F, 91.3F, 0.4F),
                 localScale = new Vector3(1.5F, 1.5F, 1.5F)
             });
-            UpdateDisplayRule(itemDisplayRules, "ExtraLife", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "ExtraLife", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(1.1F, 2.9F, 1.8F),
                 localAngles = new Vector3(296.1F, 152.7F, 8.5F),
                 localScale = new Vector3(2F, 2F, 2F)
             });
-            UpdateDisplayRule(itemDisplayRules, "ExtraLifeVoid", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "ExtraLifeVoid", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0F, 3F, -1F),
                 localAngles = new Vector3(284.1F, 173.6F, 196.4F),
                 localScale = new Vector3(2F, 2F, 2F)
             });
-            UpdateDisplayRule(itemDisplayRules, "ExtraShrineItem", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "ExtraShrineItem", new ItemDisplayRule
             {
                 childName = "Hip",
                 localPos = new Vector3(2.4F, 2.2F, 1F),
                 localAngles = new Vector3(7.9F, 26.5F, 173.9F),
                 localScale = new Vector3(1.4F, 1.4F, 1.4F)
             });
-            UpdateDisplayRule(itemDisplayRules, "ExtraShrineItem", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "ExtraShrineItem", new ItemDisplayRule
             {
                 childName = "Hip",
                 localPos = new Vector3(2.4F, 2.2F, 1F),
@@ -604,42 +601,42 @@ namespace LemurFusion.Devotion.Components
                 localScale = new Vector3(1.4F, 1.4F, 1.4F)
             });
             UpdateDisplayRule(itemDisplayRules, "ExtraStatsOnLevelUp", "UpperArmL");
-            UpdateDisplayRule(itemDisplayRules, "FallBoots", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "FallBoots", new ItemDisplayRule
             {
                 childName = "FootL",
                 localPos = new Vector3(0.1F, -0.9F, -0.9F),
                 localAngles = new Vector3(274.9F, 244.6F, 121.6F),
                 localScale = new Vector3(2F, 2F, 2F)
             }, 
-            new ItemDisplayRule()
+            new ItemDisplayRule
             {
                 childName = "FootR",
                 localPos = new Vector3(-0.1F, -0.9F, -0.7F),
                 localAngles = new Vector3(273.7F, 282F, 78.4F),
                 localScale = new Vector3(2F, 2F, 2F)
             });
-            UpdateDisplayRule(itemDisplayRules, "FlatHealth", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "FlatHealth", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0.7F, 3.3F, 0.4F),
                 localAngles = new Vector3(360F, 165.4F, 192.7F),
                 localScale = new Vector3(1F, 1F, 1F)
             });
-            UpdateDisplayRule(itemDisplayRules, "GhostOnKill", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "GhostOnKill", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0F, 2.8F, -0.1F),
                 localAngles = new Vector3(285.8F, 183.9F, 175.5F),
                 localScale = new Vector3(6F, 6F, 6F)
             });
-            UpdateDisplayRule(itemDisplayRules, "GoldOnHit", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "GoldOnHit", new ItemDisplayRule
             {
                 childName = "Head",
                 localPos = new Vector3(0.1F, -1.7F, -0.1F),
                 localAngles = new Vector3(8.5F, 0F, 0F),
                 localScale = new Vector3(11.5F, 11.5F, 11.5F)
             });
-            UpdateDisplayRule(itemDisplayRules, "HealOnCrit", new ItemDisplayRule()
+            UpdateDisplayRule(itemDisplayRules, "HealOnCrit", new ItemDisplayRule
             {
                 childName = "Chest",
                 localPos = new Vector3(1.6F, 1.7F, 3.1F),
@@ -653,6 +650,7 @@ namespace LemurFusion.Devotion.Components
         private static void UpdateDisplayRule(List<ItemDisplayRuleSet.KeyAssetRuleGroup> rules, string key, ItemDisplayRule newRule)
         {
             var group = rules.First(x => x.keyAsset.name == key).displayRuleGroup;
+            newRule.followerPrefabAddress = group.rules[0].followerPrefabAddress;
             newRule.followerPrefab = group.rules[0].followerPrefab;
             newRule.limbMask = group.rules[0].limbMask;
             newRule.ruleType = group.rules[0].ruleType;
@@ -662,12 +660,14 @@ namespace LemurFusion.Devotion.Components
         private static void UpdateDisplayRule(List<ItemDisplayRuleSet.KeyAssetRuleGroup> rules, string key, ItemDisplayRule newRule, ItemDisplayRule newRule2)
         {
             var group = rules.First(x => x.keyAsset.name == key).displayRuleGroup;
+            newRule.followerPrefabAddress = group.rules[0].followerPrefabAddress;
             newRule.followerPrefab = group.rules[0].followerPrefab;
             newRule.limbMask = group.rules[0].limbMask;
             newRule.ruleType = group.rules[0].ruleType;
 
             group.rules[0] = newRule;
             
+            newRule2.followerPrefabAddress = group.rules[1].followerPrefabAddress;
             newRule2.followerPrefab = group.rules[1].followerPrefab;
             newRule2.limbMask = group.rules[1].limbMask;
             newRule2.ruleType = group.rules[1].ruleType;
@@ -701,7 +701,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = chaingunDisplay,
+                                followerPrefabAddress = chaingunDisplay,
                                 limbMask = LimbFlags.None,
                                 childName = "Chest",
                                 localPos = new Vector3(0F, 2F, 1.3F),
@@ -721,7 +721,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = launcherDisplay,
+                                followerPrefabAddress = launcherDisplay,
                                 limbMask = LimbFlags.None,
                                 childName = "Chest",
                                 localPos = new Vector3(0F, 0.6F, 1F),
@@ -741,7 +741,7 @@ namespace LemurFusion.Devotion.Components
                             new ItemDisplayRule
                             {
                                 ruleType = ItemDisplayRuleType.ParentedPrefab,
-                                followerPrefab = robotArm,
+                                followerPrefabAddress = robotArm,
                                 limbMask = LimbFlags.None,
                                 childName = "MuzzleMouth",
                                 localPos = new Vector3(0.75F, 0.68F, -1.1F),
@@ -776,10 +776,10 @@ namespace LemurFusion.Devotion.Components
             model.itemDisplayRuleSet.keyAssetRuleGroups = [.. itemDisplayRules];
         }
 
-        private void CharacterModel_UpdateOverlays(On.RoR2.CharacterModel.orig_UpdateOverlays orig, CharacterModel self)
+        private static void CharacterModel_UpdateOverlays(On.RoR2.CharacterModel.orig_UpdateOverlays orig, CharacterModel self)
         {
             orig.Invoke(self);
-            if (self.materialsDirty && Utils.IsDevoted(self.body) && self.body.inventory.GetItemCount(DLC1Content.Items.DroneWeaponsBoost) > 0)
+            if (self.materialsDirty && Utils.IsDevoted(self.body, out _) && self.body.inventory.GetItemCount(DLC1Content.Items.DroneWeaponsBoost) > 0)
             {
                 if (self.activeOverlayCount < CharacterModel.maxOverlays)
                     self.currentOverlays[self.activeOverlayCount++] = wolfMat;

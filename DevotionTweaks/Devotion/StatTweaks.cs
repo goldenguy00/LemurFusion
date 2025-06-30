@@ -30,26 +30,28 @@ namespace LemurFusion.Devotion
 
         #region Hooks
         #region UI
-        private static string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster) => Utils.IsDevoted(characterMaster) ? characterMaster.GetBody()?.GetDisplayName() : orig(characterMaster);
+        private static string Util_GetBestMasterName(On.RoR2.Util.orig_GetBestMasterName orig, CharacterMaster characterMaster) => Utils.IsDevoted(characterMaster, out _) ? characterMaster.GetBody()?.GetDisplayName() : orig(characterMaster);
 
         private static string CharacterBody_GetDisplayName(On.RoR2.CharacterBody.orig_GetDisplayName orig, CharacterBody self)
         {
             var baseName = orig(self);
-            if (!string.IsNullOrEmpty(baseName) && Utils.IsDevoted(self))
+
+            if (!string.IsNullOrEmpty(baseName) && Utils.IsDevoted(self, out var lemCtrl))
             {
-                var lemCtrl = self.master.GetComponent<BetterLemurController>();
-                var fusionCount = lemCtrl.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
+                var fusionCount = lemCtrl.FusionCount;
                 if (fusionCount > 0)
                 {
                     return $"{baseName} <style=cStack>x{fusionCount}</style>";
                 }
             }
+
             return baseName;
         }
 
         private static void ScoreboardController_Rebuild(On.RoR2.UI.ScoreboardController.orig_Rebuild orig, RoR2.UI.ScoreboardController self)
         {
             orig(self);
+
             if (!PluginConfig.enableMinionScoreboard.Value)
                 return;
 
@@ -86,12 +88,12 @@ namespace LemurFusion.Devotion
         #region Stats
         private static void CharacterBody_onBodyStartGlobal(CharacterBody lemBody)
         {
-            if (Utils.IsDevoted(lemBody))
+            if (Utils.IsDevoted(lemBody, out var lemCtrl))
             {
                 if (AITweaks.disableFallDamage.Value)
-                    lemBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage | CharacterBody.BodyFlags.ResistantToAOE;
+                    lemBody.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
                 if (AITweaks.immuneToVoidDeath.Value)
-                    lemBody.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath | CharacterBody.BodyFlags.OverheatImmune;
+                    lemBody.bodyFlags |= CharacterBody.BodyFlags.ImmuneToVoidDeath | CharacterBody.BodyFlags.OverheatImmune | CharacterBody.BodyFlags.ResistantToAOE;
 
                 if (PluginConfig.disableTeamCollision.Value)
                 {
@@ -107,11 +109,10 @@ namespace LemurFusion.Devotion
                     {
                         if (PluginConfig.miniElders.Value && lemBody.bodyIndex == BodyCatalog.FindBodyIndex(DevotionTweaks.devotedBigLemBodyName))
                         {
-                            var init = PluginConfig.initScaleValue.Value * 0.01f;
+                            var init = Mathf.Max(0.01f, PluginConfig.initScaleValue.Value * 0.01f);
                             var stack = PluginConfig.scaleValue.Value * 0.01f;
-                            var count = lemBody.master.inventory.GetItemCount(CU8Content.Items.LemurianHarness);
 
-                            lemModel.localScale = Vector3.one * (init + (stack * count));
+                            lemModel.localScale = Vector3.one * (init + (stack * lemCtrl.FusionCount));
                         }
 
                         if (lemModel.TryGetComponent<FootstepHandler>(out var footstep))
@@ -123,25 +124,23 @@ namespace LemurFusion.Devotion
 
         private static void RecalculateStatsAPI_GetStatCoefficients(CharacterBody sender, RecalculateStatsAPI.StatHookEventArgs args)
         {
-            if (Utils.IsDevoted(sender) && sender.master.TryGetComponent<BetterLemurController>(out var lem) && lem.LemurianInventory)
+            if (Utils.IsDevoted(sender, out var lemCtrl))
             {
-                var fusionCount = lem.LemurianInventory.GetItemCount(CU8Content.Items.LemurianHarness);
-                if (PluginConfig.rebalanceHealthScaling.Value)
+                var fusionCount = lemCtrl.FusionCount;
+                if (PluginConfig.rebalanceStatScaling.Value)
                 {
-                    var scaledHealth = sender.level * sender.levelMaxHealth * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    var scaledHealth = sender.level * sender.levelMaxHealth * Utils.GetLevelModifier(lemCtrl.DevotedEvolutionLevel);
                     args.baseHealthAdd += scaledHealth;
-                    args.baseRegenAdd += scaledHealth * 0.01f * Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
-                    args.armorAdd += Utils.GetLevelModifier(lem.DevotedEvolutionLevel);
+                    args.baseRegenAdd += scaledHealth * 0.005f * Utils.GetLevelModifier(lemCtrl.DevotedEvolutionLevel);
 
-                    args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
-                    args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, fusionCount, lem.DevotedEvolutionLevel);
-                    args.attackSpeedMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultAttackSpeed.Value, fusionCount, lem.DevotedEvolutionLevel);
+                    args.healthMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultHealth.Value, fusionCount, lemCtrl.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultDamage.Value, fusionCount, lemCtrl.DevotedEvolutionLevel);
+                    args.attackSpeedMultAdd += Utils.GetFusionStatMultiplier(PluginConfig.statMultAttackSpeed.Value, fusionCount, lemCtrl.DevotedEvolutionLevel);
                 }
                 else
                 {
-                    args.healthMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
-                    args.damageMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, lem.DevotedEvolutionLevel);
-                    args.attackSpeedMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, 0);
+                    args.healthMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultHealth.Value, fusionCount, lemCtrl.DevotedEvolutionLevel);
+                    args.damageMultAdd += Utils.GetVanillaStatModifier(PluginConfig.statMultDamage.Value, fusionCount, lemCtrl.DevotedEvolutionLevel);
                 }
             }
         }

@@ -16,6 +16,7 @@ public class BetterLemurController : DevotedLemurianController
     public new Inventory LemurianInventory => this._lemurianMaster ? this._lemurianMaster.inventory : null;
     public new CharacterBody LemurianBody => this._lemurianMaster ? this._lemurianMaster.GetBody() : null;
     public Inventory PersonalInventory { get; set; }
+    public int FusionCount => LemurianInventory?.GetItemCount(CU8Content.Items.LemurianHarness) ?? 0;
 
     public void InitializeDevotedLemurian()
     {
@@ -27,7 +28,7 @@ public class BetterLemurController : DevotedLemurianController
         if (LemurianInventory)
         {
             var inv = this._lemurianMaster.inventory;
-            if (inv.GetItemCount(CU8Content.Items.LemurianHarness) == 0)
+            if (FusionCount == 0)
                 inv.AddItemsFrom(this.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
 
             ShareItem(this.DevotionItem);
@@ -104,8 +105,9 @@ public class BetterLemurController : DevotedLemurianController
                 placementMode = DirectorPlacementRule.PlacementMode.Direct,
                 position = raycastHit.point
             };
-            DirectorCore.instance.TrySpawnObject(new DirectorSpawnRequest(Addressables.LoadAssetAsync<SpawnCard>
-                ("RoR2/CU8/LemurianEgg/iscLemurianEgg.asset").WaitForCompletion(), placementRule, new Xoroshiro128Plus(0UL)));
+            DirectorCore.instance.TrySpawnObject(new DirectorSpawnRequest(
+                Addressables.LoadAssetAsync<SpawnCard>("RoR2/CU8/LemurianEgg/iscLemurianEgg.asset").WaitForCompletion(), 
+                placementRule, new Xoroshiro128Plus(0UL)));
         }
 
         if (this._lemurianMaster)

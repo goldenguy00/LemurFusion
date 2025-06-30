@@ -26,7 +26,7 @@ namespace LemurFusion.Config
         public static ConfigEntry<bool> enableDetailedLogs;
         public static ConfigEntry<bool> disableTeamCollision;
 
-        public static ConfigEntry<bool> rebalanceHealthScaling;
+        public static ConfigEntry<bool> rebalanceStatScaling;
         public static ConfigEntry<int> statMultHealth;
         public static ConfigEntry<int> statMultDamage;
         public static ConfigEntry<int> statMultAttackSpeed;

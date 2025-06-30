@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Utilities;
+﻿using MiscFixes.Modules;
+using Newtonsoft.Json.Utilities;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.Projectile;
@@ -24,7 +25,7 @@ namespace LemurFusion.Devotion.Components
         {
             ai = GetComponent<BaseAI>();
             master = GetComponent<CharacterMaster>();
-            laserLineComponent = this.GetOrAddComponent<LineRenderer>();
+            laserLineComponent = this.GetComponent<LineRenderer>() ?? this.gameObject.AddComponent<LineRenderer>();
             DisableLaser();
 
             escapeSkillIndex = ai.skillDrivers.IndexOf(s => s.customName == AITweaks.SKILL_ESCAPE_NAME);

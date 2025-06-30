@@ -13,15 +13,13 @@ namespace LemurFusion
     [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("bouncyshield.LemurianNames", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.KingEnderBrine.ProperSave", BepInDependency.DependencyFlags.SoftDependency)]
-    //[BepInDependency("com.Nebby.VAPI", BepInDependency.DependencyFlags.SoftDependency)]
-    //[BepInDependency("com.TeamSandswept.Sandswept", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class LemurFusionPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.8.1";
+        public const string PluginVersion = "1.8.4";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -29,8 +27,6 @@ namespace LemurFusion
         public static bool lemNamesInstalled => Chainloader.PluginInfos.ContainsKey("bouncyshield.LemurianNames");
         public static bool properSaveInstalled => Chainloader.PluginInfos.ContainsKey("com.KingEnderBrine.ProperSave");
         public static bool riskyInstalled => Chainloader.PluginInfos.ContainsKey("com.RiskyLives.RiskyMod");
-        //public static bool vApiInstalled => Chainloader.PluginInfos.ContainsKey("com.Nebby.VAPI");
-        //public static bool sandInstalled => Chainloader.PluginInfos.ContainsKey("com.TeamSandswept.Sandswept");
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public void Awake()
@@ -55,9 +51,6 @@ namespace LemurFusion
             if (LemurFusionPlugin.lemNamesInstalled)
                 CreateLemNameCompat(harmony);
 
-            //if (LemurFusionPlugin.vApiInstalled)
-            //    CreateVAPICompat(harmony);
-
             if (LemurFusionPlugin.properSaveInstalled)
                 CreateProperSaveCompat(harmony);
         }
@@ -67,12 +60,6 @@ namespace LemurFusion
         {
             harmony.CreateClassProcessor(typeof(LemurianUpdateNameFriend)).Patch();
         }
-        /*
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static void CreateVAPICompat(Harmony harmony)
-        {
-            //harmony.CreateClassProcessor(typeof(VarianceAPI)).Patch();
-        }*/
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void CreateProperSaveCompat(Harmony harmony)

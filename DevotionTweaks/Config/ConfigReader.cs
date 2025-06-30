@@ -117,7 +117,7 @@ namespace LemurFusion.Config
             //
             // stats
             //
-            PluginConfig.rebalanceHealthScaling = PluginConfig.BindOption(STATS,
+            PluginConfig.rebalanceStatScaling = PluginConfig.BindOption(STATS,
                 "Rebalance Stat Scaling",
                 true,
                 "Rebalances base stats and stat scaling so that new summons on later stages have an easier time surviving and elder lemurians dont get buffed as much");
