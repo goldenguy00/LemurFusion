@@ -47,10 +47,10 @@
       <HintPath>..\libs\LemurianNames.dll</HintPath>
     </Reference>
     <Reference Include="MiscFixes">
-      <HintPath>..\..\..\_CORE\MysticFixes\Release\MiscFixes.dll</HintPath>
+      <HintPath>..\libs\MiscFixes.dll</HintPath>
     </Reference>
     <Reference Include="ProperSave">
-      <HintPath>..\..\..\SharedRef\ProperSave.dll</HintPath>
+      <HintPath>..\libs\ProperSave.dll</HintPath>
     </Reference>
     <Reference Include="RiskyMod">
       <HintPath>..\libs\RiskyMod.dll</HintPath>
