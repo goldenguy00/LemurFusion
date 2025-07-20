@@ -56,7 +56,7 @@ namespace LemurFusion.Config
             PluginConfig.showPersonalInventory = PluginConfig.BindOption(GENERAL,
                 "Individual Scoreboard Inventories",
                 true,
-                "Enable to display a scoreboard entry for each lemurian you control. Scoreboard entry will show the items that each minion contributes to the shared inventory.\r\n" +
+                "Enable to display a scoreboard entry for each lemurian you control. Scoreboard entries will show the items that each minion contributes to the shared inventory.\r\n" +
                 "Purely visual, does not change vanilla item sharing mechanics.");
 
             PluginConfig.highTierElitesOnly = PluginConfig.BindOption(GENERAL,
@@ -65,9 +65,9 @@ namespace LemurFusion.Config
                 "When rerolling the fully evolved elite elder lemurian aspects, should it always be a lategame elite type?");
 
             PluginConfig.permaDevotion = PluginConfig.BindOption(GENERAL,
-                "Permenant Devotion",
+                "Permanent Devotion",
                 false,
-                "When enabled, the devotion artifact no longer have any effect, Instead, the egg spawnrate will be decided by \"Egg Spawn Chance\"." +
+                "When enabled, the Devotion artifact will no longer have any effect. Instead, the egg spawnrate will be decided by \"Egg Spawn Chance\"." +
                 " Disable this option if you would like to be able to toggle the artifact's effects like normal.",
                 true);
 
@@ -89,7 +89,7 @@ namespace LemurFusion.Config
             PluginConfig.enableSharedInventory = PluginConfig.BindOption(EXPERIMENTAL,
                 "Enable Shared Inventory",
                 true,
-                "If set to false, the shared inventory will not be used and instead unique inventory will be used for every lemurian you control.\r\n" +
+                "If set to false, the shared inventory will not be used and instead a unique inventory will be used for every lemurian you control.\r\n" +
                 "Disabling this setting will make all lemurians visible on the scoreboard.",
                 true);
 
@@ -125,25 +125,25 @@ namespace LemurFusion.Config
             PluginConfig.statMultHealth = PluginConfig.BindOptionSlider(STATS,
                 "Fusion Health Increase",
                 20,
-                "Health multiplier for each lemur fusion, in percent.",
+                "Health Multiplier for each lemur fusion, in percent.",
                 0, 100);
 
             PluginConfig.statMultDamage = PluginConfig.BindOptionSlider(STATS,
                 "Fusion Damage Increase",
                 20,
-                "Damage multiplier for each lemur fusion, in percent.",
+                "Damage Multiplier for each lemur fusion, in percent.",
                 0, 100);
 
             PluginConfig.statMultAttackSpeed = PluginConfig.BindOptionSlider(STATS,
                 "Fusion Attack Speed Increase",
                 20,
-                "Attack speed multiplier for each lemur fusion, in percent.",
+                "Attack Speed Multiplier for each lemur fusion, in percent.",
                 0, 100);
 
             PluginConfig.statMultEvo = PluginConfig.BindOptionSlider(STATS,
                 "Evolution Stat Modifier",
                 100,
-                "Additional Health and Damage Multiplier for per Evolution Stage, in percent. Vanilla is 100.",
+                "Additional Health and Damage Multiplier per Evolution Stage, in percent. Vanilla is 100.",
                 0, 200);
         }
 
@@ -234,17 +234,17 @@ namespace LemurFusion.Config
             ConfigExtended.DeathDrop_DropEgg = PluginConfig.BindOption(DEATH,
 				"Egg On Death", 
 				false, 
-				"Should minions revert to an egg when they are killed off?");
+				"Should lemurs revert to an egg when they die?");
 
             ConfigExtended.DeathDrop_DropAll = PluginConfig.BindOption(DEATH,
                 "Drop Duplicate Items",
                 false,
-                "When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you gave originally.");
+                "When items are dropped on death, should it drop additional items equal to the number of stacks? Can result in getting more items back than you originally gave up.");
 
             ConfigExtended.DeathDrop_ItemType = PluginConfig.BindOption(DEATH, 
 				"Item Dropped On Death",
 				DevotionTweaks.DeathItem.Scrap, 
-				"What kind of item to drop when minions are killed.",
+				"What kind of item to drop when lemurs are killed.",
 				true);
 
             ConfigExtended.DeathDrops_TierToItem_Map_Raw = PluginConfig.BindOption(DEATH, 
@@ -279,7 +279,7 @@ namespace LemurFusion.Config
 			ConfigExtended.Blacklisted_ItemTiers_Raw = PluginConfig.BindOption(BLACKLIST, 
 				"Tier Blacklist",
 				"LunarTierDef, VoidTier1Def, VoidTier2Def, VoidTier3Def, VoidBossDef",
-				"Item tiers prevented from being given to minions.",
+				"Item tiers prevented from being given to lemurs.",
 				true);
 		}
 	}
