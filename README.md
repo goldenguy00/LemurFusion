@@ -6,7 +6,7 @@ Makes your lemurians fuse together like dragonball!
 
 
 ---
-# Found Bug or Have Suggestions?
+# Found a Bug or Have Suggestions?
 
 - Contact me at
 
@@ -21,17 +21,21 @@ Makes your lemurians fuse together like dragonball!
 
 - Set the number of lemur buddies you want and trying to summon any more than that will juice up the existing fellows.
 
-- Designed to be a full scale rework but still compatible with all other mods
+- Designed to be a full scale rework of Devotion mechanics, but still compatible with all other mods.
+
+- Optional Permanent Devotion mode, mixing lemur eggs in with normal drone spawns.
 
 - Cracked af AI! Uses predictive aiming, actively dodges, strafes and jumps projectiles while continuing to fight back.
 
 - Rebalancing of stats and scaling for better survivability later on.
 
-- Stat multipliers per fusion, similar to dronemeld, while still retaining the vanilla HP and damage buffs that they would get on evolution.
+- Stat multipliers per fusion, similar to Dronemeld and MinionMeld, while still retaining vanilla HP and damage buffs on evolution.
 
 - Supports any modded elites!
 
 - Fully supports RiskyMod Ally changes!
+
+- Cute af mini-elder evolution stage that gradually grows bigger to show evolution progress.
 
 - Lemurians will switch between the various high tier elite types once they are fully evolved.
 
@@ -43,7 +47,8 @@ Makes your lemurians fuse together like dragonball!
 
 - Lemurians can use the vanilla shared inventory or have an inventory entirely to themselves.
 
-- ... And much, much more! Nearly all features are configurable.
+- Your lemurian buddies have full item displays!
+
 
 
 ### *(WORK IN PROGRESS, SOME FUTURE PLANS COMING SOON)*
@@ -60,6 +65,8 @@ Makes your lemurians fuse together like dragonball!
 - !!! Subject to Change, this list may not be entirely accurate.
 
 - Total number of lemur buddies you can have
+
+- Toggleable Permanent Devotion, with a configurable chance to replace drone spawns.
 
 - Disable fall damage and void insta-kill death
 
