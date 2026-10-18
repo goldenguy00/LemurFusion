@@ -29,10 +29,10 @@ namespace LemurFusion.Devotion
 
         private static void DevotedLemurianController_OnDevotedBodyDead(On.DevotedLemurianController.orig_OnDevotedBodyDead orig, DevotedLemurianController self)
         {
-            if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl._lemurianMaster &&
-                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLife") &&
-                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLifeShrine") &&
-                !lemCtrl._lemurianMaster.IsInvoking("RespawnExtraLifeVoid"))
+            if (self is BetterLemurController lemCtrl && lemCtrl && lemCtrl.LemurianMaster &&
+                !lemCtrl.LemurianMaster.IsInvoking("RespawnExtraLife") &&
+                !lemCtrl.LemurianMaster.IsInvoking("RespawnExtraLifeShrine") &&
+                !lemCtrl.LemurianMaster.IsInvoking("RespawnExtraLifeVoid"))
             {
                 lemCtrl.KillYourSelf();
             }

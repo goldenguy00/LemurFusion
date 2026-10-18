@@ -41,7 +41,7 @@ namespace LemurFusion.Devotion
         }
         private static bool DevotionInventoryController_isDevotionEnable(Func<bool> orig)
         {
-            return PluginConfig.permaDevotion.Value || orig();
+            return orig() || PluginConfig.permaDevotion.Value;
         }
 
         #region IL Hooks
@@ -49,19 +49,17 @@ namespace LemurFusion.Devotion
         {
             var c = new ILCursor(il);
 
-            if (c.TryGotoNext(MoveType.AfterLabel,
-                i => i.MatchLdstr("shouldn't evolve!"),
-                i => i.MatchCall<UE.Debug>("LogError")))
+            if (c.TryGotoNext(MoveType.After,
+                    x => x.MatchSwitch(out _)
+                ))
             {
                 c.Emit(OpCodes.Ldarg_1);
-                c.EmitDelegate(delegate (DevotedLemurianController lem)
+                c.EmitDelegate<Action<DevotedLemurianController>>((lem) =>
                 {
                     var list = PluginConfig.highTierElitesOnly.Value ? BetterInventoryController.gigaChadLvl : DevotionInventoryController.highLevelEliteBuffs;
-                    
-                    var idx = UE.Random.Range(0, list.Count);
-                    lem.LemurianInventory.SetEquipmentIndex(list[idx]);
+                    if (list.Any())
+                        lem.LemurianInventory.SetEquipmentIndex(list[UE.Random.Range(0, list.Count)]);
                 });
-                c.RemoveRange(2);
             }
             else
                 LemurFusionPlugin.LogError("Hook failed for DevotionInventoryController_EvolveDevotedLumerian #2");
@@ -83,23 +81,12 @@ namespace LemurFusion.Devotion
             if (!NetworkServer.active)
                 return;
 
-            if (lem is BetterLemurController lemCtrl && lemCtrl && lemCtrl._lemurianMaster)
+            if (lem is BetterLemurController lemCtrl && lemCtrl && self is BetterInventoryController betterCtrl)
             {
-                if (lemCtrl.PersonalInventory)
-                {
-                    foreach (var item in lemCtrl.PersonalInventory.itemAcquisitionOrder.ToList())
-                    {
-                        if (lemCtrl.BetterInventoryController)
-                            lemCtrl.BetterInventoryController.GiveItem(item);
+                betterCtrl.ShareAllItems(lemCtrl);
 
-                        if (lemCtrl.LemurianInventory)
-                            lemCtrl.LemurianInventory.GiveItem(item);
-
-                        lemCtrl.ShareItem(item);
-                    }
-                }
-
-                if (BetterInventoryController.activationSoundEventDef)
+                var body = lemCtrl.LemurianBody;
+                if (BetterInventoryController.activationSoundEventDef && body)
                 {
                     EffectManager.SimpleSoundEffect(BetterInventoryController.activationSoundEventDef.index, lemCtrl.LemurianBody.transform.position, transmit: true);
                 }

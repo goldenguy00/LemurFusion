@@ -16,7 +16,7 @@ namespace LemurFusion.Compat
         [HarmonyFinalizer]
         public static Exception Finalizer() => null;
     }
-
+    /*
     [HarmonyPatch]
     public class FixProperSave
     {
@@ -35,7 +35,7 @@ namespace LemurFusion.Compat
                 }
             }
         }
-    }
+    }*/
     /*
     [HarmonyPatch(typeof(VAPI.VariantCatalog), "RegisterVariantsFromPacks")]
     public class VarianceAPI

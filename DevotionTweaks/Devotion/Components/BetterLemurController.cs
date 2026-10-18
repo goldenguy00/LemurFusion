@@ -8,94 +8,66 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using HG;
 
 public class BetterLemurController : DevotedLemurianController
 {
     #region Lemur Instance
     public BetterInventoryController BetterInventoryController => base._devotionInventoryController as BetterInventoryController;
-    public new Inventory LemurianInventory => this._lemurianMaster ? this._lemurianMaster.inventory : null;
-    public new CharacterBody LemurianBody => this._lemurianMaster ? this._lemurianMaster.GetBody() : null;
-    public Inventory PersonalInventory { get; set; }
-    public int FusionCount => LemurianInventory?.GetItemCount(CU8Content.Items.LemurianHarness) ?? 0;
+    public int FusionCount => LemurianInventory.GetItemCountPermanent(CU8Content.Items.LemurianHarness);
+    public CharacterMaster LemurianMaster => this._lemurianMaster;
+
+    public new Inventory LemurianInventory { get; private set; }
+    public Inventory PersonalInventory { get; private set; }
+
+    private void Awake()
+    {
+        this._lemurianMaster = GetComponent<CharacterMaster>();
+        this.LemurianInventory = GetComponent<Inventory>();
+        this.PersonalInventory = GetComponents<Inventory>().Last();
+    }
 
     public void InitializeDevotedLemurian()
     {
         this._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
 
-        if (!this.PersonalInventory)
-            this.PersonalInventory = this._lemurianMaster.GetComponents<Inventory>().Last();
+        if (this.FusionCount == 0)
+            this.BetterInventoryController.ChannelSharedItems(this);
 
-        if (LemurianInventory)
-        {
-            var inv = this._lemurianMaster.inventory;
-            if (FusionCount == 0)
-                inv.AddItemsFrom(this.BetterInventoryController._devotionMinionInventory, ConfigExtended.Blacklist_Filter);
+        this.BetterInventoryController.ShareInitialItem(this, this.DevotionItem);
 
-            ShareItem(this.DevotionItem);
-
-            inv.GiveItem(this.DevotionItem);
-            inv.GiveItem(CU8Content.Items.LemurianHarness.itemIndex);
-            inv.ResetItem(RoR2Content.Items.MinionLeash.itemIndex, 1);
-            inv.ResetItem(RoR2Content.Items.UseAmbientLevel.itemIndex, 1);
-            inv.ResetItem(RoR2Content.Items.TeleportWhenOob.itemIndex, 1);
-            if (LemurFusionPlugin.riskyInstalled)
-                AddRiskyAllyItem();
-        }
+        LemurianInventory.GiveItemPermanent(CU8Content.Items.LemurianHarness.itemIndex);
+        LemurianInventory.ResetItem(RoR2Content.Items.MinionLeash.itemIndex, 1);
+        LemurianInventory.ResetItem(RoR2Content.Items.UseAmbientLevel.itemIndex, 1);
+        LemurianInventory.ResetItem(RoR2Content.Items.TeleportWhenOob.itemIndex, 1);
+        //if (LemurFusionPlugin.riskyInstalled)
+        //    AddRiskyAllyItem();
     }
 
-    public void ShareItem(ItemIndex item)
-    {
-        if (this.PersonalInventory)
-            this.PersonalInventory.GiveItem(item);
-
-        if (PluginConfig.enableSharedInventory.Value)
-        {
-            foreach (var friend in this.BetterInventoryController.GetFriends(this))
-            {
-                friend.LemurianInventory.GiveItem(item);
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public void AddRiskyAllyItem()
-    {
-        LemurianInventory.ResetItem(RiskyMod.Allies.AllyItems.AllyMarkerItem.itemIndex, 1);
-    }
+    //[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    //public void AddRiskyAllyItem()
+    //{
+    //    LemurianInventory.ResetItem(RiskyMod..AllyMarkerItem.itemIndex, 1);
+    //}
 
     public void KillYourSelf()
     {
-        bool sharing = DevotionTweaks.instance.EnableSharedInventory && this.BetterInventoryController;
-        var friends = sharing ? this.BetterInventoryController.GetFriends() : [];
-
-        if (this.PersonalInventory)
+        using var _0 = ListPool<ItemIndex>.RentCollection(out var itemStacks);
+        this.PersonalInventory.permanentItemStacks.GetNonZeroIndices(itemStacks);
+        foreach (var item in itemStacks)
         {
-            foreach (var item in this.PersonalInventory.itemAcquisitionOrder.ToList())
+            var pickupIndex = FindPickupIndex(item);
+            if (pickupIndex != PickupIndex.none)
             {
-                var count = this.PersonalInventory.GetItemCount(item);
-                if (count <= 0)
-                    continue;
-
-                if (sharing)
+                var dropCount = ConfigExtended.DeathDrop_DropAll.Value ? this.PersonalInventory.GetItemCountPermanent(item) : 1;
+                for (var i = 0; i < dropCount; i++)
                 {
-                    this.BetterInventoryController.RemoveItem(item, System.Math.Min(count, this.BetterInventoryController._devotionMinionInventory.GetItemCount(item)));
-                    foreach (var friend in friends)
-                    {
-                        friend.LemurianInventory.RemoveItem(item, System.Math.Min(count, friend.LemurianInventory.GetItemCount(item)));
-                    }
-                }
-
-                var pickupIndex = FindPickupIndex(item);
-                if (pickupIndex != PickupIndex.none)
-                {
-                    var dropCount = ConfigExtended.DeathDrop_DropAll.Value ? count : 1;
-                    for (var i = 0; i < dropCount; i++)
-                    {
-                        PickupDropletController.CreatePickupDroplet(pickupIndex, this.LemurianBody.corePosition, Random.insideUnitCircle * 15f);
-                    }
+                    PickupDropletController.CreatePickupDroplet(new UniquePickup(pickupIndex), this.LemurianBody.corePosition, Random.insideUnitCircle * 15f, false);
                 }
             }
         }
+
+        BetterInventoryController.UnChannelSharedItems(this);
 
         if (ConfigExtended.DeathDrop_DropEgg.Value && this.LemurianBody && Physics.Raycast(this.LemurianBody.corePosition,
             Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))

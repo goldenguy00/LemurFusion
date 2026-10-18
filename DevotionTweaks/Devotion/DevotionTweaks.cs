@@ -15,7 +15,8 @@ using RoR2.Projectile;
 using static RoR2.FriendlyFireManager;
 using HarmonyLib;
 using RoR2.Skills;
-using RoR2BepInExPack.GameAssetPaths;
+using RoR2BepInExPack.GameAssetPathsBetter;
+using RoR2.Scripts.GameBehaviors;
 
 namespace LemurFusion.Devotion
 {
@@ -148,15 +149,6 @@ namespace LemurFusion.Devotion
             bigBody.baseArmor = 0;
             bigBody.levelArmor = 0.5f;
 
-            var betterLemInvCtrlPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/NetworkedObjects/DevotionMinionInventory");
-            UE.Object.DestroyImmediate(betterLemInvCtrlPrefab.GetComponent<DevotionInventoryController>());
-            betterLemInvCtrlPrefab.AddComponent<BetterInventoryController>().sfxLocator = betterLemInvCtrlPrefab.GetComponent<SfxLocator>();
-            BetterInventoryController.s_effectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect");
-            LegacyResourcesAPI.LoadAsyncCallback("NetworkSoundEventDefs/nseNullifiedBuffApplied", delegate (NetworkSoundEventDef asset)
-            {
-                BetterInventoryController.activationSoundEventDef = asset;
-            });
-
             masterPrefab = Addressables.LoadAssetAsync<GameObject>(RoR2_CU8_LemurianEgg.DevotedLemurianMaster_prefab).WaitForCompletion();
             UE.Object.DestroyImmediate(masterPrefab.GetComponent<DevotedLemurianController>());
             masterPrefab.AddComponent<BetterLemurController>();
@@ -166,19 +158,36 @@ namespace LemurFusion.Devotion
             bruiserMasterPrefab = masterPrefab.InstantiateClone(devotedBruiserMasterName, true);
             bruiserMasterPrefab.GetComponent<CharacterMaster>().bodyPrefab = bigBodyPrefab;
 
+            LegacyResourcesAPI.LoadAsyncCallback("Prefabs/NetworkedObjects/DevotionMinionInventory", delegate (GameObject asset)
+            {
+                UE.Object.DestroyImmediate(asset.GetComponent<DevotionInventoryController>());
+                asset.AddComponent<BetterInventoryController>().sfxLocator = asset.GetComponent<SfxLocator>();
+            });
+
+            LegacyResourcesAPI.LoadAsyncCallback("Prefabs/Effects/OrbEffects/ItemTakenOrbEffect", delegate (GameObject asset)
+            {
+                BetterInventoryController.s_effectPrefab = asset;
+            });
+
+            LegacyResourcesAPI.LoadAsyncCallback("NetworkSoundEventDefs/nseNullifiedBuffApplied", delegate (NetworkSoundEventDef asset)
+            {
+                BetterInventoryController.activationSoundEventDef = asset;
+            });
+
             Addressables.LoadAssetAsync<SkillDef>(RoR2_Base_LemurianBruiser.LemurianBruiserBodyPrimary_asset).Completed +=
                 (task) => task.Result.interruptPriority = EntityStates.InterruptPriority.Any;
 
             Addressables.LoadAssetAsync<SkillDef>(RoR2_Base_LemurianBruiser.LemurianBruiserBodySecondary_asset).Completed +=
                 (task) => task.Result.interruptPriority = EntityStates.InterruptPriority.Any;
 
-            var itemDef = Addressables.LoadAssetAsync<ItemDef>(RoR2_CU8_Harness.LemurianHarness_asset).WaitForCompletion();
-            itemDef.tags = [.. itemDef.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct()];
+            Addressables.LoadAssetAsync<ItemDef>(RoR2_CU8_Harness.LemurianHarness_asset).Completed +=
+                (task) => task.Result.tags = task.Result.tags.Concat([ItemTag.BrotherBlacklist, ItemTag.CannotSteal]).Distinct().ToArray();
 
-            var fireball = Addressables.LoadAssetAsync<GameObject>(RoR2_Base_Lemurian.Fireball_prefab).WaitForCompletion();
-            fireball.GetComponent<ProjectileDamage>().damageType.damageSource = DamageSource.Primary;
-            var fireball2 = Addressables.LoadAssetAsync<GameObject>(RoR2_Base_LemurianBruiser.LemurianBigFireball_prefab).WaitForCompletion();
-            fireball.GetComponent<ProjectileDamage>().damageType.damageSource = DamageSource.Primary;
+            Addressables.LoadAssetAsync<GameObject>(RoR2_Base_Lemurian.Fireball_prefab).Completed +=
+                (task) => task.Result.GetComponent<ProjectileDamage>().damageType.damageSource = DamageSource.Primary;
+
+            Addressables.LoadAssetAsync<GameObject>(RoR2_Base_LemurianBruiser.LemurianBigFireball_prefab).Completed +=
+                (task) => task.Result.GetComponent<ProjectileDamage>().damageType.damageSource = DamageSource.Primary;
         }
         #endregion
 
@@ -202,7 +211,7 @@ namespace LemurFusion.Devotion
                         list.Add(new PickupPickerController.Option
                         {
                             available = true,
-                            pickupIndex = pickupIndex
+                            pickup = new UniquePickup(pickupIndex)
                         });
                     }
                 }
@@ -240,21 +249,22 @@ namespace LemurFusion.Devotion
                 if (lemMaster && lemCount >= PluginConfig.maxLemurs.Value)
                     return lemMaster;
             }
+
             return orig(self);
         }
 
         private static void PopulateScene(ILContext il)
         {
             var c = new ILCursor(il);
-
-            if (c.TryGotoNext(MoveType.After,
-                    i => i.MatchCallOrCallvirt(AccessTools.PropertyGetter(typeof(RunArtifactManager), nameof(RunArtifactManager.instance))),
-                    i => i.MatchLdsfld("RoR2.CU8Content/Artifacts", "Devotion"),
-                    i => i.MatchCallOrCallvirt<RunArtifactManager>(nameof(RunArtifactManager.IsArtifactEnabled))
+            int loc = 0;
+            if (c.TryGotoNext(
+                    x => x.MatchLdfld<SceneDirector>(nameof(SceneDirector.lumerianEgg)),
+                    i => i.MatchStloc(out loc)
                 ))
             {
+                c.Index++;
                 c.Emit(OpCodes.Pop);
-                c.Emit(OpCodes.Ldc_I4_0);
+                c.Emit(OpCodes.Ldloc, loc);
             }
             else
             {
@@ -273,12 +283,12 @@ namespace LemurFusion.Devotion
                     if (!DevotionInventoryController.isDevotionEnable)
                         return originalCard;
 
-                    if (!(originalCard is InteractableSpawnCard originalIsc && originalIsc.skipSpawnWhenDevotionArtifactEnabled))
-                        return originalCard;
-
-                    if (self.rng.RangeInt(0, 100) < Math.Clamp(PluginConfig.eggSpawnChance.Value, 0, 100))
+                    if (originalCard is InteractableSpawnCard originalIsc && originalIsc.skipSpawnWhenDevotionArtifactEnabled)
                     {
-                        return Addressables.LoadAssetAsync<SpawnCard>(RoR2_CU8_LemurianEgg.iscLemurianEgg_asset).WaitForCompletion();
+                        if (self.rng.RangeInt(0, 100) < Math.Clamp(PluginConfig.eggSpawnChance.Value, 0, 100))
+                        {
+                            return self.lumerianEgg?.spawnCard ?? Addressables.LoadAssetAsync<SpawnCard>(RoR2_CU8_LemurianEgg.iscLemurianEgg_asset).WaitForCompletion();
+                        }
                     }
 
                     return originalCard;

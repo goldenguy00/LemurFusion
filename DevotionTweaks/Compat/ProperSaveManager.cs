@@ -26,13 +26,7 @@ namespace LemurFusion.Compat
 
         public void LoadData(BetterLemurController lemCtrl)
         {
-            if (lemCtrl && lemCtrl._lemurianMaster)
-            {
-                if (!lemCtrl.PersonalInventory)
-                    lemCtrl.PersonalInventory = lemCtrl._lemurianMaster.GetComponents<Inventory>().Last();
-
-                devotedItemData.LoadInventory(lemCtrl.PersonalInventory);
-            }
+            devotedItemData.LoadInventory(lemCtrl.PersonalInventory);
         }
     }
 
@@ -97,5 +91,4 @@ namespace LemurFusion.Compat
             }
         }
     }
-
 }

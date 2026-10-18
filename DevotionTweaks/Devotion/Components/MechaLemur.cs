@@ -26,7 +26,7 @@ namespace LemurFusion.Devotion.Components
             PopulateBigPrefab(DevotionTweaks.instance.bigBodyPrefab);
 
             R2API.TempVisualEffectAPI.AddTemporaryVisualEffect(LegacyResourcesAPI.Load<GameObject>("Prefabs/TemporaryVisualEffects/TeslaFieldBuffEffect"),
-                (body) => Utils.IsDevoted(body, out _) && body.inventory.GetItemCount(DLC1Content.Items.DroneWeaponsBoost) > 0,
+                (body) => Utils.IsDevoted(body, out _) && body.inventory.GetItemCountPermanent(DLC1Content.Items.DroneWeaponsBoost) > 0,
                 false,
                 "Pelvis");
 
@@ -779,7 +779,7 @@ namespace LemurFusion.Devotion.Components
         private static void CharacterModel_UpdateOverlays(On.RoR2.CharacterModel.orig_UpdateOverlays orig, CharacterModel self)
         {
             orig.Invoke(self);
-            if (self.materialsDirty && Utils.IsDevoted(self.body, out _) && self.body.inventory.GetItemCount(DLC1Content.Items.DroneWeaponsBoost) > 0)
+            if (self.materialsDirty && Utils.IsDevoted(self.body, out _) && self.body.inventory.GetItemCountPermanent(DLC1Content.Items.DroneWeaponsBoost) > 0)
             {
                 if (self.activeOverlayCount < CharacterModel.maxOverlays)
                     self.currentOverlays[self.activeOverlayCount++] = wolfMat;

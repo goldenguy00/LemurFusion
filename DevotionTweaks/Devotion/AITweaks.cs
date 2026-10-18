@@ -32,7 +32,6 @@ namespace LemurFusion.Devotion
         {
             if (improveAI.Value)
             {
-                IL.EntityStates.AI.Walker.Combat.UpdateAI += Combat_UpdateAI;
                 LemHitboxGroupRevealer.Init();
 
                 var masterPrefab = DevotionTweaks.instance.masterPrefab;
@@ -108,33 +107,5 @@ namespace LemurFusion.Devotion
                 }
             }
         }
-
-        private static void Combat_UpdateAI(ILContext il)
-        {
-            ILCursor c = new(il);
-
-            if (c.TryGotoNext(MoveType.Before,
-                    i => i.MatchLdcI4(0),
-                    i => i.MatchStloc(13)
-                ))
-            {
-                c.Emit(OpCodes.Ldloc, 12);
-                c.Emit(OpCodes.Ldloc, 15);
-                c.Emit(OpCodes.Ldarg_0);
-                c.Emit<Combat>(OpCodes.Ldfld, nameof(Combat.dominantSkillDriver));
-                c.EmitDelegate<Func<Vector3, Vector3, AISkillDriver, Vector3>>((position, fleeDirection, skillDriver) =>
-                {
-                    if (skillDriver && (skillDriver.customName == SKILL_STRAFE_NAME || skillDriver.customName == "StrafeNearbyEnemies"))
-                        return position - (fleeDirection * 0.5f);
-                    return position;
-                });
-                c.Emit(OpCodes.Stloc, 12);
-            }
-            else
-            {
-                LemurFusionPlugin.LogError("EntityStates.AI.Walker.Combat.UpdateAI IL Hook failed");
-            }
-        }
-
     }
 }

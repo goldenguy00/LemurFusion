@@ -19,7 +19,7 @@ namespace LemurFusion
     {
         public const string PluginGUID = "com.score.LemurFusion";
         public const string PluginName = "LemurFusion";
-        public const string PluginVersion = "1.8.4";
+        public const string PluginVersion = "1.9.0";
 
         public static LemurFusionPlugin instance { get; private set; }
         
@@ -51,8 +51,8 @@ namespace LemurFusion
             if (LemurFusionPlugin.lemNamesInstalled)
                 CreateLemNameCompat(harmony);
 
-            if (LemurFusionPlugin.properSaveInstalled)
-                CreateProperSaveCompat(harmony);
+            //if (LemurFusionPlugin.properSaveInstalled)
+            //    CreateProperSaveCompat(harmony);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -64,8 +64,8 @@ namespace LemurFusion
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private static void CreateProperSaveCompat(Harmony harmony)
         {
-            harmony.CreateClassProcessor(typeof(FixProperSave)).Patch();
-            ProperSaveManager.Init();
+            //harmony.CreateClassProcessor(typeof(FixProperSave)).Patch();
+            //ProperSaveManager.Init();
         }
 
         #region Logging

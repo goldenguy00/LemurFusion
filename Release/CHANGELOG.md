@@ -1,3 +1,10 @@
+# 1.9.1
+- Fixed for HC
+
+# 1.9.0
+
+- Fixed for AC
+
 # 1.8.4
 
 - Fixed spawncard being null sometimes

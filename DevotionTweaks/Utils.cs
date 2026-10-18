@@ -1,8 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using LemurFusion.Config;
 using RoR2;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace LemurFusion
 {
@@ -22,28 +24,12 @@ namespace LemurFusion
             return lemCtrl && lemCtrl.LemurianInventory;
         }
 
-        public static void ResetItem(this Inventory self, ItemIndex itemIndex, int count)
+        public static void ResetItem(this Inventory self, ItemIndex itemIndex, int target)
         {
-            if (count == 0)
+            var current = self.GetItemCountPermanent(itemIndex);
+            if (current != target)
             {
-                self.itemAcquisitionOrder.Remove(itemIndex);
-                self.ResetItem(itemIndex);
-            }
-            else if ((uint)itemIndex < self.itemStacks.Length)
-            {
-                ref int reference = ref self.itemStacks[(int)itemIndex];
-                if (reference != count)
-                {
-                    if (reference == 0)
-                    {
-                        self.itemAcquisitionOrder.Add(itemIndex);
-                        self.SetDirtyBit(8u);
-                    }
-
-                    reference = count;
-                    self.SetDirtyBit(1u);
-                    self.HandleInventoryChanged();
-                }
+                self.GiveItemPermanent(itemIndex, target - current);
             }
         }
         #endregion
@@ -84,7 +70,7 @@ namespace LemurFusion
         {
             var closestPoint = collider.ClosestPoint(worldPoint);
 
-            if ((closestPoint - worldPoint).sqrMagnitude < 0.001f)
+            if ((closestPoint - worldPoint).sqrMagnitude < 0.01f)
                 return ClosestPointOnTransform(collider.transform, worldPoint, out distance);
 
             distance = (closestPoint - worldPoint).sqrMagnitude;
@@ -101,9 +87,13 @@ namespace LemurFusion
         }
 
         public static Vector3 ClosestPointOnBounds(Vector3 position, Vector3 size, Vector3 otherPoint, out float distance)
-        {
+        {       
             var bounds = new Bounds(position, size);
+            return bounds.ClosestPointOnBounds(ref otherPoint, out distance);
+        }
 
+        public static Vector3 ClosestPointOnBounds(this ref Bounds bounds, ref Vector3 otherPoint, out float distance)
+        {
             Vector3 closestPoint;
             if (bounds.Contains(otherPoint))
             {
@@ -119,7 +109,7 @@ namespace LemurFusion
             return closestPoint;
         }
 
-        public static Vector3 ClosestPointInternal(this ref Bounds bounds, Vector3 localPoint)
+        private static Vector3 ClosestPointInternal(this ref Bounds bounds, Vector3 localPoint)
         {
             var max = bounds.max;
             var min = bounds.min;

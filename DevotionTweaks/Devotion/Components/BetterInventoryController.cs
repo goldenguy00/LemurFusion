@@ -1,5 +1,9 @@
-﻿using RoR2;
+﻿using Grumpy.UnitTest;
+using HG;
+using LemurFusion.Config;
 using R2API;
+using RoR2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Networking;
@@ -8,6 +12,7 @@ namespace LemurFusion.Devotion.Components
 {
     public class BetterInventoryController : DevotionInventoryController
     {
+
         #region Static Methods
         public static List<EquipmentIndex> gigaChadLvl = [];
 
@@ -123,7 +128,7 @@ namespace LemurFusion.Devotion.Components
                     foreach (var minionOwnership in minionGroup.members)
                     {
                         if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend) &&
-                            friend && friend != self && friend.LemurianInventory)
+                            friend && friend != self && friend.LemurianInventory && friend.PersonalInventory)
                         {
                             friends.Add(friend);
                         }
@@ -132,24 +137,181 @@ namespace LemurFusion.Devotion.Components
             }
             return friends;
         }
-
-
-        public static List<BetterLemurController> GetFriends(NetworkInstanceId masterID)
+        public static List<BetterLemurController> GetFriends(NetworkInstanceId netId)
         {
-            List<BetterLemurController> lemCtrlList = [];
-            var minionGroup = MinionOwnership.MinionGroup.FindGroup(masterID);
+            List<BetterLemurController> friends = [];
+            var minionGroup = MinionOwnership.MinionGroup.FindGroup(netId);
             if (minionGroup != null)
             {
                 foreach (var minionOwnership in minionGroup.members)
                 {
-                    if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend) && friend && friend.PersonalInventory)
+                    if (minionOwnership && minionOwnership.TryGetComponent<BetterLemurController>(out var friend) &&
+                        friend && friend.LemurianInventory && friend.PersonalInventory)
                     {
-                        lemCtrlList.Add(friend);
+                        friends.Add(friend);
+                    }
+                }
+            }
+            return friends;
+        }
+
+        private new void Awake()
+        {
+            _devotionMinionInventory = GetComponent<Inventory>();
+        }
+
+
+        public void ShareInitialItem(BetterLemurController lem, ItemIndex item)
+        {
+            this.GiveItem(item);
+            lem.PersonalInventory.GiveItemPermanent(item);
+            lem.LemurianInventory.GiveItemPermanent(item);
+
+            if (DevotionTweaks.instance.EnableSharedInventory == false)
+                return;
+
+            foreach (var friend in GetFriends(lem))
+            {
+                friend.LemurianInventory.GiveItemChanneled(item);
+            }
+        }
+
+        public void ShareAllItems(BetterLemurController lem)
+        {
+            Inventory src = lem.PersonalInventory;
+            if (src == null)
+                return;
+
+            using var _1 = ListPool<ItemIndex>.RentCollection(out var allItems);
+            using var _2 = ItemCatalog.PerItemBufferPool.RequestTemp(out int[] allStacks);
+
+            src.permanentItemStacks.GetNonZeroIndices(allItems);
+            src.WriteAllPermanentItemStacks(allStacks);
+
+
+            Inventory dest = this._devotionMinionInventory;
+            if (dest)
+            {
+                using (var _0 = new Inventory.InventoryChangeScope(dest))
+                {
+                    for (int i = 0; i < allItems.Count; i++)
+                    {
+                        ItemIndex itemIndex = allItems[i];
+                        dest.ChangeItemStacksCount(new Inventory.GiveItemPermanentImpl
+                        {
+                            inventory = dest
+                        }, itemIndex, allStacks[(int)itemIndex]);
                     }
                 }
             }
 
-            return lemCtrlList;
+
+            foreach (var friend in GetFriends())
+            {
+                if (DevotionTweaks.instance.EnableSharedInventory == false && friend != lem)
+                    continue;
+
+                dest = friend.LemurianInventory;
+                using (var _0 = new Inventory.InventoryChangeScope(dest))
+                {
+                    for (int i = 0; i < allItems.Count; i++)
+                    {
+                        ItemIndex itemIndex = allItems[i];
+                        dest.ChangeItemStacksCount(new Inventory.GiveItemChanneledImpl
+                        {
+                            inventory = dest
+                        }, itemIndex, allStacks[(int)itemIndex]);
+                    }
+                }
+            }
+        }
+
+        public void ChannelSharedItems(BetterLemurController lem)
+        {
+            if (DevotionTweaks.instance.EnableSharedInventory == false)
+                return;
+
+            Inventory dest = lem.LemurianInventory;
+            if (dest == null)
+                return;
+
+            using var _1 = CollectionPool<ItemIndex, HashSet<ItemIndex>>.RentCollection(out var allItems);
+            using var _2 = ItemCatalog.PerItemBufferPool.RequestTemp(out int[] allStacks);
+            using var _3 = ListPool<ItemIndex>.RentCollection(out var lemItems);
+
+            foreach (var friend in GetFriends(lem))
+            {
+                var src = friend.PersonalInventory;
+
+                lemItems.Clear();
+                src.permanentItemStacks.GetNonZeroIndices(lemItems);
+                for (int i = 0; i < lemItems.Count; i++)
+                {
+                    ItemIndex itemIndex = lemItems[i];
+                    allItems.Add(itemIndex);
+
+                    ref var stack = ref allStacks[(int)itemIndex];
+                    stack += src.permanentItemStacks.GetStackValue(itemIndex);
+                }
+            }
+
+            using var _0 = new Inventory.InventoryChangeScope(dest);
+            foreach (var itemIndex in allItems)
+            {
+                dest.ChangeItemStacksCount(new Inventory.GiveItemChanneledImpl
+                {
+                    inventory = dest
+                }, itemIndex, allStacks[(int)itemIndex]);
+            }
+        }
+
+        public void UnChannelSharedItems(BetterLemurController lem)
+        {
+            Inventory src = lem.PersonalInventory;
+            if (src == null)
+                return;
+
+            using var _1 = ListPool<ItemIndex>.RentCollection(out var allItems);
+            using var _2 = ItemCatalog.PerItemBufferPool.RequestTemp(out int[] allStacks);
+
+            src.permanentItemStacks.GetNonZeroIndices(allItems);
+            src.WriteAllPermanentItemStacks(allStacks);
+
+
+            Inventory dest = this._devotionMinionInventory;
+            if (dest)
+            {
+                using (var _0 = new Inventory.InventoryChangeScope(dest))
+                {
+                    for (int i = 0; i < allItems.Count; i++)
+                    {
+                        ItemIndex itemIndex = allItems[i];
+                        dest.ChangeItemStacksCount(new Inventory.GiveItemPermanentImpl
+                        {
+                            inventory = dest
+                        }, itemIndex, -allStacks[(int)itemIndex]);
+                    }
+                }
+            }
+
+            if (DevotionTweaks.instance.EnableSharedInventory == false)
+                return;
+
+            foreach (var friend in GetFriends(lem))
+            {
+                dest = friend.LemurianInventory;
+                using (var _0 = new Inventory.InventoryChangeScope(dest))
+                {
+                    for (int i = 0; i < allItems.Count; i++)
+                    {
+                        ItemIndex itemIndex = allItems[i];
+                        dest.ChangeItemStacksCount(new Inventory.GiveItemChanneledImpl
+                        {
+                            inventory = dest
+                        }, itemIndex, -allStacks[(int)itemIndex]);
+                    }
+                }
+            }
         }
     }
 }

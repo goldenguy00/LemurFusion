@@ -105,12 +105,16 @@ namespace LemurFusion.Config
             try
             {
                 // just to get familiar with this syntax... move along.
-                Blacklisted_Items = [.. from item in Blacklisted_Items_Raw.Value?.Split(',') ?? []
-                                    let idx = ItemCatalog.FindItemIndex(item?.Trim())
-                                    where idx != ItemIndex.None && ItemCatalog.IsIndexValid(idx)
-                                    select ItemCatalog.GetItemDef(idx) into def
-                                    where def
-                                    select def.itemIndex];
+
+                Blacklisted_Items = 
+                [
+                    ..from item in Blacklisted_Items_Raw.Value?.Split(',') ?? []
+                                let idx = ItemCatalog.FindItemIndex(item?.Trim())
+                                where idx != ItemIndex.None && ItemCatalog.IsIndexValid(idx)
+                                select ItemCatalog.GetItemDef(idx) into def
+                                where def != null
+                                select def.itemIndex
+                ];
 
                 if (!PluginConfig.enableDetailedLogs.Value) return;
                 foreach (var item in Blacklisted_Items)
