@@ -83,7 +83,7 @@ namespace LemurFusion.Devotion
 
             if (lem is BetterLemurController lemCtrl && lemCtrl && self is BetterInventoryController betterCtrl)
             {
-                betterCtrl.ShareAllItems(lemCtrl);
+                betterCtrl.GiveItemsToGroup(lemCtrl);
 
                 var body = lemCtrl.LemurianBody;
                 if (BetterInventoryController.activationSoundEventDef && body)

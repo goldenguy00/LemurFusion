@@ -32,7 +32,7 @@ public class BetterLemurController : DevotedLemurianController
         this._leashDistSq = PluginConfig.teleportDistance.Value * PluginConfig.teleportDistance.Value;
 
         if (this.FusionCount == 0)
-            this.BetterInventoryController.ChannelSharedItems(this);
+            this.BetterInventoryController.TakeItemsFromGroup(this);
 
         this.BetterInventoryController.ShareInitialItem(this, this.DevotionItem);
 
@@ -67,7 +67,7 @@ public class BetterLemurController : DevotedLemurianController
             }
         }
 
-        BetterInventoryController.UnChannelSharedItems(this);
+        BetterInventoryController.RemovesItemFromGroup(this);
 
         if (ConfigExtended.DeathDrop_DropEgg.Value && this.LemurianBody && Physics.Raycast(this.LemurianBody.corePosition,
             Vector3.down, out var raycastHit, float.PositiveInfinity, LayerIndex.world.mask))

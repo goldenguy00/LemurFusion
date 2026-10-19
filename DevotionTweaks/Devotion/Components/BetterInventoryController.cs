@@ -176,7 +176,7 @@ namespace LemurFusion.Devotion.Components
             }
         }
 
-        public void ShareAllItems(BetterLemurController lem)
+        public void GiveItemsToGroup(BetterLemurController lem)
         {
             Inventory src = lem.PersonalInventory;
             if (src == null)
@@ -226,7 +226,7 @@ namespace LemurFusion.Devotion.Components
             }
         }
 
-        public void ChannelSharedItems(BetterLemurController lem)
+        public void TakeItemsFromGroup(BetterLemurController lem)
         {
             if (DevotionTweaks.instance.EnableSharedInventory == false)
                 return;
@@ -251,7 +251,7 @@ namespace LemurFusion.Devotion.Components
                     allItems.Add(itemIndex);
 
                     ref var stack = ref allStacks[(int)itemIndex];
-                    stack += src.permanentItemStacks.GetStackValue(itemIndex);
+                    stack += src.permanentItemStacks.GetStackValue(itemIndex) * (1 + friend.DevotedEvolutionLevel);
                 }
             }
 
@@ -265,7 +265,7 @@ namespace LemurFusion.Devotion.Components
             }
         }
 
-        public void UnChannelSharedItems(BetterLemurController lem)
+        public void RemovesItemFromGroup(BetterLemurController lem)
         {
             Inventory src = lem.PersonalInventory;
             if (src == null)
